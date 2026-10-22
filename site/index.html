@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Handled · Maintenance, done for you</title>
+<meta name="description" content="Tenants text one number. Handled triages, finds the right vendor, and drafts the dispatch. You just approve." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235b45e8'/%3E%3Cpath d='M9 16.5l5 5 9-10' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" />
+<style>
+  :root { --ink: #fff; --ink-2: rgba(255,255,255,.72); --line: rgba(255,255,255,.16); }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--ink);
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+    background:
+      radial-gradient(900px 600px at 50% 38%, rgba(125,140,255,.55), transparent 70%),
+      radial-gradient(700px 500px at 85% 100%, rgba(80,200,255,.28), transparent 70%),
+      linear-gradient(160deg, #2a1a6e 0%, #4433d6 48%, #3b6df0 100%);
+    background-attachment: fixed;
+  }
+  .wrap { min-height: 100%; display: flex; flex-direction: column; }
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 22px clamp(20px, 5vw, 56px); }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -.02em; font-size: 18px; }
+  .logo i { width: 28px; height: 28px; border-radius: 8px; background: #fff; display: grid; place-items: center; }
+  .logo svg { width: 16px; height: 16px; }
+  .pill { font-size: 14px; font-weight: 500; padding: 8px 16px; border-radius: 99px; border: 1px solid var(--line); color: var(--ink); text-decoration: none; backdrop-filter: blur(8px); background: rgba(255,255,255,.08); transition: background .15s; }
+  .pill:hover { background: rgba(255,255,255,.18); }
+  main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 10px 24px 70px; }
+
+  .stage { perspective: 1100px; width: 260px; height: 190px; margin-bottom: 54px; position: relative; }
+  .stage::after { content: ''; position: absolute; left: 50%; bottom: -34px; width: 200px; height: 26px; margin-left: -100px; background: radial-gradient(closest-side, rgba(10,5,60,.45), transparent); animation: shadow 9s linear infinite; }
+  .envelope { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; animation: spin 9s linear infinite; filter: drop-shadow(0 24px 40px rgba(15,8,80,.45)); }
+  .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 14px; overflow: hidden; }
+  .face svg { width: 100%; height: 100%; display: block; }
+  .back { transform: rotateY(180deg); }
+  @keyframes spin { to { transform: rotateY(360deg); } }
+  @keyframes shadow { 0%,50%,100% { transform: scaleX(1); opacity: .9; } 25%,75% { transform: scaleX(.25); opacity: .5; } }
+
+  h1 { font-size: clamp(38px, 6.4vw, 68px); line-height: 1.04; letter-spacing: -.035em; font-weight: 500; max-width: 14ch; }
+  .sub { margin-top: 20px; font-size: clamp(16px, 2vw, 19px); color: var(--ink-2); max-width: 46ch; line-height: 1.55; }
+  .cta { margin-top: 34px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; background: #fff; color: #3a2bc4; font-weight: 600; font-size: 15px; padding: 13px 22px; border-radius: 12px; text-decoration: none; box-shadow: 0 6px 24px rgba(15,8,80,.3); transition: transform .12s; }
+  .btn:hover { transform: translateY(-1px); }
+  kbd { font: 500 11px Inter, sans-serif; color: #5b45e8; background: #eceaff; border: 1px solid #d6d1ff; border-radius: 5px; padding: 1px 6px; }
+  .note { margin-top: 26px; font-size: 13.5px; color: var(--ink-2); display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
+  .note span::before { content: ''; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: #9fe9c0; margin-right: 8px; vertical-align: 2px; }
+  footer { text-align: center; font-size: 12.5px; color: rgba(255,255,255,.55); padding: 0 20px 22px; }
+
+  @media (prefers-reduced-motion: reduce) { .envelope, .stage::after { animation: none; } .envelope { transform: rotateY(-18deg) rotateX(6deg); } }
+  @media (max-width: 520px) { .stage { transform: scale(.82); margin-bottom: 40px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="logo"><i><svg viewBox="0 0 24 24" fill="none" stroke="#5b45e8" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-10"/></svg></i> Handled</div>
+    <a class="pill" href="mailto:hello@example.com?subject=Handled%20demo">Request a demo</a>
+  </nav>
+  <main>
+    <div class="stage" aria-hidden="true">
+      <div class="envelope">
+        <div class="face front">
+          <svg viewBox="0 0 260 190">
+            <defs>
+              <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e6e8ff"/></linearGradient>
+              <linearGradient id="flap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f4ff"/><stop offset="1" stop-color="#d5d9ff"/></linearGradient>
+            </defs>
+            <rect width="260" height="190" rx="14" fill="url(#paper)"/>
+            <path d="M0 190 L112 92 L120 98 L0 190Z M260 190 L148 92 L140 98 L260 190Z" fill="#dfe2ff"/>
+            <path d="M0 14 Q0 0 14 0 H246 Q260 0 260 14 L134 112 Q130 115 126 112 Z" fill="url(#flap)"/>
+            <path d="M0 14 L126 112 Q130 115 134 112 L260 14" fill="none" stroke="#c4c8fb" stroke-width="1.5"/>
+            <circle cx="130" cy="108" r="17" fill="#5b45e8"/>
+            <path d="M122 108.5l5.5 5.5 10-11" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="face back">
+          <svg viewBox="0 0 260 190">
+            <rect width="260" height="190" rx="14" fill="#eceeff"/>
+            <path d="M0 190 L130 88 L260 190Z" fill="#dadeff"/>
+            <path d="M0 0 L130 100 L260 0" fill="none" stroke="#c4c8fb" stroke-width="1.5"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <h1>Maintenance, handled.</h1>
+    <p class="sub">Tenants text one number. Handled reads every message, finds the right vendor, and drafts the dispatch. You just approve.</p>
+    <div class="cta"><a class="btn" href="mailto:hello@example.com?subject=Handled%20demo">Request a demo <kbd>Enter</kbd></a></div>
+    <div class="note"><span>Nothing sends without your OK</span><span>Emergencies flagged instantly</span><span>English &amp; Spanish</span></div>
+  </main>
+  <footer>Built for small property managers, 10 to 300 doors.</footer>
+</div>
+</body>
+</html>

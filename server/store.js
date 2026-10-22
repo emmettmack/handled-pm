@@ -1,0 +1,217 @@
+// Data access + small helpers. Everything the rest of the server needs from SQLite lives here.
+import { db } from './db.js';
+
+export const nowIso = () => new Date().toISOString();
+export const minsAgo = (m) => new Date(Date.now() - m * 60000).toISOString();
+export const minsFromNow = (m) => new Date(Date.now() + m * 60000).toISOString();
+
+export const STATUS_LABELS = {
+  new: 'New',
+  triaged: 'Triaged',
+  needs_info: 'Needs info',
+  dispatch_drafted: 'Dispatch drafted',
+  awaiting_approval: 'Awaiting approval',
+  dispatched: 'Dispatched',
+  scheduled: 'Scheduled',
+  in_progress: 'In progress',
+  resolved: 'Resolved',
+  closed: 'Closed',
+};
+export const CLOSED_STATUSES = ['resolved', 'closed'];
+export const TRADE_FOR_CATEGORY = {
+  plumbing: 'plumber',
+  electrical: 'electrician',
+  HVAC: 'HVAC',
+  appliance: 'appliance',
+  lockout: 'locksmith',
+  other: 'handyman',
+};
+
+export function normPhone(p) {
+  const d = String(p || '').replace(/\D/g, '');
+  return d.length >= 10 ? '+1' + d.slice(-10) : String(p || '').trim();
+}
+export function prettyPhone(p) {
+  const d = String(p || '').replace(/\D/g, '').slice(-10);
+  return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : p || '';
+}
+
+const JSON_FIELDS = ['next_steps', 'flags'];
+
+function parseTicket(row) {
+  if (!row) return null;
+  const t = { ...row };
+  for (const f of JSON_FIELDS) {
+    try { t[f] = JSON.parse(t[f] || '[]'); } catch { t[f] = []; }
+  }
+  return t;
+}
+
+export function getCompany() {
+  return db.prepare('SELECT * FROM company LIMIT 1').get();
+}
+export function getTicket(id) {
+  return parseTicket(db.prepare('SELECT * FROM tickets WHERE id = ?').get(id));
+}
+
+export function updateTicket(id, fields) {
+  const keys = Object.keys(fields);
+  if (!keys.length) return;
+  const vals = keys.map((k) => {
+    const v = fields[k];
+    return JSON_FIELDS.includes(k) ? JSON.stringify(v ?? []) : v;
+  });
+  db.prepare(`UPDATE tickets SET ${keys.map((k) => `${k} = ?`).join(', ')}, updated_at = ? WHERE id = ?`).run(
+    ...vals, nowIso(), id,
+  );
+}
+
+export function addMessage(ticketId, sender, body, { kind = 'sms', at } = {}) {
+  const info = db
+    .prepare('INSERT INTO messages (ticket_id, sender, body, kind, created_at) VALUES (?,?,?,?,?)')
+    .run(ticketId, sender, body, kind, at || nowIso());
+  db.prepare('UPDATE tickets SET updated_at = ? WHERE id = ?').run(nowIso(), ticketId);
+  return info.lastInsertRowid;
+}
+/** Internal activity line shown muted in the thread (never sent to anyone). */
+export const addNote = (ticketId, body) => addMessage(ticketId, 'system', body, { kind: 'note' });
+
+export function setStatus(ticketId, status, note = null, at) {
+  const t = getTicket(ticketId);
+  if (t && t.status === status && !note) return;
+  const patch = { status };
+  if (status === 'resolved' && !t.resolved_at) patch.resolved_at = at || nowIso();
+  updateTicket(ticketId, patch);
+  db.prepare('INSERT INTO status_history (ticket_id, status, note, created_at) VALUES (?,?,?,?)').run(
+    ticketId, status, note, at || nowIso(),
+  );
+}
+
+export function addFlag(ticketId, type, reason) {
+  const t = getTicket(ticketId);
+  if (t.flags.some((f) => f.type === type && !f.resolved)) return false;
+  t.flags.push({ type, reason, resolved: false, at: nowIso() });
+  updateTicket(ticketId, { flags: t.flags });
+  return true;
+}
+export function resolveFlag(ticketId, type, resolution = 'resolved') {
+  const t = getTicket(ticketId);
+  let changed = false;
+  for (const f of t.flags) {
+    if (f.type === type && !f.resolved) { f.resolved = true; f.resolution = resolution; changed = true; }
+  }
+  if (changed) updateTicket(ticketId, { flags: t.flags });
+  return changed;
+}
+export const hasOpenFlag = (t, type) => t.flags.some((f) => f.type === type && !f.resolved);
+
+// ---------- lookups ----------
+export function findTenantByPhone(phone) {
+  return db.prepare('SELECT * FROM tenants WHERE phone = ?').get(normPhone(phone));
+}
+export function getUnit(unitId) {
+  if (!unitId) return null;
+  return db
+    .prepare(
+      `SELECT u.id, u.number, p.id AS property_id, p.name AS property_name, p.address, p.neighborhood,
+              p.approval_limit, p.owner_name, p.owner_email
+       FROM units u JOIN properties p ON p.id = u.property_id WHERE u.id = ?`,
+    )
+    .get(unitId);
+}
+export function getVendor(id) {
+  return id ? db.prepare('SELECT * FROM vendors WHERE id = ?').get(id) : null;
+}
+export function activeVendors() {
+  return db.prepare('SELECT * FROM vendors WHERE active = 1').all();
+}
+
+// ---------- views ----------
+function pendingDispatch(ticketId) {
+  return db.prepare("SELECT * FROM dispatches WHERE ticket_id = ? AND state = 'pending' ORDER BY id DESC LIMIT 1").get(ticketId);
+}
+
+export function ticketDetail(id) {
+  const t = getTicket(id);
+  if (!t) return null;
+  const tenant = t.tenant_id ? db.prepare('SELECT * FROM tenants WHERE id = ?').get(t.tenant_id) : null;
+  const unit = getUnit(t.unit_id);
+  const dispatches = db
+    .prepare(
+      `SELECT d.*, v.name AS vendor_name, v.trade AS vendor_trade, v.phone AS vendor_phone
+       FROM dispatches d LEFT JOIN vendors v ON v.id = d.vendor_id WHERE d.ticket_id = ? ORDER BY d.id`,
+    )
+    .all(id);
+  return {
+    ...t,
+    tenant,
+    unit,
+    vendor: getVendor(t.vendor_id),
+    messages: db.prepare('SELECT * FROM messages WHERE ticket_id = ? ORDER BY id').all(id),
+    history: db.prepare('SELECT * FROM status_history WHERE ticket_id = ? ORDER BY id').all(id),
+    dispatches,
+    pending_dispatch: dispatches.find((d) => d.state === 'pending') || null,
+    active_dispatch: dispatches.filter((d) => d.kind === 'vendor' && d.state === 'approved').pop() || null,
+  };
+}
+
+export function listBrief() {
+  const rows = db.prepare('SELECT id FROM tickets ORDER BY id DESC').all();
+  return rows.map(({ id }) => {
+    const t = getTicket(id);
+    const tenant = t.tenant_id ? db.prepare('SELECT name FROM tenants WHERE id = ?').get(t.tenant_id) : null;
+    const unit = getUnit(t.unit_id);
+    const pd = pendingDispatch(id);
+    const last = db.prepare('SELECT body, sender FROM messages WHERE ticket_id = ? AND kind = ? ORDER BY id DESC LIMIT 1').get(id, 'sms');
+    return {
+      id: t.id, title: t.title, category: t.category, urgency: t.urgency, status: t.status,
+      created_at: t.created_at, updated_at: t.updated_at, language: t.language,
+      tenant_name: tenant?.name || null, from_phone: t.from_phone,
+      unit_label: unit ? `Unit ${unit.number} · ${unit.property_name}` : null,
+      pending_dispatch_kind: pd?.kind || null,
+      owner_state: t.owner_state, flags: t.flags.filter((f) => !f.resolved),
+      emergency_ack: t.emergency_ack, cost_estimate: t.cost_estimate,
+      last_message: last?.body || '', last_sender: last?.sender || '',
+    };
+  });
+}
+
+export function approvalQueue() {
+  const rows = db.prepare("SELECT d.id FROM dispatches d JOIN tickets t ON t.id = d.ticket_id WHERE d.state = 'pending' ORDER BY d.id").all();
+  return rows
+    .map(({ id }) => {
+      const d = db.prepare('SELECT d.*, v.name AS vendor_name, v.trade AS vendor_trade, v.phone AS vendor_phone, v.rate AS vendor_rate FROM dispatches d LEFT JOIN vendors v ON v.id = d.vendor_id WHERE d.id = ?').get(id);
+      const t = ticketDetail(d.ticket_id);
+      return { ...d, ticket: { ...t, messages: undefined, history: undefined } };
+    })
+    .sort((a, b) => {
+      const rank = { emergency: 0, urgent: 1, routine: 2 };
+      return rank[a.ticket.urgency] - rank[b.ticket.urgency] || a.id - b.id;
+    });
+}
+
+export function stats() {
+  const open = db.prepare("SELECT COUNT(*) c FROM tickets WHERE status NOT IN ('resolved','closed')").get().c;
+  const awaiting = db.prepare("SELECT COUNT(DISTINCT ticket_id) c FROM dispatches WHERE state = 'pending'").get().c;
+  const emergencies = db.prepare("SELECT COUNT(*) c FROM tickets WHERE urgency = 'emergency' AND status NOT IN ('resolved','closed')").get().c;
+  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+  const resolved = db.prepare("SELECT COUNT(*) c FROM tickets WHERE resolved_at IS NOT NULL AND resolved_at >= ?").get(weekAgo).c;
+  return { open, awaiting, emergencies, resolved_this_week: resolved };
+}
+
+export function db_tenant(id) {
+  return db.prepare('SELECT * FROM tenants WHERE id = ?').get(id);
+}
+export function allTenantsWithUnits() {
+  return db
+    .prepare(
+      `SELECT t.*, u.number AS unit_number, p.name AS property_name
+       FROM tenants t JOIN units u ON u.id = t.unit_id JOIN properties p ON p.id = u.property_id`,
+    )
+    .all();
+}
+export function db_insertDispatch({ ticket_id, vendor_id, kind, text, reasoning, state = 'pending', at, response_due_at = null }) {
+  return db
+    .prepare('INSERT INTO dispatches (ticket_id, vendor_id, kind, text, reasoning, state, created_at, response_due_at) VALUES (?,?,?,?,?,?,?,?)')
+    .run(ticket_id, vendor_id, kind, text, reasoning, state, at || nowIso(), response_due_at).lastInsertRowid;
+}
