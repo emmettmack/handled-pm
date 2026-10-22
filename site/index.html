@@ -11,7 +11,9 @@
 <style>
   :root { --ink: #fff; --ink-2: rgba(255,255,255,.72); --line: rgba(255,255,255,.16); }
   * { box-sizing: border-box; margin: 0; }
-  html, body { height: 100%; }
+  html { scroll-behavior: smooth; }
+  .wrap { min-height: 100vh; }
+  .down { text-align: center; color: rgba(255,255,255,.7); text-decoration: none; font-size: 22px; padding-bottom: 22px; }
   body {
     font-family: Geist, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--ink);
     -webkit-font-smoothing: antialiased; overflow-x: hidden;
@@ -50,6 +52,7 @@
   .cta input { width: min(320px, 86vw); padding: 13px 16px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.14); color: #fff; font: 500 15px Geist, sans-serif; backdrop-filter: blur(8px); outline: none; }
   .cta input::placeholder { color: rgba(255,255,255,.65); }
   .cta input:focus { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.6); }
+  .btn.ghost { background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.35); box-shadow: none; }
   .err { margin-top: 10px; min-height: 18px; font-size: 13px; color: #ffd1d3; }
   kbd { font: 500 11px Geist, sans-serif; color: #5b45e8; background: #eceaff; border: 1px solid #d6d1ff; border-radius: 5px; padding: 1px 6px; }
   .note { margin-top: 26px; font-size: 13.5px; color: var(--ink-2); display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
@@ -58,13 +61,42 @@
 
   @media (prefers-reduced-motion: reduce) { .envelope, .stage::after { animation: none; } .envelope { transform: rotateY(-18deg) rotateX(6deg); } }
   @media (max-width: 520px) { .stage { transform: scale(.82); margin-bottom: 40px; } }
+
+  .light { background: #f7f6fb; color: #17142b; position: relative; text-align: left; }
+  .sec { max-width: 1060px; margin: 0 auto; padding: 84px 24px 0; }
+  .sec h2 { font-size: clamp(26px, 3.6vw, 38px); letter-spacing: -.03em; font-weight: 500; margin-bottom: 8px; }
+  .sec .lead { color: #5a5675; max-width: 58ch; margin-bottom: 28px; font-size: 17px; line-height: 1.6; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+  .c { background: #fff; border: 1px solid #e7e4f3; border-radius: 16px; padding: 22px; box-shadow: 0 1px 2px rgba(23,20,43,.04), 0 8px 28px rgba(23,20,43,.05); }
+  .c h3 { font-size: 17px; letter-spacing: -.015em; margin-bottom: 5px; font-weight: 600; }
+  .c p { color: #5a5675; font-size: 15px; line-height: 1.55; }
+  .num { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #efecff; color: #5b45e8; font-weight: 600; font-size: 14px; margin-bottom: 12px; }
+  .tg { display: inline-block; font-size: 12px; font-weight: 600; color: #5b45e8; background: #efecff; border-radius: 99px; padding: 2px 10px; margin-bottom: 10px; }
+  .tg.red { color: #d4262c; background: #fdecec; }
+  .peek { background: #fff; border: 1px solid #e7e4f3; border-radius: 18px; padding: 24px; box-shadow: 0 20px 60px rgba(60,40,200,.14); display: grid; grid-template-columns: 1fr 1.1fr; gap: 22px; }
+  .peek .lab { font-size: 11.5px; text-transform: uppercase; letter-spacing: .07em; color: #7a7596; font-weight: 600; margin: 12px 0 4px; }
+  .peek .why { background: #efecff; color: #35298f; border-radius: 11px; padding: 10px 13px; font-size: 14px; }
+  .peek .dr { background: #faf9fe; border: 1px solid #e7e4f3; border-radius: 11px; padding: 12px 14px; font-size: 14px; white-space: pre-line; }
+  .peek .ap { display: inline-flex; gap: 8px; margin-top: 14px; background: #5b45e8; color: #fff; font-weight: 600; padding: 9px 16px; border-radius: 10px; box-shadow: 0 4px 14px rgba(91,69,232,.35); }
+  .badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 99px; background: #fdf0e2; color: #c9590a; }
+  @media (max-width: 760px) { .peek { grid-template-columns: 1fr; } }
+  details { border-top: 1px solid #e7e4f3; padding: 16px 0; }
+  details:last-of-type { border-bottom: 1px solid #e7e4f3; }
+  summary { font-weight: 600; cursor: pointer; }
+  details p { color: #5a5675; margin-top: 8px; }
+  .final { margin: 90px auto 0; max-width: 1060px; padding: 0 24px 80px; }
+  .box { background: linear-gradient(160deg, #2a1a6e, #4433d6 55%, #3b6df0); color: #fff; border-radius: 24px; padding: 54px 24px; text-align: center; }
+  .box h2 { font-size: clamp(26px, 3.6vw, 38px); letter-spacing: -.03em; font-weight: 500; }
+  .box p { color: rgba(255,255,255,.8); margin: 8px auto 4px; max-width: 46ch; }
+  .skip { color: rgba(255,255,255,.75); font-size: 14px; display: inline-block; margin-top: 14px; }
+  .light footer { color: #8a85a6; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <nav>
     <div class="logo"><i><svg viewBox="0 0 24 24" fill="none" stroke="#5b45e8" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-10"/></svg></i> Handled</div>
-    <div class="links"><a class="l" href="how-it-works.html">How it works</a><a class="pill" href="#try">Try the demo</a></div>
+    <div class="links"><a class="l" href="#how">How it works</a><a class="l" href="#features">Features</a><a class="l" href="#safety">Safety</a><a class="pill" href="#try">Try the demo</a></div>
   </nav>
   <main>
     <div class="stage" aria-hidden="true">
@@ -92,26 +124,108 @@
         </div>
       </div>
     </div>
-    <h1 id="try">Maintenance, handled.</h1>
+    <h1>Maintenance, handled.</h1>
     <p class="sub">Tenants text one number. Handled reads every message, finds the right vendor, and drafts the dispatch. You just approve.</p>
-    <form class="cta" id="f" tabindex="-1" novalidate>
-      <input id="c" type="text" inputmode="email" autocomplete="email" placeholder="Your phone number or email" aria-label="Your phone number or email" />
-      <button class="btn" type="submit">See it in action <kbd>Enter</kbd></button>
-    </form>
-    <p class="err" id="err" role="alert"></p>
-    <script>
-      document.getElementById('f').addEventListener('submit', function (e) {
-        e.preventDefault();
-        var v = document.getElementById('c').value.trim();
-        var ok = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v) || v.replace(/\D/g, '').length >= 10;
-        if (!ok) { document.getElementById('err').textContent = 'Enter a valid phone number or email.'; return; }
-        try { localStorage.setItem('handled_contact', v); } catch (x) {}
-        location.href = 'demo.html';
-      });
-    </script>
+    <div class="cta"><a class="btn" href="#how">See how it works</a><a class="btn ghost" href="#try">Try the demo</a></div>
     <div class="note"><span>Nothing sends without your OK</span><span>Emergencies flagged instantly</span><span>English &amp; Spanish</span></div>
   </main>
-  <footer>Built for small property managers, 10 to 300 doors.</footer>
+  <a class="down" href="#how" aria-label="Scroll">&#8595;</a>
 </div>
+
+<div class="light">
+  <section class="sec" id="how">
+    <h2>From text to dispatch in five steps</h2>
+    <p class="lead">Tenants text one dedicated maintenance number. Everything after that is prepared before you look.</p>
+    <div class="grid">
+      <div class="c"><div class="num">1</div><h3>Tenant texts</h3><p>"My sink is broken." English or Spanish, from any phone. No app to download.</p></div>
+      <div class="c"><div class="num">2</div><h3>Handled sorts it out</h3><p>It works out the category and how urgent it is, and flags emergencies instantly.</p></div>
+      <div class="c"><div class="num">3</div><h3>It asks what it needs</h3><p>A natural follow-up question when something is unclear. Two at most, then it moves on.</p></div>
+      <div class="c"><div class="num">4</div><h3>It prepares the dispatch</h3><p>A plain-English summary, the best vendor from your list, and a ready-to-send message.</p></div>
+      <div class="c"><div class="num">5</div><h3>You approve</h3><p>Approve, edit, or reject. Nothing goes to a vendor until you do.</p></div>
+    </div>
+  </section>
+
+  <section class="sec" id="peek">
+    <h2>What lands in your queue</h2>
+    <p class="lead">Not a pile of tickets to sort. A finished draft you can read in ten seconds.</p>
+    <div class="peek">
+      <div>
+        <span class="badge">Urgent</span>
+        <h3 style="font-size:19px;margin:8px 0 2px;letter-spacing:-.02em">Kitchen sink leaking under cabinet</h3>
+        <div style="color:#7a7596">Maria, Unit 4B &middot; Hyperion Terrace</div>
+        <div class="lab">What's going on</div>
+        <div>Active but contained leak under the kitchen sink. Tenant is home evenings.</div>
+        <div class="lab">Why this vendor</div>
+        <div class="why">Rivera Plumbing: your preferred plumber, fast on same-day leaks.</div>
+      </div>
+      <div>
+        <div class="lab" style="margin-top:0">Draft to Rivera Plumbing</div>
+        <div class="dr">Hi Rivera Plumbing team, new work order #1042.
+Priority: URGENT, same or next day
+Job: Kitchen sink leaking under cabinet
+Address: 2830 Hyperion Ave, Unit 4B
+Please reply YES with an arrival window.</div>
+        <div class="ap">Approve &amp; send</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="features">
+    <h2>Everything a two-person shop needs</h2>
+    <p class="lead">Built for companies with 10 to 300 doors, where a couple of people handle every repair.</p>
+    <div class="grid">
+      <div class="c"><h3>An approval queue, not another dashboard</h3><p>Summary, reasoning, vendor and message together. You confirm and move on.</p></div>
+      <div class="c"><h3>Your vendors, your rules</h3><p>It only picks from vendors you add, using trade, your preferred flag, and your notes.</p></div>
+      <div class="c"><h3>Every work order in one place</h3><p>Full conversation, status from New to Closed, vendor details, and your private notes.</p></div>
+      <div class="c"><h3>Always-on tenant replies</h3><p>Warm, clear answers in seconds, day or night, in the tenant's language.</p></div>
+      <div class="c"><h3>Spanish built in</h3><p>It understands and replies in Spanish, and tells your vendor when a tenant prefers it.</p></div>
+      <div class="c"><h3>Owner approvals handled</h3><p>Over a property's spending limit? You get a drafted owner request instead.</p></div>
+    </div>
+  </section>
+
+  <section class="sec" id="safety">
+    <h2>Safety is built in</h2>
+    <p class="lead">These are rules the product enforces, not suggestions to the AI.</p>
+    <div class="grid">
+      <div class="c"><span class="tg red">Emergencies</span><h3>Flagged the moment they arrive</h3><p>Gas, flooding, sparks, no heat in freezing weather: red banner, pinned work order, instant safety instructions to the tenant.</p></div>
+      <div class="c"><span class="tg">Human approval</span><h3>Nothing sends without your OK</h3><p>Every message to a vendor or owner is a draft until you approve.</p></div>
+      <div class="c"><span class="tg">Liability</span><h3>Never promises money or fault</h3><p>"We'll get this handled" yes. "We'll pay for it" never. Compensation requests are flagged for you.</p></div>
+      <div class="c"><span class="tg">Security</span><h3>Lockouts are verified first</h3><p>The number must match the tenant on file. If not, it holds the ticket for you.</p></div>
+      <div class="c"><span class="tg">Reliability</span><h3>Silent vendors don't stall repairs</h3><p>No reply in 15 minutes? The next best vendor is drafted for you.</p></div>
+    </div>
+  </section>
+
+  <section class="sec" id="faq">
+    <h2>Questions</h2>
+    <details><summary>Can it message vendors on its own?</summary><p>No. Vendor and owner messages are always drafts that you approve first.</p></details>
+    <details><summary>What if it gets something wrong?</summary><p>You see its reasoning next to every draft and can edit or reject it. Emergencies and sensitive cases are escalated to you rather than guessed.</p></details>
+    <details><summary>How long does setup take?</summary><p>Add your vendors and properties, set each owner's spending limit, and point your maintenance number at Handled.</p></details>
+  </section>
+
+  <div class="final" id="try">
+    <div class="box">
+      <h2>See it with your own details</h2>
+      <p>Enter your phone number or email and we'll fill the demo in with it.</p>
+      <form class="cta" id="f" novalidate>
+        <input id="c" type="text" inputmode="email" autocomplete="email" placeholder="Your phone number or email" aria-label="Your phone number or email" />
+        <button class="btn" type="submit">See it in action <kbd>Enter</kbd></button>
+      </form>
+      <p class="err" id="err" role="alert"></p>
+      <a class="skip" href="#" id="skip">Or just show me the demo, no details needed</a>
+    </div>
+  </div>
+  <footer style="text-align:center;padding:0 20px 28px;font-size:13px">Built for small property managers, 10 to 300 doors.</footer>
+</div>
+<script>
+  function go(v) { try { localStorage.setItem('handled_contact', v); } catch (x) {} location.href = 'demo.html'; }
+  document.getElementById('f').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = document.getElementById('c').value.trim();
+    var ok = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v) || v.replace(/\D/g, '').length >= 10;
+    if (!ok) { document.getElementById('err').textContent = 'Enter a valid phone number or email.'; return; }
+    go(v);
+  });
+  document.getElementById('skip').addEventListener('click', function (e) { e.preventDefault(); go('you@yourcompany.com'); });
+</script>
 </body>
 </html>
