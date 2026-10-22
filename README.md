@@ -92,6 +92,14 @@ All inbound texts, from any source, go through one function: `receiveInboundMess
 
 Nothing else in the app changes: triage, the approval queue, and the timers don't know where a message came from.
 
+## Hosting the live dashboard
+
+The landing page (`site/`) is static and runs on GitHub Pages. The dashboard needs the Node server, so host it separately:
+
+1. On render.com, choose New > Blueprint and connect this GitHub repo. It reads `render.yaml` and deploys for free.
+2. Copy the service URL (for example `https://handled-pm.onrender.com`) into `site/config.js`, commit and push. The "Live demo" tab then opens the real dashboard.
+3. Demo mode needs no API key. The data resets every 6 hours (`DEMO_RESET_HOURS`). Free instances sleep when idle, so the first load can take about a minute.
+
 ## File map
 
 ```

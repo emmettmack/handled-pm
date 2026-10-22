@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: handled-pm
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node server/index.js
+    healthCheckPath: /api/status
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: DEMO_RESET_HOURS
+        value: "6"
+      # Leave ANTHROPIC_API_KEY unset for demo mode (free, canned replies).

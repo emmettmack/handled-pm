@@ -141,3 +141,6 @@ app.listen(port, () => {
   console.log(s.mock ? '  AI: DEMO MODE (no ANTHROPIC_API_KEY set, using canned responses)' : `  AI: live, model ${s.model}`);
 });
 A.startScheduler();
+
+// Public demo hosting: wipe visitor changes and restore the sample data every N hours.
+if (Number(process.env.DEMO_RESET_HOURS) > 0) setInterval(() => seed(), Number(process.env.DEMO_RESET_HOURS) * 3600000);

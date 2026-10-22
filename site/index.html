@@ -96,7 +96,7 @@
 <div class="wrap">
   <nav>
     <div class="logo"><i><svg viewBox="0 0 24 24" fill="none" stroke="#5b45e8" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-10"/></svg></i> Handled</div>
-    <div class="links"><a class="l" href="#how">How it works</a><a class="l" href="#features">Features</a><a class="l" href="#safety">Safety</a><a class="pill" href="#try">Try the demo</a></div>
+    <div class="links"><a class="l" id="live" href="demo.html">Live demo</a><a class="l" href="#how">How it works</a><a class="l" href="#features">Features</a><a class="l" href="#safety">Safety</a><a class="pill" href="#try">Try the demo</a></div>
   </nav>
   <main>
     <div class="stage" aria-hidden="true">
@@ -227,5 +227,7 @@ Please reply YES with an arrival window.</div>
   });
   document.getElementById('skip').addEventListener('click', function (e) { e.preventDefault(); go('you@yourcompany.com'); });
 </script>
+<script src="config.js"></script>
+<script>if (window.HANDLED_DASHBOARD_URL) { var a = document.getElementById("live"); a.href = window.HANDLED_DASHBOARD_URL; a.target = "_blank"; a.rel = "noopener"; }</script>
 </body>
 </html>
