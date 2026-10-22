@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Handled · Your demo</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235b45e8'/%3E%3Cpath d='M9 16.5l5 5 9-10' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" />
+<style>
+  :root { --bg:#f7f6fb; --card:#fff; --ink:#17142b; --ink2:#5a5675; --line:#e7e4f3; --accent:#5b45e8; --accent2:#4433d6; --soft:#efecff; --red:#d4262c; --redsoft:#fdecec; --green:#1f7a55; }
+  * { box-sizing:border-box; margin:0; }
+  body { font-family:Inter,-apple-system,sans-serif; background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased; font-size:14.5px; line-height:1.5; }
+  header { background:linear-gradient(160deg,#2a1a6e,#4433d6 55%,#3b6df0); color:#fff; padding:14px clamp(16px,4vw,40px); display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  header a { color:#fff; text-decoration:none; font-weight:600; font-size:17px; letter-spacing:-.02em; display:flex; gap:9px; align-items:center; }
+  header a i { width:26px; height:26px; background:#fff; border-radius:8px; display:grid; place-items:center; color:var(--accent); font-style:normal; font-size:14px; }
+  .for { margin-left:auto; font-size:13px; background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.22); border-radius:99px; padding:5px 13px; }
+  .banner { display:none; background:var(--red); color:#fff; padding:10px clamp(16px,4vw,40px); font-weight:600; }
+  .banner small { font-weight:400; opacity:.9; margin-left:8px; }
+  .banner.on { display:block; }
+  main { max-width:1060px; margin:0 auto; padding:26px clamp(16px,4vw,40px) 60px; }
+  h1 { font-size:26px; letter-spacing:-.03em; font-weight:600; }
+  .lead { color:var(--ink2); margin:4px 0 18px; }
+  .tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+  .tab { border:1px solid var(--line); background:#fff; border-radius:99px; padding:6px 14px; font-weight:500; cursor:pointer; font-size:13.5px; color:var(--ink2); }
+  .tab.on { background:var(--ink); border-color:var(--ink); color:#fff; }
+  .cols { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.1fr); gap:20px; align-items:start; }
+  @media(max-width:820px){ .cols{grid-template-columns:1fr;} }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:0 1px 2px rgba(23,20,43,.04),0 8px 28px rgba(23,20,43,.05); }
+  .ph { padding:16px 18px 6px; font-size:12px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink2); font-weight:600; }
+  .thread { padding:8px 18px 14px; display:flex; flex-direction:column; gap:9px; min-height:260px; }
+  .b { max-width:84%; padding:9px 14px; border-radius:16px; animation:in .22s ease-out; white-space:pre-wrap; }
+  .b.t { background:#efedf6; align-self:flex-start; border-bottom-left-radius:5px; }
+  .b.a { background:var(--accent); color:#fff; align-self:flex-end; border-bottom-right-radius:5px; }
+  .who { font-size:11.5px; color:var(--ink2); margin:0 6px -4px; }
+  .who.r { align-self:flex-end; }
+  .typing { align-self:flex-end; color:var(--ink2); font-size:12.5px; }
+  .quick { padding:0 18px 16px; display:flex; flex-wrap:wrap; gap:7px; }
+  .quick button { border:1px dashed #b9b0f5; background:#fff; color:var(--accent); border-radius:99px; padding:5px 13px; cursor:pointer; font-size:13px; }
+  .quick button:hover { background:var(--soft); }
+  .qtitle { padding:0 18px 6px; font-size:12.5px; color:var(--accent); font-weight:600; }
+  .empty { padding:46px 24px; text-align:center; color:var(--ink2); }
+  .urg { display:inline-block; font-size:12px; font-weight:600; padding:2px 10px; border-radius:99px; background:#efedf6; }
+  .urg.urgent { background:#fdf0e2; color:#c9590a; } .urg.emergency { background:var(--red); color:#fff; }
+  .q { padding:18px 20px; animation:in .25s ease-out; }
+  .q h3 { font-size:17px; letter-spacing:-.015em; margin:8px 0 2px; }
+  .lab { font-size:11.5px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink2); font-weight:600; margin:14px 0 5px; }
+  .why { background:var(--soft); border-radius:11px; padding:10px 13px; color:#35298f; font-size:13.5px; }
+  .draft { background:#faf9fe; border:1px solid var(--line); border-radius:11px; padding:12px 14px; white-space:pre-wrap; font-size:13.5px; }
+  .actions { display:flex; gap:9px; align-items:center; flex-wrap:wrap; margin-top:16px; }
+  .btn { border:1px solid var(--line); background:#fff; border-radius:10px; padding:9px 16px; font-weight:600; cursor:pointer; font-size:14px; display:inline-flex; gap:8px; align-items:center; }
+  .btn.p { background:var(--accent); border-color:var(--accent); color:#fff; box-shadow:0 4px 14px rgba(91,69,232,.35); }
+  .btn.p:hover { background:var(--accent2); }
+  kbd { font:500 11px Inter,sans-serif; background:rgba(255,255,255,.22); border:1px solid rgba(255,255,255,.35); border-radius:5px; padding:0 6px; }
+  .btn:not(.p) kbd { background:#f2f0fa; border-color:var(--line); color:var(--ink2); }
+  .hint { color:var(--ink2); font-size:12.5px; margin-left:auto; }
+  .done { padding:22px; animation:in .25s ease-out; }
+  .done .ok { color:var(--green); font-weight:600; font-size:16px; margin-bottom:6px; }
+  .steps { margin:10px 0 0; padding-left:18px; color:var(--ink2); }
+  .cta { margin-top:18px; display:flex; gap:10px; flex-wrap:wrap; }
+  @keyframes in { from { opacity:0; transform:translateY(6px); } }
+</style>
+</head>
+<body>
+<header>
+  <a href="index.html"><i>&#10003;</i> Handled</a>
+  <span class="for" id="for"></span>
+</header>
+<div class="banner" id="banner">EMERGENCY <small>Demo only: the live product pages you by phone until you acknowledge.</small></div>
+<main>
+  <h1>Here's your maintenance line in action</h1>
+  <p class="lead">Pick a situation. Watch a tenant text arrive, the AI handle it, and a ready-to-send dispatch land in your queue. Nothing sends until you approve.</p>
+  <div class="tabs" id="tabs"></div>
+  <div class="cols">
+    <div class="card"><div class="ph">Tenant texts <span id="line"></span></div><div class="thread" id="thread"></div><div id="qwrap"></div></div>
+    <div class="card" id="right"><div class="empty">Your approval queue is empty.<br>Start a situation to see the draft appear here.</div></div>
+  </div>
+</main>
+<script>
+(function () {
+  var contact = null;
+  try { contact = localStorage.getItem('handled_contact'); } catch (e) {}
+  if (!contact) { location.replace('index.html'); return; }
+  var isEmail = contact.indexOf('@') > -1;
+  var name = isEmail ? contact.split('@')[0] : '';
+  document.getElementById('for').textContent = 'Demo for ' + contact;
+  document.getElementById('line').textContent = '· your maintenance line';
+
+  var sig = '\n\nQuestions? Reach the property manager at ' + contact + '.';
+  var S = [
+    { id: 'sink', label: 'Routine: "my sink is broken"', tenant: 'Maria, Unit 4B', urgency: 'routine',
+      first: 'my sink is broken',
+      ask: 'Happy to help, Maria. Which sink is it, and is water leaking onto the floor or cabinet, or is it just not working right?',
+      chips: ['Kitchen sink, leaking under the cabinet', 'Bathroom sink, just draining slowly'],
+      ack: "Thanks, Maria. I've got what I need and I'm lining up a plumber. I'll text you as soon as there's a time.",
+      title: 'Kitchen sink leaking under cabinet', summary: 'Kitchen sink is leaking under the cabinet in Unit 4B, 2830 Hyperion Ave. Active but contained leak, tenant is home evenings.',
+      vendor: 'Rivera Plumbing', why: 'Preferred plumber on your list, fast on same-day leaks. Urgent because water under a cabinet can spread to the floor.', urg: 'urgent',
+      text: 'Hi Rivera Plumbing team, new work order #1042.\n\nPriority: URGENT, same or next day\nJob: Kitchen sink leaking under cabinet\nAddress: 2830 Hyperion Ave, Unit 4B\nTenant: Maria, home evenings after 5pm\nPlease reply YES with an arrival window. Call before going over $400.' },
+    { id: 'gas', label: 'Emergency: gas smell', tenant: 'James, Unit 2A', urgency: 'emergency',
+      first: "I smell gas in my kitchen, it's really strong near the stove",
+      ack: "This sounds serious. Please leave the apartment now and don't use any switches or flames. From outside, call 911 or SoCalGas at 1-800-427-2200. I'm alerting the office and getting help on the way.",
+      title: 'Gas smell reported', summary: 'Tenant smells strong gas near the kitchen stove, Unit 2A. Severity: emergency. Tenant told to leave and call SoCalGas.',
+      vendor: 'Rivera Plumbing', why: 'Your note says they have a 24/7 emergency line. Emergency because a gas smell endangers everyone in the building.', urg: 'emergency', emergency: true,
+      text: 'EMERGENCY: Rivera Plumbing, work order #1043.\n\nJob: Gas smell at stove, tenant has evacuated\nAddress: 4521 Rosewood Ave, Unit 2A\nAccess: Do not enter until our office confirms. SoCalGas is also notified.\nPlease call immediately.' },
+    { id: 'es', label: 'Spanish: toilet clogged', tenant: 'Rosa, Unit 1', urgency: 'urgent',
+      first: 'Hola, el inodoro está tapado y no baja el agua. Es el único baño que tenemos',
+      ack: 'Gracias, Rosa. Ya tengo lo que necesito y estoy buscando a un plomero. Le escribo en cuanto haya un horario.',
+      title: 'Toilet clogged (Spanish-speaking tenant)', summary: 'Only toilet is clogged and will not flush. Tenant writes in Spanish. Urgent: no other bathroom.',
+      vendor: 'Rivera Plumbing', why: 'Preferred, and your note says they speak Spanish, which matters for this tenant. Urgent because it is the only toilet.', urg: 'urgent',
+      text: 'Hi Rivera Plumbing team, work order #1044.\n\nPriority: URGENT\nJob: Clogged toilet, the only toilet in the unit\nAddress: 5712 N Figueroa St, Unit 1\nTenant: Rosa (prefers Spanish)\nPlease reply YES with an arrival window.' }
+  ];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var cur, timers = [];
+  function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
+  function bubble(text, who, label) {
+    var th = $('thread');
+    var l = document.createElement('div'); l.className = 'who' + (who === 'a' ? ' r' : ''); l.textContent = label; th.appendChild(l);
+    var b = document.createElement('div'); b.className = 'b ' + who; b.textContent = text; th.appendChild(b);
+  }
+  function typing(on) {
+    var old = $('typing'); if (old) old.remove();
+    if (on) { var t = document.createElement('div'); t.id = 'typing'; t.className = 'typing'; t.textContent = 'Handled is reading…'; $('thread').appendChild(t); }
+  }
+  function start(s) {
+    timers.forEach(clearTimeout); timers = []; cur = s;
+    $('thread').innerHTML = ''; $('qwrap').innerHTML = '';
+    $('banner').classList.remove('on');
+    $('right').innerHTML = '<div class="empty">Your approval queue is empty.<br>Start a situation to see the draft appear here.</div>';
+    [].forEach.call(document.querySelectorAll('.tab'), function (t) { t.classList.toggle('on', t.dataset.id === s.id); });
+    bubble(s.first, 't', s.tenant);
+    typing(true);
+    if (s.ask) {
+      later(function () { typing(false); bubble(s.ask, 'a', 'Handled (AI)'); chips(s); }, 1300);
+    } else {
+      later(function () { typing(false); bubble(s.ack, 'a', 'Handled (AI)'); if (s.emergency) $('banner').classList.add('on'); later(draft, 900); }, 1300);
+    }
+  }
+  function chips(s) {
+    var w = $('qwrap');
+    w.innerHTML = '<div class="qtitle">Reply as the tenant to keep the demo going:</div><div class="quick"></div>';
+    s.chips.forEach(function (c) {
+      var b = document.createElement('button'); b.textContent = c;
+      b.onclick = function () {
+        w.innerHTML = ''; bubble(c, 't', s.tenant); typing(true);
+        later(function () { typing(false); bubble(s.ack, 'a', 'Handled (AI)'); later(draft, 900); }, 1200);
+      };
+      w.querySelector('.quick').appendChild(b);
+    });
+  }
+  function draft() {
+    var s = cur;
+    $('right').innerHTML = '<div class="q"><span class="urg ' + s.urg + '">' + s.urg.charAt(0).toUpperCase() + s.urg.slice(1) + '</span>' +
+      '<h3>' + s.title + '</h3><div style="color:var(--ink2)">' + s.tenant + '</div>' +
+      '<div class="lab">What\'s going on</div><div>' + s.summary + '</div>' +
+      '<div class="lab">Why this vendor</div><div class="why">' + s.vendor + ': ' + s.why + '</div>' +
+      '<div class="lab">Draft to ' + s.vendor + '</div><div class="draft"></div>' +
+      '<div class="actions"><button class="btn p" id="approve">Approve &amp; send <kbd>Enter</kbd></button><button class="btn" id="edit">Edit <kbd>E</kbd></button><button class="btn" id="rej">Reject <kbd>R</kbd></button><span class="hint">Nothing sends until you approve</span></div></div>';
+    $('right').querySelector('.draft').textContent = s.text + sig;
+    $('approve').onclick = approve;
+    $('edit').onclick = edit;
+    $('rej').onclick = function () { $('right').innerHTML = '<div class="empty">Draft rejected. In the real product you add a note and the AI tries the next best vendor.</div>'; };
+  }
+  function edit() {
+    var d = $('right').querySelector('.draft'); if (!d) return;
+    d.contentEditable = 'true'; d.focus(); d.style.outline = '3px solid rgba(91,69,232,.2)';
+  }
+  function approve() {
+    if (!$('approve')) return;
+    var s = cur;
+    $('right').innerHTML = '<div class="done"><div class="ok">&#10003; Sent to ' + s.vendor + '</div>' +
+      '<p>That took you one tap. Behind the scenes:</p><ol class="steps"><li>The vendor has 15 minutes to confirm.</li><li>If they stay silent, Handled drafts the next best plumber for your OK.</li><li>The tenant is told when it is scheduled, and when it is done.</li></ol>' +
+      '<div class="cta"><button class="btn p" id="again">Try another situation</button></div>' +
+      '<p style="margin-top:16px;color:var(--ink2);font-size:13px">This was a demo. No real messages were sent to ' + (isEmail ? 'your inbox' : 'your phone') + '.</p></div>';
+    $('again').onclick = function () { var i = (S.indexOf(s) + 1) % S.length; start(S[i]); };
+  }
+  S.forEach(function (s) {
+    var b = document.createElement('button'); b.className = 'tab'; b.dataset.id = s.id; b.textContent = s.label; b.onclick = function () { start(s); }; $('tabs').appendChild(b);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.target.isContentEditable) return;
+    if (e.key === 'Enter') approve(); else if (e.key === 'e' || e.key === 'E') edit();
+  });
+  start(S[0]);
+})();
+</script>
+</body>
+</html>

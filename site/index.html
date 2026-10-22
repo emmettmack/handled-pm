@@ -44,6 +44,10 @@
   .cta { margin-top: 34px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; }
   .btn { display: inline-flex; align-items: center; gap: 10px; background: #fff; color: #3a2bc4; font-weight: 600; font-size: 15px; padding: 13px 22px; border-radius: 12px; text-decoration: none; box-shadow: 0 6px 24px rgba(15,8,80,.3); transition: transform .12s; }
   .btn:hover { transform: translateY(-1px); }
+  .cta input { width: min(320px, 86vw); padding: 13px 16px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.14); color: #fff; font: 500 15px Inter, sans-serif; backdrop-filter: blur(8px); outline: none; }
+  .cta input::placeholder { color: rgba(255,255,255,.65); }
+  .cta input:focus { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.6); }
+  .err { margin-top: 10px; min-height: 18px; font-size: 13px; color: #ffd1d3; }
   kbd { font: 500 11px Inter, sans-serif; color: #5b45e8; background: #eceaff; border: 1px solid #d6d1ff; border-radius: 5px; padding: 1px 6px; }
   .note { margin-top: 26px; font-size: 13.5px; color: var(--ink-2); display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
   .note span::before { content: ''; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: #9fe9c0; margin-right: 8px; vertical-align: 2px; }
@@ -87,7 +91,21 @@
     </div>
     <h1>Maintenance, handled.</h1>
     <p class="sub">Tenants text one number. Handled reads every message, finds the right vendor, and drafts the dispatch. You just approve.</p>
-    <div class="cta"><a class="btn" href="mailto:hello@example.com?subject=Handled%20demo">Request a demo <kbd>Enter</kbd></a></div>
+    <form class="cta" id="f" novalidate>
+      <input id="c" type="text" inputmode="email" autocomplete="email" placeholder="Your phone number or email" aria-label="Your phone number or email" />
+      <button class="btn" type="submit">See it in action <kbd>Enter</kbd></button>
+    </form>
+    <p class="err" id="err" role="alert"></p>
+    <script>
+      document.getElementById('f').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var v = document.getElementById('c').value.trim();
+        var ok = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v) || v.replace(/\D/g, '').length >= 10;
+        if (!ok) { document.getElementById('err').textContent = 'Enter a valid phone number or email.'; return; }
+        try { localStorage.setItem('handled_contact', v); } catch (x) {}
+        location.href = 'demo.html';
+      });
+    </script>
     <div class="note"><span>Nothing sends without your OK</span><span>Emergencies flagged instantly</span><span>English &amp; Spanish</span></div>
   </main>
   <footer>Built for small property managers, 10 to 300 doors.</footer>
