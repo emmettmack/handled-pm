@@ -1,14 +1,15 @@
 // In the static build (GitHub Pages) the same routes run in the browser; otherwise they hit the Node server.
-const STATIC = import.meta.env.VITE_STATIC === '1';
-const staticApi = STATIC ? import('./demo/staticApi.js') : null;
+import { loadStatic } from './backend.js';
 
 async function request(path, opts = {}) {
-  if (STATIC) {
-    const { staticRequest } = await staticApi;
+  if (loadStatic) {
+    const { staticRequest } = await loadStatic();
     return staticRequest(path, opts.method || 'GET', opts.body ? JSON.parse(opts.body) : {});
   }
-  const res = await fetch('/api' + path, { headers: { 'Content-Type': 'application/json' }, ...opts });
+  const token = await window.Clerk?.session?.getToken(); // set when signed in with Clerk
+  const res = await fetch('/api' + path, { headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, ...opts });
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401) window.Clerk?.signOut(); // expired session: back to the sign-in screen
   if (!res.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
   return data;
 }

@@ -1,6 +1,7 @@
 // The AI flow: read -> classify -> (verify) -> (follow up) -> summarize -> pick vendor -> draft -> approval queue.
 // The model proposes; this file enforces the hard rules (liability, verification, spend cap, 2-round cap).
 import * as ai from './ai.js';
+import { currentAccount } from './accounts.js';
 import * as S from './store.js';
 import { sendToTenant } from './outbound.js';
 import { T, sanitizeTenantReply, COMPENSATION_ASK } from './templates.js';
@@ -12,7 +13,8 @@ const CATS = ['plumbing', 'electrical', 'HVAC', 'appliance', 'lockout', 'other']
 
 // One job at a time per ticket, so a tenant reply can't race an in-flight triage.
 const queues = new Map();
-export function enqueue(id, fn) {
+export function enqueue(ticketId, fn) {
+  const id = `${currentAccount()}:${ticketId}`; // ticket ids repeat across accounts
   const next = (queues.get(id) || Promise.resolve()).then(fn).catch((e) => console.error(`[ticket ${id}]`, e));
   queues.set(id, next);
   next.then(() => { if (queues.get(id) === next) queues.delete(id); });

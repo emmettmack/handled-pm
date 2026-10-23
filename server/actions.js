@@ -1,5 +1,6 @@
 // Things the property manager (or the demo timers) can do to a ticket after the AI has done its part.
-import { db } from './db.js';
+import { db, accountIds } from './db.js';
+import { runAs } from './accounts.js';
 import * as S from './store.js';
 import { enqueue, draftAndQueue } from './triage.js';
 import { sendToTenant } from './outbound.js';
@@ -85,8 +86,12 @@ export function skipTimer(ticketId) {
 
 export function startScheduler() {
   setInterval(() => {
-    const due = db.prepare("SELECT DISTINCT ticket_id FROM dispatches WHERE kind='vendor' AND state='approved' AND response_due_at IS NOT NULL AND response_due_at <= ?").all(S.nowIso());
-    for (const { ticket_id } of due) markNoResponse(ticket_id);
+    for (const id of accountIds()) {
+      runAs(id, () => {
+        const due = db.prepare("SELECT DISTINCT ticket_id FROM dispatches WHERE kind='vendor' AND state='approved' AND response_due_at IS NOT NULL AND response_due_at <= ?").all(S.nowIso());
+        for (const { ticket_id } of due) markNoResponse(ticket_id);
+      });
+    }
   }, 5000);
 }
 

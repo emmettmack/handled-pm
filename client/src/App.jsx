@@ -63,7 +63,7 @@ function EmergencyBanner({ emergencies, company, onHide }) {
   );
 }
 
-export default function App() {
+export default function App({ accountSlot = null }) {
   useTick();
   const route = useHash();
   const [dash, refresh] = usePoll(() => api.get('/dashboard'), 3000);
@@ -110,6 +110,7 @@ export default function App() {
             <a href="#/properties" className={section === 'properties' ? 'active' : ''}>Properties</a>
             <a href="#/preferences" className={section === 'preferences' ? 'active' : ''}>Preferences</a>
             {import.meta.env.VITE_STATIC === '1' && <a href="../index.html" className="back">&larr; Back to site</a>}
+            {accountSlot && <span className="account-slot">{accountSlot}</span>}
           </nav>
           {ctx.status && (
             <span

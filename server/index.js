@@ -7,14 +7,13 @@ import * as S from './store.js';
 import * as ai from './ai.js';
 import * as A from './actions.js';
 import { seed } from './seed.js';
-import { receiveInboundMessage } from './intake.js';
 import { routes } from './routes.js';
+import { authenticate, authEnabled } from './auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-if (!S.getCompany()) seed();
+if (!authEnabled() && !S.getCompany()) seed(); // sample data is for local development only; real accounts start empty
 
 const app = express();
-app.use(express.json({ limit: '25mb' })); // tenant photos and videos arrive as data URLs
 app.use(express.urlencoded({ extended: false })); // Twilio posts form-encoded webhooks
 
 const wrap = (fn) => async (req, res) => {
@@ -27,6 +26,19 @@ const wrap = (fn) => async (req, res) => {
   }
 };
 
+// Health check for the host (no sign-in, reveals nothing).
+app.get('/healthz', (_req, res) => res.send('ok'));
+
+// Twilio-shaped webhook stub, off until texting is connected (it needs Twilio signature validation and
+// routing to the right account first). It sits outside the sign-in check because Twilio can't sign in.
+app.post('/api/webhooks/sms', (req, res) => {
+  if (!process.env.TWILIO_AUTH_TOKEN) return res.status(503).send('Texting is not set up yet.');
+  res.status(501).send('Not implemented.');
+});
+
+// Body parsing comes after the sign-in check so strangers can't make the server buffer large uploads.
+app.use('/api', authenticate, express.json({ limit: '25mb' })); // tenant photos and videos arrive as data URLs
+
 // Every JSON route lives in routes.js (shared with the static browser demo).
 for (const [method, path, handler] of routes) {
   app[method.toLowerCase()]('/api' + path, wrap((req) => {
@@ -34,13 +46,6 @@ for (const [method, path, handler] of routes) {
     return handler({ params, body: req.body || {} });
   }));
 }
-
-// Twilio-shaped webhook stub. Point a Twilio number's "A message comes in" webhook here and the same
-// pipeline handles it. (Add signature validation + a TwiML/empty 200 response before going live.)
-app.post('/api/webhooks/sms', wrap((req, res) => {
-  receiveInboundMessage({ channel: 'sms', from: req.body.From, body: req.body.Body });
-  res.type('text/xml').send('<Response></Response>');
-}));
 
 // ---------- static frontend (after `npm run build`) ----------
 const dist = path.join(__dirname, '..', 'client', 'dist');
@@ -58,4 +63,4 @@ app.listen(port, () => {
 A.startScheduler();
 
 // Public demo hosting: wipe visitor changes and restore the sample data every N hours.
-if (Number(process.env.DEMO_RESET_HOURS) > 0) setInterval(() => seed(), Number(process.env.DEMO_RESET_HOURS) * 3600000);
+if (!authEnabled() && Number(process.env.DEMO_RESET_HOURS) > 0) setInterval(() => seed(), Number(process.env.DEMO_RESET_HOURS) * 3600000);

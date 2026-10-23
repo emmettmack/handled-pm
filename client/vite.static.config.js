@@ -7,12 +7,14 @@ import { fileURLToPath } from 'node:url';
 const root = path.dirname(fileURLToPath(import.meta.url));
 const demo = (f) => path.join(root, 'src', 'demo', f);
 
-// server/*.js import './db.js' (native SQLite file); swap in the browser database for this build only.
+// server/*.js import './db.js' (native SQLite files) and './accounts.js' (Node-only); swap in browser versions for this build only.
+const swaps = { './db.js': 'browserDb.js', './accounts.js': 'browserAccounts.js' };
 const browserDb = {
   name: 'browser-db',
   enforce: 'pre',
   resolveId(source, importer) {
-    if (source === './db.js' && importer && importer.includes(`${path.sep}server${path.sep}`)) return demo('browserDb.js');
+    if (swaps[source] && importer && importer.includes(`${path.sep}server${path.sep}`)) return demo(swaps[source]);
+    if (source === './backend.js' && importer?.endsWith(`${path.sep}src${path.sep}api.js`)) return demo('backend.js');
   },
 };
 
@@ -20,7 +22,7 @@ export default defineConfig({
   root,
   base: './',
   plugins: [browserDb, react()],
-  define: { 'process.env': '{}', 'process.argv': '[]', 'import.meta.env.VITE_STATIC': '"1"' },
+  define: { 'process.env': '{}', 'process.argv': '[]', 'import.meta.env.VITE_STATIC': '"1"', 'import.meta.env.VITE_CLERK_PUBLISHABLE_KEY': 'undefined' },
   resolve: { alias: { '@anthropic-ai/sdk': demo('anthropicStub.js') } },
   build: { outDir: path.join(root, '..', 'site', 'app'), emptyOutDir: true, target: 'esnext' },
 });

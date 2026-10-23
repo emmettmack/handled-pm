@@ -1,14 +1,28 @@
+# Hosted app (login, per-account databases). The public site and the demo run separately on GitHub Pages.
+# Secrets marked sync: false are entered in the Render dashboard, never committed.
 services:
   - type: web
     name: macalisto
     runtime: node
-    plan: free
+    plan: starter            # a persistent disk needs a paid plan
     buildCommand: npm install && npm run build
     startCommand: node server/index.js
-    healthCheckPath: /api/status
+    healthCheckPath: /healthz
+    disk:
+      name: data
+      mountPath: /var/data   # each account's SQLite file lives here
+      sizeGB: 1
     envVars:
       - key: NODE_VERSION
         value: 22
-      - key: DEMO_RESET_HOURS
-        value: "6"
-      # Leave ANTHROPIC_API_KEY unset for demo mode (free, canned replies).
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: VITE_CLERK_PUBLISHABLE_KEY   # baked into the page at build time (public by design)
+        sync: false
+      - key: CLERK_AUTHORIZED_PARTIES
+        value: https://app.macalisto.com
+      # Optional: set ANTHROPIC_API_KEY for live AI instead of the built-in sample replies.

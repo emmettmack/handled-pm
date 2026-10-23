@@ -40,3 +40,4 @@ export const db = {
 };
 
 export const SCHEMA = '';
+export const accountIds = () => ['local'];

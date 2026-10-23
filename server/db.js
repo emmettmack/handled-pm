@@ -3,13 +3,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const file = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'handled.db');
-fs.mkdirSync(path.dirname(file), { recursive: true });
+import { currentAccount, LOCAL_ACCOUNT } from './accounts.js';
 
-export const db = new Database(file);
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
+const LOCAL_FILE = process.env.DB_PATH || path.join(DATA_DIR, 'handled.db');
 
 export const SCHEMA = `
 CREATE TABLE IF NOT EXISTS company (
@@ -64,14 +62,51 @@ CREATE TABLE IF NOT EXISTS status_history (
 );
 `;
 
-db.exec(SCHEMA);
-
 // Databases created before a column existed get it added here (CREATE TABLE IF NOT EXISTS won't).
-const ensureColumn = (table, name, def) => {
-  if (!db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === name)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${def}`);
-};
-ensureColumn('vendors', 'personal_phone', "TEXT DEFAULT ''");
-ensureColumn('vendors', 'primary_company', 'INTEGER DEFAULT 1');
-ensureColumn('vendors', 'primary_personal', 'INTEGER DEFAULT 0');
-ensureColumn('vendors', 'primary_email', 'INTEGER DEFAULT 0');
-ensureColumn('properties', 'company', "TEXT DEFAULT ''");
+function migrate(d) {
+  d.exec(SCHEMA);
+  const ensureColumn = (table, name, def) => {
+    if (!d.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === name)) d.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${def}`);
+  };
+  ensureColumn('vendors', 'personal_phone', "TEXT DEFAULT ''");
+  ensureColumn('vendors', 'primary_company', 'INTEGER DEFAULT 1');
+  ensureColumn('vendors', 'primary_personal', 'INTEGER DEFAULT 0');
+  ensureColumn('vendors', 'primary_email', 'INTEGER DEFAULT 0');
+  ensureColumn('properties', 'company', "TEXT DEFAULT ''");
+}
+
+const open = new Map();
+
+/** Each account has its own SQLite file: DATA_DIR/accounts/<id>.db. The local dev account keeps the original file. */
+function forAccount(id) {
+  if (open.has(id)) return open.get(id);
+  if (id !== LOCAL_ACCOUNT && !/^[A-Za-z0-9_-]{1,100}$/.test(id)) throw new Error('Invalid account id');
+  const file = id === LOCAL_ACCOUNT ? LOCAL_FILE : path.join(DATA_DIR, 'accounts', `${id}.db`);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const d = new Database(file);
+  d.pragma('journal_mode = WAL');
+  d.pragma('foreign_keys = ON');
+  migrate(d);
+  // A brand-new real account starts empty, with a blank company profile to fill in under Preferences.
+  if (id !== LOCAL_ACCOUNT && !d.prepare('SELECT 1 FROM company').get()) {
+    d.prepare("INSERT INTO company (id, name, pm_name, phone, email, address, maintenance_line) VALUES (1, 'My rentals', 'You', '', '', '', '')").run();
+  }
+  open.set(id, d);
+  return d;
+}
+
+/** Same surface as a better-sqlite3 database, but always the current request's account. */
+export const db = new Proxy({}, {
+  get(_, key) {
+    const d = forAccount(currentAccount());
+    const v = d[key];
+    return typeof v === 'function' ? v.bind(d) : v;
+  },
+});
+
+/** Every account that has a database on disk (used by background timers). */
+export function accountIds() {
+  const dir = path.join(DATA_DIR, 'accounts');
+  const ids = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith('.db')).map((f) => f.slice(0, -3)) : [];
+  return fs.existsSync(LOCAL_FILE) ? [LOCAL_ACCOUNT, ...ids] : ids;
+}
