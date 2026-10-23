@@ -21,8 +21,10 @@ export const STATUS_LABELS = {
   in_progress: 'In progress', resolved: 'Resolved', closed: 'Closed',
 };
 export const CATEGORY_LABELS = { plumbing: 'Plumbing', electrical: 'Electrical', HVAC: 'Heating & cooling', appliance: 'Appliance', lockout: 'Lockout', other: 'General' };
-export const TRADES = ['plumber', 'electrician', 'HVAC', 'handyman', 'locksmith', 'appliance', 'general'];
-export const TRADE_LABELS = { plumber: 'Plumbers', electrician: 'Electricians', HVAC: 'Heating & cooling', handyman: 'Handymen', locksmith: 'Locksmiths', appliance: 'Appliance repair', general: 'General contractors' };
+export const TRADES = ['plumber', 'electrician', 'HVAC', 'handyman', 'locksmith', 'appliance', 'general', 'other'];
+export const TRADE_LABELS = { plumber: 'Plumbers', electrician: 'Electricians', HVAC: 'Heating & cooling', handyman: 'Handymen', locksmith: 'Locksmiths', appliance: 'Appliance repair', general: 'General contractors', other: 'Other' };
+export const TRADE_OPTION_LABELS = { plumber: 'Plumber', electrician: 'Electrician', HVAC: 'Heating & cooling', handyman: 'Handyman', locksmith: 'Locksmith', appliance: 'Appliance repair', general: 'General contractor', other: 'Other' };
+export const URGENCY_RANK = { emergency: 0, urgent: 1, routine: 2 };
 export const money = (n) => (n == null ? 'n/a' : '$' + Number(n).toLocaleString());
 
 /** Re-render every `ms` so "5 min ago" labels stay fresh between data polls. */

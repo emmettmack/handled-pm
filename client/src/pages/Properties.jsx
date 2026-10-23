@@ -1,7 +1,6 @@
-import { useState } from 'react';
-import { RotateCcw } from 'lucide-react';
+import { Fragment, useState } from 'react';
 import { api } from '../api.js';
-import { useApp, go } from '../ctx.jsx';
+import { useApp } from '../ctx.jsx';
 import { usePoll } from '../util.js';
 
 function LimitEditor({ p, onSaved }) {
@@ -9,7 +8,7 @@ function LimitEditor({ p, onSaved }) {
   const [val, setVal] = useState(String(p.approval_limit));
   const dirty = Number(val) !== p.approval_limit;
   const save = async () => {
-    try { await api.put(`/properties/${p.id}`, { approval_limit: Number(val) }); toast('Approval limit updated'); onSaved(); } catch (e) { toast(e.message, 'err'); }
+    try { await api.put(`/properties/${p.id}`, { approval_limit: Number(val) }); toast('Owner limit updated'); onSaved(); } catch (e) { toast(e.message, 'err'); }
   };
   return (
     <div className="btn-row">
@@ -19,50 +18,59 @@ function LimitEditor({ p, onSaved }) {
   );
 }
 
+// "4521 Rosewood Ave, Los Angeles, CA 90004" -> street "Rosewood Ave", city "Los Angeles"
+const street = (p) => (p.address.split(',')[0] || '').replace(/^\d+\s*/, '').replace(/^[NSEW]\s+/i, '');
+const city = (p) => (p.address.split(',')[1] || '').trim();
+
+const SORTS = [
+  ['street', 'Street', street],
+  ['city', 'City', city],
+  ['company', 'Company', (p) => p.company || 'No company'],
+  ['owner', 'Owner', (p) => p.owner_name || 'No owner'],
+];
+
 export default function Properties() {
-  const { toast, refresh, status } = useApp();
   const [props, reload] = usePoll(() => api.get('/properties'), 15000);
-  const reset = async () => {
-    if (!window.confirm('Reset all demo data? This replaces every work order with the sample set.')) return;
-    try { await api.post('/demo/reset'); await refresh(); toast('Demo data reset'); go('/'); } catch (e) { toast(e.message, 'err'); }
-  };
+  const [sort, setSort] = useState('street');
   if (!props) return null;
-  const co = status?.company;
+  const by = SORTS.find((s) => s[0] === sort)[2];
+  const rows = [...props].sort((a, b) => by(a).localeCompare(by(b)) || street(a).localeCompare(street(b)));
+  const grouped = sort !== 'street';
+
   return (
     <>
       <div className="page-head">
-        <div><h1>Properties</h1><p>Set how much you're comfortable spending on a repair before the owner has to sign off.</p></div>
+        <div><h1>Properties</h1><p>Every building you manage. Set how much a repair can cost before you want to check with the owner.</p></div>
+      </div>
+      <div className="sortbar">
+        <span>Sort by</span>
+        {SORTS.map(([key, label]) => (
+          <button key={key} className={`filter ${sort === key ? 'on' : ''}`} onClick={() => setSort(key)}>{label}</button>
+        ))}
       </div>
       <div className="card" style={{ overflow: 'hidden' }}>
         <table className="plain">
-          <thead><tr><th>Property</th><th>Neighborhood</th><th>Units</th><th>Owner</th><th>Owner approval limit</th></tr></thead>
+          <thead><tr><th>Property</th><th>City</th><th>Company</th><th>Owner</th><th>Units</th><th>Owner limit</th></tr></thead>
           <tbody>
-            {props.map((p) => (
-              <tr key={p.id}>
-                <td><b>{p.name}</b><div style={{ color: 'var(--muted)', fontSize: 13 }}>{p.address}</div></td>
-                <td>{p.neighborhood}</td>
-                <td>{p.unit_count}</td>
-                <td>{p.owner_name}<div style={{ color: 'var(--muted)', fontSize: 13 }}>{p.owner_email}</div></td>
-                <td><LimitEditor key={p.approval_limit} p={p} onSaved={reload} /></td>
-              </tr>
+            {rows.map((p, i) => (
+              <Fragment key={p.id}>
+                {grouped && by(p) !== (i ? by(rows[i - 1]) : null) && (
+                  <tr className="group-row"><td colSpan={6}>{by(p)}</td></tr>
+                )}
+                <tr>
+                  <td><b>{p.name}</b><div style={{ color: 'var(--muted)', fontSize: 13 }}>{p.address}</div></td>
+                  <td>{city(p)}</td>
+                  <td>{p.company || <span style={{ color: 'var(--muted)' }}>None</span>}</td>
+                  <td>{p.owner_name}<div style={{ color: 'var(--muted)', fontSize: 13 }}>{p.owner_email}</div></td>
+                  <td>{p.unit_count}</td>
+                  <td><LimitEditor key={p.approval_limit} p={p} onSaved={reload} /></td>
+                </tr>
+              </Fragment>
             ))}
           </tbody>
         </table>
       </div>
-      <p style={{ color: 'var(--muted)', marginTop: 12, fontSize: 13.5 }}>When a repair is estimated above a property's limit, the assistant drafts a request to the owner instead of a dispatch, and nothing goes to a vendor until the owner approves.</p>
-
-      <div className="group-title">Your company</div>
-      <div className="card card-pad kv">
-        <dt>Company</dt><dd>{co?.name}</dd>
-        <dt>Contact</dt><dd>{co?.pm_name} · {co?.phone} · {co?.email}</dd>
-        <dt>Maintenance line</dt><dd>{co?.maintenance_line} <span style={{ color: 'var(--muted)' }}>(tenants text this number)</span></dd>
-      </div>
-
-      <div className="group-title">Demo tools</div>
-      <div className="card card-pad btn-row">
-        <button className="btn" onClick={reset}><RotateCcw size={15} /> Reset demo data</button>
-        <span style={{ color: 'var(--muted)', fontSize: 13.5 }}>Puts the sample work orders back to how they looked on first launch, with fresh timestamps.</span>
-      </div>
+      <p style={{ color: 'var(--muted)', marginTop: 12, fontSize: 13.5 }}>When a repair is estimated above a property's limit, the work order is flagged so you can check with the owner first. Handled never contacts owners on its own.</p>
     </>
   );
 }

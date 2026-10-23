@@ -7,8 +7,8 @@ export function UrgencyBadge({ urgency }) {
   return <span className="badge routine">Routine</span>;
 }
 
-export function StatusPill({ status, ownerState }) {
-  const label = ownerState === 'requested' && status === 'awaiting_approval' ? 'Waiting on owner' : STATUS_LABELS[status] || status;
+export function StatusPill({ status }) {
+  const label = STATUS_LABELS[status] || status;
   return <span className={`pill ${status}`}>{label}</span>;
 }
 
@@ -16,7 +16,8 @@ const FLAG = {
   identity: { label: 'Identity check needed', icon: ShieldAlert, red: true },
   compensation: { label: 'Compensation request', icon: DollarSign, red: false },
   update: { label: 'New tenant message', icon: MessageSquare, red: false },
-  no_response: { label: 'Vendor didn’t respond', icon: Hourglass, red: false },
+  no_response: { label: 'Vendor hasn’t replied', icon: Hourglass, red: true },
+  over_limit: { label: 'Over owner’s limit', icon: DollarSign, red: false },
   no_vendor: { label: 'No vendor available', icon: TriangleAlert, red: true },
 };
 export function FlagChip({ flag }) {

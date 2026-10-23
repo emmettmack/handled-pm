@@ -22,11 +22,12 @@ const VENDORS = [
   ['Golden State Builders', 'general', '(818) 555-0209', 'bids@goldenstatebuilders.example', '$125/hr', 0, 'Larger jobs: ceilings, water damage, remodels. Sends written quotes within 24 hours.'],
 ];
 
+// name, address, neighborhood, owner, owner email, owning company, units
 const PROPERTIES = [
-  ['Rosewood Gardens', '4521 Rosewood Ave, Los Angeles, CA 90004', 'Larchmont', 'Harold Feinberg', 'harold@feinbergholdings.example', ['1A', '1B', '2A', '2B', '3A', '3B']],
-  ['Lemoyne Bungalows', '1245 Lemoyne St, Los Angeles, CA 90026', 'Echo Park', 'Susan Park', 'susan.park@example.com', ['A', 'B', 'C', 'D']],
-  ['Hyperion Terrace', '2830 Hyperion Ave, Los Angeles, CA 90027', 'Silver Lake', 'Daniel Okafor', 'dokafor@okaforproperties.example', ['201', '202', '203', '204', '205', '206']],
-  ['Figueroa Flats', '5712 N Figueroa St, Los Angeles, CA 90042', 'Highland Park', 'Gloria Mendoza', 'gloria@mendozarealty.example', ['1', '2', '3', '4']],
+  ['Rosewood Gardens', '4521 Rosewood Ave, Los Angeles, CA 90004', 'Larchmont', 'Harold Feinberg', 'harold@feinbergholdings.example', 'Feinberg Holdings LLC', ['1A', '1B', '2A', '2B', '3A', '3B']],
+  ['Lemoyne Bungalows', '1245 Lemoyne St, Los Angeles, CA 90026', 'Echo Park', 'Susan Park', 'susan.park@example.com', 'Park Family Trust', ['A', 'B', 'C', 'D']],
+  ['Hyperion Terrace', '2830 Hyperion Ave, Glendale, CA 91206', 'Glendale', 'Daniel Okafor', 'dokafor@okaforproperties.example', 'Okafor Properties Inc.', ['201', '202', '203', '204', '205', '206']],
+  ['Figueroa Flats', '5712 N Figueroa St, Pasadena, CA 91103', 'Pasadena', 'Gloria Mendoza', 'gloria@mendozarealty.example', 'Mendoza Realty Group', ['1', '2', '3', '4']],
 ];
 
 // property index, unit, name, language
@@ -37,8 +38,22 @@ const TENANTS = [
   [3, '1', 'Rosa Hernandez', 'es'], [3, '2', 'Luis Ortega', 'es'], [3, '3', 'Megan Doyle'], [3, '4', 'Isaiah Brown'],
 ];
 
+/** Small illustrated stand-ins for tenant photos/videos (so the demo needs no image files). */
+const THEMES = {
+  leak: ['#3b6df0', '#1b2a6b', '<ellipse cx="200" cy="215" rx="120" ry="22" fill="#9fc2ff" opacity=".55"/><path d="M200 70c28 44 46 70 46 96a46 46 0 0 1-92 0c0-26 18-52 46-96z" fill="#cfe3ff"/><rect x="150" y="30" width="100" height="26" rx="8" fill="#8fa3d9"/>'],
+  drain: ['#5a5675', '#1f1b3a', '<ellipse cx="200" cy="160" rx="140" ry="60" fill="#d9d6ea"/><ellipse cx="200" cy="152" rx="110" ry="40" fill="#8f8aa8"/><circle cx="200" cy="150" r="12" fill="#2a2640"/>'],
+  heater: ['#c9590a', '#4a1d05', '<rect x="140" y="40" width="120" height="190" rx="22" fill="#e8dccf"/><rect x="156" y="170" width="88" height="40" rx="8" fill="#a24b17" opacity=".7"/><circle cx="200" cy="90" r="14" fill="#a24b17"/>'],
+  outlet: ['#7a7596', '#25213f', '<rect x="140" y="70" width="120" height="130" rx="16" fill="#efecf7"/><rect x="178" y="100" width="10" height="26" rx="3" fill="#2a2640"/><rect x="212" y="100" width="10" height="26" rx="3" fill="#2a2640"/><circle cx="200" cy="160" r="9" fill="#2a2640"/>'],
+};
+const art = (theme, kind) => {
+  const [a, b, shapes] = THEMES[theme] || THEMES.drain;
+  const play = kind === 'video' ? '<circle cx="200" cy="150" r="34" fill="#000" opacity=".5"/><path d="M190 132l30 18-30 18z" fill="#fff"/>' : '';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="400" height="300" fill="url(#g)"/>${shapes}${play}</svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+};
+
 export function wipe() {
-  for (const t of ['status_history', 'messages', 'dispatches', 'tickets', 'tenants', 'units', 'properties', 'vendors', 'company']) {
+  for (const t of ['media', 'settings', 'status_history', 'messages', 'dispatches', 'tickets', 'tenants', 'units', 'properties', 'vendors', 'company']) {
     db.exec(`DELETE FROM ${t}`);
   }
   db.exec("DELETE FROM sqlite_sequence");
@@ -49,10 +64,12 @@ export function seed() {
   db.prepare('INSERT INTO company (id,name,pm_name,phone,email,address,maintenance_line) VALUES (1,?,?,?,?,?,?)').run(...Object.values(COMPANY));
   const insV = db.prepare('INSERT INTO vendors (name,trade,phone,email,rate,preferred,notes) VALUES (?,?,?,?,?,?,?)');
   VENDORS.forEach((v) => insV.run(...v));
+  // One vendor reached through a person's own phone, to show company vs personal numbers
+  db.prepare("UPDATE vendors SET personal_phone = '(323) 555-0291', primary_company = 0, primary_personal = 1 WHERE name LIKE 'Rivera%'").run();
 
   const unitIds = {}; const propIds = [];
-  PROPERTIES.forEach(([name, address, hood, owner, email, units], pi) => {
-    const pid = db.prepare('INSERT INTO properties (name,address,neighborhood,owner_name,owner_email,approval_limit) VALUES (?,?,?,?,?,500)').run(name, address, hood, owner, email).lastInsertRowid;
+  PROPERTIES.forEach(([name, address, hood, owner, email, owningCompany, units], pi) => {
+    const pid = db.prepare('INSERT INTO properties (name,address,neighborhood,owner_name,owner_email,company,approval_limit) VALUES (?,?,?,?,?,?,500)').run(name, address, hood, owner, email, owningCompany).lastInsertRowid;
     propIds.push(pid);
     units.forEach((u) => { unitIds[`${pi}:${u}`] = db.prepare('INSERT INTO units (property_id, number) VALUES (?,?)').run(pid, u).lastInsertRowid; });
   });
@@ -70,10 +87,10 @@ export function seed() {
     const created = S.minsAgo(o.ago);
     const id = Number(db.prepare(
       `INSERT INTO tickets (tenant_id, unit_id, from_phone, channel, title, category, urgency, status, language, summary, diagnosis, next_steps,
-        reasoning, trade, access_notes, cost_estimate, followup_rounds, verified, verification_asked, vendor_id, owner_state, owner_approved,
+        reasoning, trade, access_notes, cost_estimate, followup_rounds, verified, verification_asked, vendor_id,
         emergency_at, scheduled_for, flags, created_at, updated_at, resolved_at, internal_notes)
        VALUES (@tenant_id,@unit_id,@from_phone,'sim',@title,@category,@urgency,@status,@language,@summary,@diagnosis,@next_steps,
-        @reasoning,@trade,@access_notes,@cost_estimate,@followup_rounds,@verified,@verification_asked,@vendor_id,@owner_state,@owner_approved,
+        @reasoning,@trade,@access_notes,@cost_estimate,@followup_rounds,@verified,@verification_asked,@vendor_id,
         @emergency_at,@scheduled_for,@flags,@created_at,@created_at,@resolved_at,@internal_notes)`,
     ).run({
       tenant_id: tn?.id ?? null, unit_id: tn?.unit_id ?? o.unit_id ?? null, from_phone: tn?.phone ?? o.phone,
@@ -81,7 +98,6 @@ export function seed() {
       summary: o.summary ?? null, diagnosis: o.diagnosis ?? null, next_steps: JSON.stringify(o.steps || []), reasoning: o.reason ?? null,
       trade: o.trade ?? null, access_notes: o.access ?? null, cost_estimate: o.cost ?? null, followup_rounds: o.rounds || 0,
       verified: tn ? 1 : 0, verification_asked: o.verAsked ? 1 : 0, vendor_id: o.vendor ? vendor(o.vendor).id : null,
-      owner_state: o.ownerState || 'none', owner_approved: o.ownerApproved ? 1 : 0,
       emergency_at: o.urgency === 'emergency' ? created : null, scheduled_for: o.scheduled ?? null,
       flags: JSON.stringify(o.flags || []), created_at: created, resolved_at: o.resolvedAgo != null ? S.minsAgo(o.resolvedAgo) : null,
       internal_notes: o.internalNotes || '',
@@ -93,11 +109,12 @@ export function seed() {
       const v = vendor(d.vendor);
       const t = S.getTicket(id);
       const unit = S.getUnit(t.unit_id);
-      const text = d.text || buildText({ company, ticket: t, unit, tenant: tn ? S.db_tenant(tn.id) : null, mode: d.kind === 'owner' ? 'owner_request' : 'vendor', accessAllowed: !!tn }, v);
+      const text = d.text || buildText({ company, ticket: t, unit, tenant: tn ? S.db_tenant(tn.id) : null, mode: 'vendor', accessAllowed: !!tn, prefs: S.getPrefs(), mediaCount: (o.media || []).length }, v);
       db.prepare('INSERT INTO dispatches (ticket_id,vendor_id,kind,text,reasoning,state,created_at,decided_at,response_due_at) VALUES (?,?,?,?,?,?,?,?,?)').run(
-        id, v.id, d.kind || 'vendor', text, d.reasoning, d.state || 'pending', S.minsAgo(d.ago), d.decidedAgo != null ? S.minsAgo(d.decidedAgo) : null,
+        id, v.id, 'vendor', text, d.reasoning, d.state || 'pending', S.minsAgo(d.ago), d.decidedAgo != null ? S.minsAgo(d.decidedAgo) : null,
         d.dueIn != null ? S.minsFromNow(d.dueIn) : null);
     }
+    (o.media || []).forEach(([kind, name, source, theme, ago]) => S.addMedia(id, { kind, name, source, url: art(theme, kind), at: S.minsAgo(ago) }));
     return id;
   }
 
@@ -128,6 +145,7 @@ export function seed() {
     steps: ['Plumber snakes the kitchen drain', 'Check trap and under-sink connections for leaks', 'Run water to confirm flow'],
     reason: 'No active leak and the tenant has other drains to use, so it can be scheduled normally.',
     access: 'Tenant works from home most days; call ahead.',
+    media: [['photo', 'sink-standing-water.jpg', 'text', 'drain', 54], ['video', 'drain-gurgling.mp4', 'email', 'drain', 53]],
     msgs: [
       ['tenant', 'Kitchen sink draining really slow, water just sits there. Tried drano twice and nothing', 55],
       ['ai', "Thanks, Jamal. I've got what I need and I'm lining up a plumber. I'll text you as soon as there's a time. If anything changes, just reply here.", 54],
@@ -136,21 +154,23 @@ export function seed() {
     dispatches: [{ vendor: 'Bluebird', ago: 53, reasoning: "Chose Bluebird Plumbing & Rooter over your preferred plumber: your note says they're great on drain clogs, and this is routine so their next-day scheduling is fine. Rivera is the backup if Bluebird doesn't reply." }],
   });
 
-  // 3. Over the spend cap -> owner approval request
+  // 3. Over the owner's spend limit -> flagged for the PM to check with the owner
   ticket({
     tenant: 'Sofia Ricci', ago: 130, title: 'Water heater failing', category: 'plumbing', urgency: 'urgent', status: 'awaiting_approval', trade: 'plumber', vendor: 'Rivera', cost: 1450,
     summary: 'No hot water for two days. The water heater is making popping noises and there is rust-colored water at the bottom of the tank. Severity: urgent. Access: tenant is home evenings.',
     diagnosis: 'Heater is likely at end of life (sediment and corrosion). Repair is unlikely to hold; replacement is the realistic fix.',
-    steps: ['Plumber confirms the heater needs replacing', 'Owner approves the cost', 'Install new 40-gallon unit and haul away old one'],
+    steps: ['Plumber confirms the heater needs replacing', 'You check the cost with the owner', 'Install new 40-gallon unit and haul away old one'],
     reason: 'No hot water affects daily life but is not dangerous. Treated as urgent, so within about a day.',
     access: 'Tenant is home evenings after 5pm.',
     msgs: [
       ['tenant', "No hot water for two days now. The water heater in the closet is making a popping noise and there's rusty water at the bottom of it", 130],
       ['ai', "Thanks, Sofia. I've got what I need and I'm lining up a plumber. I'll text you as soon as there's a time. If anything changes, just reply here.", 129],
-      ['system', "Estimated cost $1,450 is over this property's $500 owner approval limit. The assistant drafted an owner approval request instead. Nothing goes to Rivera Plumbing until the owner approves.", 128, 'note'],
+      ['system', "Estimated cost $1,450 is over this property's $500 owner approval limit. Flagged for you to check with the owner; nothing was sent to anyone.", 128, 'note'],
     ],
-    history: [['new', 130, 'Text received'], ['triaged', 129, 'Read the text: plumbing, urgent'], ['dispatch_drafted', 128, 'Drafted owner approval request (estimate $1450 is over the $500 limit)'], ['awaiting_approval', 128, 'Waiting for your approval']],
-    dispatches: [{ vendor: 'Rivera', kind: 'owner', ago: 128, reasoning: 'The estimated $1,450 is above the $500 limit set for Lemoyne Bungalows, so I drafted a request to the owner, Susan Park, instead of a dispatch. Rivera Plumbing is the proposed vendor: preferred, fast on urgent jobs. Nothing is sent to the vendor until she approves.' }],
+    history: [['new', 130, 'Text received'], ['triaged', 129, 'Read the text: plumbing, urgent'], ['dispatch_drafted', 128, 'Drafted dispatch to Rivera Plumbing'], ['awaiting_approval', 128, 'Waiting for your approval']],
+    flags: [{ type: 'over_limit', reason: "The estimate ($1,450) is over this property's $500 owner approval limit. Check with Susan Park before you approve the dispatch.", resolved: false, at: S.minsAgo(128) }],
+    media: [['photo', 'heater-rust.jpg', 'text', 'heater', 129], ['photo', 'heater-label.jpg', 'upload', 'heater', 129]],
+    dispatches: [{ vendor: 'Rivera', ago: 128, reasoning: 'Rivera Plumbing is preferred and fast on urgent jobs. Urgency is urgent because there has been no hot water for two days. The estimate is over this property\'s limit, so check with the owner before approving.' }],
   });
 
   // 4. Needs info (round 1)

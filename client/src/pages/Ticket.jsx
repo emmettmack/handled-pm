@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Bot, Send, Siren, Phone, Wrench, Hourglass, ShieldAlert, DollarSign, MessageSquare, TriangleAlert, Building2, Check, Info, Sparkles, Play, CircleCheck, Archive, FastForward, Languages } from 'lucide-react';
+import { ArrowLeft, Bot, Send, Siren, Phone, Wrench, Hourglass, ShieldAlert, DollarSign, MessageSquare, TriangleAlert, Check, Info, Sparkles, Play, CircleCheck, Archive, FastForward, Languages, Camera, Plus, Play as PlayIcon, X } from 'lucide-react';
 import { api } from '../api.js';
 import { useApp, go } from '../ctx.jsx';
 import ApprovalCard from '../components/ApprovalCard.jsx';
@@ -94,19 +94,65 @@ function VendorTimer({ t, reload }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const i = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(i); }, []);
   const act = async (path, msg) => { try { await api.post(`/tickets/${t.id}/${path}`); toast(msg); await reload(); } catch (e) { toast(e.message, 'err'); } };
-  const total = 15 * 60;
+  const total = Math.max(60, Math.round((new Date(d.response_due_at) - new Date(d.decided_at)) / 1000));
   const left = Math.max(0, Math.round((new Date(d.response_due_at).getTime() - now) / 1000));
   const pct = Math.min(100, ((total - left) / total) * 100);
   return (
     <div className="timer">
       <div className="label" style={{ color: 'var(--violet)' }}>Waiting for {d.vendor_name} to confirm</div>
-      <div className="big mono">{String(Math.floor(left / 60)).padStart(2, '0')}:{String(left % 60).padStart(2, '0')}</div>
+      <div className="big mono">{String(Math.floor(left / 3600)).padStart(2, '0')}:{String(Math.floor((left % 3600) / 60)).padStart(2, '0')}:{String(left % 60).padStart(2, '0')}</div>
       <div className="bar-track"><div style={{ width: `${pct}%` }} /></div>
-      <p style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 10 }}>If they don't reply in 15 minutes, a dispatch to the next best vendor is drafted for your OK.</p>
+      <p style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 10 }}>If they haven't replied by then, this work order comes back to the top of your list. Nothing is sent automatically. You can change the wait in Preferences.</p>
       <div className="btn-row">
         <button className="btn sm primary" onClick={() => act('vendor-accepted', 'Vendor confirmed')}><Check size={14} /> Simulate: vendor says YES</button>
-        <button className="btn sm" onClick={() => act('skip-timer', 'Skipped ahead 15 minutes')}><FastForward size={14} /> Simulate: 15 min, no reply</button>
+        <button className="btn sm" onClick={() => act('skip-timer', 'Skipped ahead')}><FastForward size={14} /> Simulate: no reply in time</button>
       </div>
+    </div>
+  );
+}
+
+const SOURCE_LABEL = { text: 'Text message', email: 'Email', upload: 'Website upload' };
+const isRealVideo = (m) => m.kind === 'video' && m.url.startsWith('data:video');
+
+function MediaCard({ t, reload }) {
+  const { toast } = useApp();
+  const [open, setOpen] = useState(null);
+  const input = useRef();
+  const add = async (e) => {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (!f) return;
+    if (f.size > 8 * 1024 * 1024) { toast('That file is over 8 MB. Try a smaller one.', 'err'); return; }
+    const url = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); });
+    try { await api.post(`/tickets/${t.id}/media`, { kind: f.type.startsWith('video') ? 'video' : 'photo', name: f.name, url, source: 'upload' }); toast('Added'); await reload(); } catch (err) { toast(err.message, 'err'); }
+  };
+  return (
+    <div className="card card-pad">
+      <div className="panel-title"><Camera size={14} /> Photos &amp; videos {t.media.length > 0 && <span style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 500 }}>({t.media.length})</span>}</div>
+      {t.media.length === 0 ? (
+        <p style={{ color: 'var(--muted)', fontSize: 13.5 }}>Nothing yet. Photos and videos a tenant sends by text or email, or uploads on your tenant website, show up here.</p>
+      ) : (
+        <div className="media-grid">
+          {t.media.map((m) => (
+            <button key={m.id} className="media-tile" onClick={() => setOpen(m)} title={m.name}>
+              <img src={m.url} alt={m.name} />
+              {m.kind === 'video' && <span className="play"><PlayIcon size={16} fill="currentColor" /></span>}
+              <span className="src">{SOURCE_LABEL[m.source] || m.source}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      <input ref={input} type="file" accept="image/*,video/*" hidden onChange={add} />
+      <button className="btn sm" style={{ marginTop: 10 }} onClick={() => input.current.click()}><Plus size={14} /> Add a photo or video <span className="demo-tag">demo</span></button>
+      {open && (
+        <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && setOpen(null)}>
+          <div className="lightbox">
+            <button className="btn link close" onClick={() => setOpen(null)}><X size={18} /></button>
+            {isRealVideo(open) ? <video src={open.url} controls autoPlay /> : <img src={open.url} alt={open.name} />}
+            <div className="cap">{open.name} · {SOURCE_LABEL[open.source] || open.source} · {dayTime(open.created_at)}{open.kind === 'video' && !isRealVideo(open) ? ' · sample video (poster shown)' : ''}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -116,13 +162,15 @@ const FLAG_UI = {
   compensation: { icon: DollarSign, title: 'Tenant asked about compensation', tone: '' },
   update: { icon: MessageSquare, title: 'Tenant sent a new message', tone: '' },
   no_vendor: { icon: TriangleAlert, title: 'No vendor left to try', tone: 'identity' },
-  no_response: { icon: Hourglass, title: 'Vendor didn’t respond', tone: '' },
+  no_response: { icon: Hourglass, title: 'Vendor hasn’t replied', tone: 'identity' },
+  over_limit: { icon: DollarSign, title: 'Over the owner’s limit', tone: '' },
 };
 
 function FlagCards({ t, reload }) {
   const { toast } = useApp();
   const act = async (type, action, msg) => { try { await api.post(`/tickets/${t.id}/flags/${type}`, { action }); toast(msg); await reload(); } catch (e) { toast(e.message, 'err'); } };
-  return t.flags.filter((f) => !f.resolved && f.type !== 'no_response').map((f) => {
+  const redraft = async () => { try { await api.post(`/tickets/${t.id}/redraft`, {}); toast('Drafting a dispatch to a different vendor…'); await reload(); } catch (e) { toast(e.message, 'err'); } };
+  return t.flags.filter((f) => !f.resolved).map((f) => {
     const ui = FLAG_UI[f.type] || { icon: TriangleAlert, title: f.type, tone: '' };
     const Icon = ui.icon;
     return (
@@ -138,7 +186,10 @@ function FlagCards({ t, reload }) {
                 <button className="btn sm danger" onClick={() => act('identity', 'cannot_verify', 'Ticket closed. No one was dispatched.')}>Can't verify, close it</button>
               </>
             ) : (
-              <button className="btn sm" onClick={() => act(f.type, 'dismiss', 'Marked as handled')}><Check size={14} /> Mark as handled</button>
+              <>
+                {f.type === 'no_response' && <button className="btn sm primary" onClick={() => redraft()}><Sparkles size={14} /> Draft to a different vendor</button>}
+                <button className="btn sm" onClick={() => act(f.type, 'dismiss', 'Marked as handled')}><Check size={14} /> Mark as handled</button>
+              </>
             )}
           </div>
         </div>
@@ -173,7 +224,7 @@ export default function Ticket({ id }) {
         <div style={{ flex: 1, minWidth: 260 }}>
           <div className="btn-row" style={{ marginBottom: 8 }}>
             <UrgencyBadge urgency={t.urgency} />
-            <StatusPill status={t.status} ownerState={t.owner_state} />
+            <StatusPill status={t.status} />
             {t.language === 'es' && <span className="chip-flag" style={{ background: '#e8eefc', color: '#2457c5' }}><Languages size={12} /> Spanish-speaking tenant</span>}
           </div>
           <h1>{t.title}</h1>
@@ -207,6 +258,8 @@ export default function Ticket({ id }) {
         </div>
 
         <div className="stack">
+          <MediaCard t={t} reload={reload} />
+
           <div className="card card-pad">
             <div className="panel-title"><Sparkles size={14} /> AI summary</div>
             <p>{t.summary || 'The assistant is reading this text…'}</p>
@@ -218,13 +271,6 @@ export default function Ticket({ id }) {
           <div className="card card-pad">
             <div className="panel-title">Next step</div>
             {t.status === 'dispatched' && t.active_dispatch && <VendorTimer t={t} reload={reload} />}
-            {t.owner_state === 'requested' && t.status === 'awaiting_approval' && (
-              <div className="timer" style={{ background: 'var(--violet-soft)' }}>
-                <div className="label" style={{ color: 'var(--violet)' }}><Building2 size={12} style={{ verticalAlign: -1 }} /> Waiting on {t.unit?.owner_name}</div>
-                <p style={{ fontSize: 13.5, margin: '4px 0 10px' }}>The request went to the owner. No vendor has been contacted. When they approve, a vendor dispatch is drafted for your OK.</p>
-                <button className="btn sm primary" onClick={() => act('owner-approved', {}, 'Owner approved. Drafting dispatch.')}><Check size={14} /> Simulate: owner says yes</button>
-              </div>
-            )}
             {t.status === 'scheduled' && (
               <div><p style={{ marginBottom: 10 }}>{vendorAttempts.at(-1)?.vendor_name} is scheduled for <b>{t.scheduled_for}</b>.</p><button className="btn primary" onClick={() => act('status', { status: 'in_progress' })}><Play size={15} /> Work has started</button></div>
             )}
@@ -237,7 +283,7 @@ export default function Ticket({ id }) {
             {pending && <p>Review the draft on the left and approve it to move this forward.</p>}
             {blocked && <p>Held for you: see the alert on the left.</p>}
             {t.status === 'closed' && <p>This work order is closed.</p>}
-            {!['dispatched', 'scheduled', 'in_progress', 'resolved', 'closed', 'needs_info'].includes(t.status) && !pending && !needsRedraft && !blocked && t.owner_state !== 'requested' && <p>The assistant is working on this…</p>}
+            {!['dispatched', 'scheduled', 'in_progress', 'resolved', 'closed', 'needs_info'].includes(t.status) && !pending && !needsRedraft && !blocked && <p>The assistant is working on this…</p>}
           </div>
 
           <div className="card card-pad">
@@ -245,7 +291,8 @@ export default function Ticket({ id }) {
             {t.vendor ? (
               <>
                 <div style={{ fontWeight: 600 }}>{t.vendor.name}</div>
-                <div style={{ color: 'var(--muted)', fontSize: 13.5 }}>{t.vendor.trade} · {t.vendor.rate} · {t.vendor.phone}</div>
+                <div style={{ color: 'var(--muted)', fontSize: 13.5 }}>{t.vendor.trade} · {t.vendor.rate}</div>
+                {t.vendor_channels?.map((c) => <div key={c.label} style={{ fontSize: 13.5 }}>{c.label}: {c.value} <span className="primary-tag">Primary</span></div>)}
                 {t.vendor.notes && <p style={{ fontSize: 13.5, marginTop: 6, color: 'var(--ink-2)' }}>{t.vendor.notes}</p>}
               </>
             ) : <p style={{ color: 'var(--muted)' }}>Not matched yet.</p>}

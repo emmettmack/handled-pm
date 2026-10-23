@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Zap, PenLine, Loader2, ChevronRight, ShieldAlert, DollarSign, MessageSquare, TriangleAlert, Inbox, PartyPopper } from 'lucide-react';
+import { Zap, PenLine, Loader2, ChevronRight, ShieldAlert, DollarSign, MessageSquare, TriangleAlert, Inbox, PartyPopper, Siren, Hourglass, Camera } from 'lucide-react';
 import { api } from '../api.js';
 import { useApp, go } from '../ctx.jsx';
 import ApprovalCard from '../components/ApprovalCard.jsx';
 import SimulateModal from '../components/SimulateModal.jsx';
 import { UrgencyBadge, StatusPill, FlagChip } from '../components/Badges.jsx';
-import { timeAgo, CATEGORY_LABELS } from '../util.js';
+import { timeAgo, CATEGORY_LABELS, URGENCY_RANK } from '../util.js';
 
 const FILTERS = [
   ['open', 'All open', (t) => !['resolved', 'closed'].includes(t.status)],
@@ -15,19 +15,39 @@ const FILTERS = [
   ['done', 'Resolved & closed', (t) => ['resolved', 'closed'].includes(t.status)],
 ];
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
-const ATTN_ICON = { identity: ShieldAlert, compensation: DollarSign, update: MessageSquare, no_vendor: TriangleAlert };
-const ATTN_TITLE = { identity: 'Confirm who this is', compensation: 'Tenant asked about compensation', update: 'Tenant sent a new message', no_vendor: 'No vendor left to try' };
+const ATTN_ICON = { identity: ShieldAlert, compensation: DollarSign, update: MessageSquare, no_vendor: TriangleAlert, over_limit: DollarSign, no_response: Hourglass };
+const ATTN_TITLE = { identity: 'Confirm who this is', compensation: 'Tenant asked about compensation', update: 'Tenant sent a new message', no_vendor: 'No vendor left to try', over_limit: 'Over the owner’s limit, check with them', no_response: 'Vendor hasn’t replied' };
+const SORTS = [['urgency', 'Urgency'], ['newest', 'Newest request'], ['oldest', 'Oldest request']];
+
+/** Orders any list by urgency or by when the request came in. `get` returns { urgency, created_at } for an item. */
+const sorter = (mode, get) => (a, b) => {
+  const x = get(a), y = get(b);
+  const byTime = new Date(y.created_at) - new Date(x.created_at);
+  if (mode === 'newest') return byTime;
+  if (mode === 'oldest') return -byTime;
+  return URGENCY_RANK[x.urgency] - URGENCY_RANK[y.urgency] || byTime;
+};
+
+function SortBar({ sort, setSort }) {
+  return (
+    <div className="sortbar">
+      <span>Sort by</span>
+      {SORTS.map(([k, label]) => <button key={k} className={`filter ${sort === k ? 'on' : ''}`} onClick={() => setSort(k)}>{label}</button>)}
+    </div>
+  );
+}
 
 function Stat({ n, label, tone }) {
   return <div className={`card stat ${tone || ''}`}><span className="num">{n}</span><span className="lbl">{label}</span></div>;
 }
 
 export default function Home() {
-  const { dash, refresh, toast, status } = useApp();
+  const { dash, refresh, toast, status, bannerHidden } = useApp();
   const [filter, setFilter] = useState('open');
+  const [sort, setSort] = useState('urgency');
   const [showSim, setShowSim] = useState(false);
   const [simulating, setSimulating] = useState(false);
-  const { stats, approvals, attention, tickets } = dash;
+  const { stats, approvals, attention, tickets, emergencies } = dash;
 
   const quickSimulate = async () => {
     setSimulating(true);
@@ -39,10 +59,11 @@ export default function Home() {
   };
 
   const active = FILTERS.find((f) => f[0] === filter);
-  const rank = { emergency: 0, urgent: 1, routine: 2 };
+  const needsAttention = (t) => t.flags.some((f) => f.type === 'no_response');
   const rows = tickets
     .filter(active[2])
-    .sort((a, b) => (filter === 'done' ? 0 : rank[a.urgency] - rank[b.urgency]) || new Date(b.updated_at) - new Date(a.updated_at));
+    .sort((a, b) => (filter === 'done' ? 0 : needsAttention(b) - needsAttention(a)) || sorter(sort, (x) => x)(a, b));
+  const queue = [...approvals].sort(sorter(sort, (a) => a.ticket));
 
   const waiting = approvals.length;
   const sub = waiting
@@ -64,6 +85,14 @@ export default function Home() {
         </div>
       </div>
 
+      {bannerHidden && emergencies.map((t) => (
+        <div key={t.id} className="card headline-emergency" onClick={() => go(`/tickets/${t.id}`)}>
+          <Siren size={22} />
+          <div><b>Emergency: {t.title}</b><span>{t.unit_label} · reported {timeAgo(t.created_at)}{t.emergency_ack ? ' · acknowledged' : ''}</span></div>
+          <button className="btn sm">Open <ChevronRight size={14} /></button>
+        </div>
+      ))}
+
       <div className="stats">
         <Stat n={stats.open} label="Open work orders" />
         <Stat n={stats.awaiting} label="Awaiting your approval" tone="wait" />
@@ -80,15 +109,18 @@ export default function Home() {
         {waiting === 0 ? (
           <div className="card empty"><PartyPopper size={26} style={{ color: 'var(--brand)' }} /><b>You're all caught up</b>New tenant texts will show up here as drafts, ready to approve.</div>
         ) : (
-          approvals.map((a) => <ApprovalCard key={a.id} item={a} />)
+          <>
+            {approvals.length > 1 && <SortBar sort={sort} setSort={setSort} />}
+            {queue.map((a) => <ApprovalCard key={a.id} item={a} />)}
+          </>
         )}
       </section>
 
       {attention.length > 0 && (
         <section className="section">
-          <div className="section-head"><h2>Needs your attention</h2><span className="n">{attention.length}</span><span className="sub">The assistant stopped here on purpose. These need a person.</span></div>
+          <div className="section-head"><h2>Needs your attention</h2><span className="n">{attention.length}</span><span className="sub">These need a person. Nothing was sent automatically.</span></div>
           {attention.map((t) => {
-            const f = t.flags.find((x) => x.type !== 'no_response');
+            const f = t.flags[0];
             const Icon = ATTN_ICON[f.type] || TriangleAlert;
             return (
               <div key={t.id} className={`card attention ${f.type}`}>
@@ -106,6 +138,7 @@ export default function Home() {
 
       <section className="section">
         <div className="section-head"><h2>All work orders</h2></div>
+        <SortBar sort={sort} setSort={setSort} />
         <div className="filters">
           {FILTERS.map(([key, label, fn]) => (
             <button key={key} className={`filter ${filter === key ? 'on' : ''}`} onClick={() => setFilter(key)}>
@@ -122,6 +155,7 @@ export default function Home() {
                 <div className="title">
                   <UrgencyBadge urgency={t.urgency} /> {t.title}
                   {t.language === 'es' && <span className="chip-flag" style={{ background: '#e8eefc', color: '#2457c5' }}>Spanish</span>}
+                  {t.media_count > 0 && <span className="chip-flag"><Camera size={12} /> {t.media_count}</span>}
                   {t.flags.map((f) => <FlagChip key={f.type} flag={f} />)}
                 </div>
                 <div className="sub">
@@ -130,7 +164,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="side">
-                <StatusPill status={t.status} ownerState={t.owner_state} />
+                <StatusPill status={t.status} />
                 <span className="age">{timeAgo(t.created_at)}</span>
               </div>
             </div>

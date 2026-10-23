@@ -1,15 +1,14 @@
 import { useState } from 'react';
-import { Check, Pencil, X, Sparkles, Building2, Wrench, Phone, Hourglass, Send, FileText } from 'lucide-react';
+import { Check, Pencil, X, Sparkles, Wrench, Send, DollarSign, Camera } from 'lucide-react';
 import { api } from '../api.js';
 import { useApp, go } from '../ctx.jsx';
 import { UrgencyBadge } from './Badges.jsx';
-import { timeAgo, CATEGORY_LABELS, money } from '../util.js';
+import { timeAgo, CATEGORY_LABELS } from '../util.js';
 
-/** One drafted message waiting for the PM: vendor dispatch or owner approval request. Nothing sends until Approve. */
+/** One drafted vendor message waiting for the PM. Nothing sends until Approve. */
 export default function ApprovalCard({ item, compact = false }) {
   const { refresh, toast } = useApp();
   const t = item.ticket;
-  const isOwner = item.kind === 'owner';
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(item.text);
   const [rejecting, setRejecting] = useState(false);
@@ -22,11 +21,11 @@ export default function ApprovalCard({ item, compact = false }) {
   };
   const approve = () => run(
     () => api.post(`/dispatches/${item.id}/approve`, { text: editing ? text : undefined }),
-    isOwner ? 'Owner request approved and sent (demo)' : `Dispatched to ${item.vendor_name} (demo)`,
+    `Dispatched to ${item.vendor_name} (demo)`,
   );
   const reject = () => run(() => api.post(`/dispatches/${item.id}/reject`, { note }), 'Draft rejected. Nothing was sent.');
 
-  const redispatch = t.flags?.some((f) => f.type === 'no_response' && !f.resolved);
+  const overLimit = t.flags?.find((f) => f.type === 'over_limit' && !f.resolved);
   const unit = t.unit ? `Unit ${t.unit.number} · ${t.unit.property_name}` : 'Unit not confirmed';
 
   return (
@@ -35,21 +34,15 @@ export default function ApprovalCard({ item, compact = false }) {
         <UrgencyBadge urgency={t.urgency} />
         <div>
           <h3><a href={`#/tickets/${t.id}`}>{t.title}</a></h3>
-          <div className="meta">{unit}{t.tenant ? ` · ${t.tenant.name}` : ' · Unrecognized number'} · {CATEGORY_LABELS[t.category]}</div>
+          <div className="meta">{unit}{t.tenant ? ` · ${t.tenant.name}` : ' · Unrecognized number'} · {CATEGORY_LABELS[t.category]}{t.media?.length ? <> · <Camera size={12} style={{ verticalAlign: -1 }} /> {t.media.length}</> : null}</div>
         </div>
         <div className="right">Work order #{t.id} · {timeAgo(item.created_at)}</div>
       </div>
 
-      {isOwner && (
+      {overLimit && (
         <div className="kind-bar owner">
-          <Building2 size={17} />
-          OWNER APPROVAL REQUEST: the estimate ({money(t.cost_estimate)}) is over this property's {money(t.unit?.approval_limit)} limit. Nothing goes to the vendor until the owner approves.
-        </div>
-      )}
-      {redispatch && !isOwner && (
-        <div className="kind-bar redispatch">
-          <Hourglass size={17} />
-          The first vendor didn't respond in 15 minutes. This is a new dispatch to the next best vendor.
+          <DollarSign size={17} />
+          {overLimit.reason}
         </div>
       )}
 
@@ -64,16 +57,17 @@ export default function ApprovalCard({ item, compact = false }) {
             </>
           )}
           <div className="why">
-            <h4><Sparkles size={13} /> Why this {isOwner ? 'request' : 'vendor'}</h4>
+            <h4><Sparkles size={13} /> Why this vendor</h4>
             <p>{item.reasoning}</p>
           </div>
         </div>
         <div>
-          <h4>Draft {isOwner ? 'to the owner' : 'to the vendor'}</h4>
+          <h4>Draft to the vendor</h4>
           <div className="recipient">
-            {isOwner ? <Building2 size={16} /> : <Wrench size={16} />}
+            <Wrench size={16} />
             <span>
-              {isOwner ? <><b>{t.unit?.owner_name}</b> · {t.unit?.owner_email}</> : <><b>{item.vendor_name}</b> · {item.vendor_trade}{item.vendor_phone ? ` · ${item.vendor_phone}` : ''}{item.vendor_rate ? ` · ${item.vendor_rate}` : ''}</>}
+              <b>{item.vendor_name}</b> · {item.vendor_trade}{item.vendor_rate ? ` · ${item.vendor_rate}` : ''}
+              {item.vendor_channels?.length > 0 && <small className="sends-to">Sends to {item.vendor_channels.map((c) => `${c.label.toLowerCase()} ${c.value}`).join(' and ')}</small>}
             </span>
           </div>
           {editing ? (
@@ -94,7 +88,7 @@ export default function ApprovalCard({ item, compact = false }) {
         ) : (
           <>
             <button className="btn primary lg" disabled={busy} onClick={approve}>
-              <Check size={17} /> {editing ? 'Save & approve' : isOwner ? 'Approve & send to owner' : 'Approve & send'}
+              <Check size={17} /> {editing ? 'Save & approve' : 'Approve & send'}
             </button>
             {editing
               ? <button className="btn" onClick={() => { setEditing(false); setText(item.text); }}><X size={15} /> Cancel edit</button>

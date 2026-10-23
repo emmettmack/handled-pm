@@ -24,7 +24,7 @@ function context(id) {
   const tenant = t.tenant_id ? S.db_tenant(t.tenant_id) : null;
   const unit = S.getUnit(t.unit_id);
   const transcript = S.ticketDetail(id).messages.filter((m) => m.kind === 'sms');
-  return { company: S.getCompany(), ticket: t, tenant, unit, transcript, verified: !!(t.verified || t.identity_cleared) };
+  return { company: S.getCompany(), prefs: S.getPrefs(), mediaCount: S.mediaCount(id), ticket: t, tenant, unit, transcript, verified: !!(t.verified || t.identity_cleared) };
 }
 
 function normalizeTriage(r, t) {
@@ -89,8 +89,14 @@ export async function processTicket(id) {
     S.addNote(id, 'Tenant raised compensation or responsibility. Flagged for you; the assistant did not respond on the substance.');
     compensationReply = true;
   }
+  // Tenants writing in a language other than English/Spanish are told once that we can translate, and which language is primary.
+  const accountLang = ctx.tenant?.language === 'es' ? 'es' : 'en';
+  const transcriptText = ctx.transcript.map((m) => m.body);
+  const needsTranslateNote = r.other_language && !transcriptText.includes(T.translateNote('en')) && !transcriptText.includes(T.translateNote('es'));
+  const withNote = (text) => (needsTranslateNote ? `${T.translateNote(accountLang)} ${text}` : text);
   const replyWithComp = (text) => {
-    const body = compensationReply ? [T.compensation(lang), text].filter(Boolean).join(' ') : text;
+    const parts = [needsTranslateNote && T.translateNote(accountLang), compensationReply && T.compensation(lang), text].filter(Boolean);
+    const body = parts.join(' ');
     if (body && body.trim()) sendToTenant(t, sanitizeTenantReply(body, lang));
   };
 
@@ -99,7 +105,7 @@ export async function processTicket(id) {
   if (!verified && r.urgency !== 'emergency') {
     if (!t.verification_asked) {
       S.updateTicket(id, { verification_asked: 1 });
-      sendToTenant(t, compensationReply ? `${T.compensation(lang)} ${T.askIdentity(lang)}` : T.askIdentity(lang));
+      sendToTenant(t, withNote(compensationReply ? `${T.compensation(lang)} ${T.askIdentity(lang)}` : T.askIdentity(lang)));
       S.setStatus(id, 'needs_info', 'Number not on file: asked the texter for their name and unit');
       S.addNote(id, `This text came from ${S.prettyPhone(t.from_phone)}, which is not a tenant number on file. The assistant asked for name and unit and will not dispatch anyone until identity is confirmed.${r.category === 'lockout' ? ' Lockouts are treated as a security event.' : ''}`);
       return;
@@ -127,22 +133,22 @@ export async function processTicket(id) {
 }
 
 /**
- * Pick a vendor and draft the message. If the estimate is over the property's owner approval limit, the
- * draft is an OWNER APPROVAL REQUEST instead and nothing is addressed to the vendor yet.
+ * Pick a vendor and draft the dispatch for the PM's approval. If the estimate is over the property's owner
+ * approval limit, the PM gets a flag to check with the owner; nothing is drafted to or sent to the owner automatically.
  */
-export async function draftAndQueue(id, { excludeVendorIds = [], note = '', redispatch = false } = {}) {
+export async function draftAndQueue(id, { excludeVendorIds = [], note = '' } = {}) {
   const t = S.getTicket(id);
   const ctx0 = context(id);
   const unit = ctx0.unit;
   const limit = unit?.approval_limit ?? 500;
-  const overCap = !t.owner_approved && (t.cost_estimate || 0) > limit;
+  const overLimit = (t.cost_estimate || 0) > limit;
 
   // candidates: same trade (not excluded); fall back to handyman / general if the trade is exhausted
   const trade = t.trade || S.TRADE_FOR_CATEGORY[t.category];
   const pool = S.activeVendors().filter((v) => !excludeVendorIds.includes(v.id));
   let candidates = pool.filter((v) => v.trade === trade);
   let fellBack = false;
-  if (!candidates.length) { candidates = pool.filter((v) => v.trade === 'general' || v.trade === 'handyman'); fellBack = true; }
+  if (!candidates.length) { candidates = pool.filter((v) => v.trade === 'general' || v.trade === 'handyman' || v.trade === 'other'); fellBack = true; }
   if (!candidates.length) {
     S.addFlag(id, 'no_vendor', `No ${trade} vendors left to try. Please call someone directly.`);
     S.setStatus(id, 'triaged', 'No vendor available');
@@ -151,19 +157,20 @@ export async function draftAndQueue(id, { excludeVendorIds = [], note = '', redi
   }
 
   const accessAllowed = !!(t.verified || t.identity_cleared);
-  const mode = overCap ? 'owner_request' : 'vendor';
-  let d = await ai.draftDispatch({ ...ctx0, ticket: t, vendors: candidates, mode, note, redispatch, accessAllowed });
+  const d = await ai.draftDispatch({ ...ctx0, ticket: t, vendors: candidates, mode: 'vendor', note, accessAllowed });
 
   let vendor = candidates.find((v) => v.id === Number(d?.vendor_id));
   if (!vendor) { // model picked something invalid: fall back to deterministic scoring
     vendor = candidates.map((v) => ({ v, ...scoreVendor(v, { urgency: t.urgency, language: t.language, text: t.summary || '' }) })).sort((a, b) => b.s - a.s)[0].v;
   }
-  const text = String(d?.text || '').trim() || (await import('./mockAi.js')).buildText({ ...ctx0, ticket: t, mode, accessAllowed }, vendor);
+  const text = String(d?.text || '').trim() || (await import('./mockAi.js')).buildText({ ...ctx0, ticket: t, mode: 'vendor', accessAllowed }, vendor);
   const reasoning = String(d?.reasoning || '') + (fellBack ? ` No other ${trade} vendors were left, so this falls back to a ${vendor.trade}.` : '');
 
-  S.db_insertDispatch({ ticket_id: id, vendor_id: vendor.id, kind: overCap ? 'owner' : 'vendor', text, reasoning });
+  S.db_insertDispatch({ ticket_id: id, vendor_id: vendor.id, kind: 'vendor', text, reasoning });
   S.updateTicket(id, { vendor_id: vendor.id });
-  S.setStatus(id, 'dispatch_drafted', overCap ? `Drafted owner approval request (estimate $${t.cost_estimate} is over the $${limit} limit)` : `Drafted dispatch to ${vendor.name}`);
+  S.setStatus(id, 'dispatch_drafted', `Drafted dispatch to ${vendor.name}`);
   S.setStatus(id, 'awaiting_approval', 'Waiting for your approval');
-  if (overCap) S.addNote(id, `Estimated cost $${t.cost_estimate?.toLocaleString()} is over this property's $${limit.toLocaleString()} owner approval limit. The assistant drafted an owner approval request instead. Nothing goes to ${vendor.name} until the owner approves.`);
+  if (overLimit && S.addFlag(id, 'over_limit', `The estimate ($${t.cost_estimate?.toLocaleString()}) is over this property's $${limit.toLocaleString()} owner approval limit. Check with ${unit?.owner_name || 'the owner'} before you approve the dispatch.`)) {
+    S.addNote(id, `Estimated cost $${t.cost_estimate?.toLocaleString()} is over this property's $${limit.toLocaleString()} owner approval limit. Flagged for you to check with the owner; nothing was sent to anyone.`);
+  }
 }

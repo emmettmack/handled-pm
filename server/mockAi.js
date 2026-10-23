@@ -50,6 +50,10 @@ const EMERGENCY_REPLY = {
   heat: ['I\'m sorry you\'re cold. Please use blankets and keep warm in one room, and don\'t use the oven for heat. I\'m alerting the office and getting a technician out as soon as possible.', 'Lamento que tenga frío. Use cobijas y quédense en un solo cuarto, y no use el horno para calentar. Estoy avisando a la oficina y buscando un técnico lo antes posible.'],
 };
 
+// Languages other than English/Spanish: any non-Latin script, or a few very common words in other Latin-script languages.
+const OTHER_LANGUAGE = /[\u0400-\u04FF\u0590-\u06FF\u0900-\u0DFF\u0E00-\u0E7F\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]|\b(bonjour|merci|fuite|évier|s'il vous plaît|olá|obrigad[oa]|vazamento|torneira|hallo|danke|wasserhahn|undicht|ciao|grazie|perdita|rubinetto|salamat|po\b|tubig|xin chào|cảm ơn)\b/i;
+export const detectOtherLanguage = (text) => OTHER_LANGUAGE.test(text);
+
 export function detectLanguage(text) {
   return SPANISH.test(text) ? 'es' : 'en';
 }
@@ -113,6 +117,7 @@ export async function triage(ctx) {
     diagnosis: diag, next_steps: steps,
     estimated_cost: costFor(category, urgency, tenantText),
     access_notes: /home|work|not home|at work|6/i.test(tenantText) && /work/i.test(tenantText) ? 'Tenant is at work; will be home around 6pm.' : 'Tenant to be contacted by the vendor to arrange entry.',
+    other_language: detectOtherLanguage(tenantText),
     compensation_requested: false, // code-level detector in triage.js handles this in both modes
     identity_claim: { name, unit },
   };
@@ -140,20 +145,32 @@ export async function draftDispatch(ctx) {
     .sort((a, b) => b.s - a.s);
   const pick = ranked[0];
   const v = pick.v;
-  const reasoning = `Chose ${v.name} (${v.trade}): ${pick.why.length ? pick.why.join(', ') : 'best available match for this trade'}.${v.notes ? ` Your note: "${v.notes}"` : ''}${ctx.redispatch ? ' Previous vendor did not respond within 15 minutes, so this is the next best option.' : ''} Urgency is ${ctx.ticket.urgency}: ${ctx.ticket.reasoning || ''}`;
+  const reasoning = `Chose ${v.name} (${v.trade}): ${pick.why.length ? pick.why.join(', ') : 'best available match for this trade'}.${v.notes ? ` Your note: "${v.notes}"` : ''}${ctx.note ? ` You asked: "${ctx.note}".` : ''} Urgency is ${ctx.ticket.urgency}: ${ctx.ticket.reasoning || ''}`;
   return { vendor_id: v.id, reasoning, text: buildText(ctx, v), estimated_cost: ctx.ticket.cost_estimate };
 }
 
 export function buildText(ctx, v) {
-  const t = ctx.ticket, u = ctx.unit, tenant = ctx.tenant;
-  if (ctx.mode === 'owner_request') {
-    return `Hi ${first(u?.owner_name) || 'there'},\n\nThis is ${ctx.company.pm_name} at ${ctx.company.name}. We have a maintenance issue at ${u?.address}, Unit ${u?.number} that we'd like your approval on before we schedule work.\n\nIssue: ${t.title}. ${t.diagnosis}\nProposed vendor: ${v.name} (${v.trade})\nEstimated cost: $${t.cost_estimate?.toLocaleString()}, which is above your $${u?.approval_limit?.toLocaleString()} approval limit.\nUrgency: ${t.urgency}.\n\nPlease reply APPROVE to authorize this work, or call me to talk it through. We won't schedule anything until we hear from you.\n\n${ctx.company.pm_name}\n${ctx.company.phone}`;
-  }
+  const t = ctx.ticket, u = ctx.unit, tenant = ctx.tenant, co = ctx.company;
+  const p = ctx.prefs.draft;
   const urgencyLine = t.urgency === 'emergency' ? 'EMERGENCY, please respond immediately' : t.urgency === 'urgent' ? 'URGENT, same/next-day if possible' : 'Routine, next available appointment';
   const access = ctx.accessAllowed
     ? `Access: ${t.access_notes || 'Call the tenant to arrange entry.'}${t.category === 'lockout' ? ' Tenant identity verified against the lease on file (phone number matches).' : ''}`
-    : `Access: Do NOT enter the unit until our office confirms with the tenant. Call ${ctx.company.pm_name} at ${ctx.company.phone}.`;
-  return `Hi ${v.name} team, this is ${ctx.company.pm_name} at ${ctx.company.name}. New work order #${t.id}.\n\nPriority: ${urgencyLine}\nJob: ${t.summary}\nLikely cause: ${t.diagnosis}\nAddress: ${u?.address}, Unit ${u?.number} (${u?.neighborhood})\nTenant: ${tenant?.name || 'Unconfirmed'}${tenant ? ` · ${fmtPhone(tenant.phone)}` : ''}${t.language === 'es' ? ' (prefers Spanish)' : ''}\n${access}\n\nPlease reply YES with your arrival window. Call us before going over $${t.cost_estimate || 500}.\n\nThank you,\n${ctx.company.pm_name}, ${ctx.company.name} · ${ctx.company.phone}`;
+    : `Access: Do NOT enter the unit until our office confirms with the tenant. Call ${co.pm_name} at ${co.phone}.`;
+  const who = [p.tenant_name && (tenant?.name || 'Unconfirmed'), p.tenant_phone && tenant && fmtPhone(tenant.phone)].filter(Boolean).join(' · ');
+  const lines = [
+    p.priority && `Priority: ${urgencyLine}`,
+    `Job: ${t.summary}`,
+    p.cause && `Likely cause: ${t.diagnosis}`,
+    p.address && `Address: ${u?.address}, Unit ${u?.number} (${u?.neighborhood})`,
+    (who || (p.language && t.language === 'es')) && `Tenant: ${who}${p.language && t.language === 'es' ? `${who ? ' ' : ''}(prefers Spanish)` : ''}`.trim(),
+    // an unverified texter is a safety rule, so access guidance is shown even if switched off
+    (p.access || !ctx.accessAllowed) && access,
+    p.photos && ctx.mediaCount > 0 && `Photos/videos: ${ctx.mediaCount} from the tenant ${ctx.mediaCount === 1 ? 'is' : 'are'} attached.`,
+    p.footer.trim() && p.footer.trim(),
+  ].filter(Boolean).join('\n');
+  const ask = `Please confirm you can take this job and tell us when you can be there.${p.cost_cap ? ` Call us before going over $${p.cost_cap_amount || t.cost_estimate || 500}.` : ''}`;
+  const sign = p.signature ? `\n\nThank you,\n${co.pm_name}, ${co.name} · ${co.phone}` : '';
+  return `Hi ${v.name} team, this is ${co.pm_name} at ${co.name}.${p.work_order ? ` New work order #${t.id}.` : ''}${p.intro.trim() ? ` ${p.intro.trim()}` : ''}\n\n${lines}\n\n${ask}${sign}`;
 }
 
 export async function generateTenantMessage({ scenario, language }) {

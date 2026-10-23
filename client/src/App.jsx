@@ -7,6 +7,7 @@ import Home from './pages/Home.jsx';
 import Ticket from './pages/Ticket.jsx';
 import Vendors from './pages/Vendors.jsx';
 import Properties from './pages/Properties.jsx';
+import Preferences from './pages/Preferences.jsx';
 
 function useHash() {
   const [h, setH] = useState(window.location.hash.slice(1) || '/');
@@ -18,15 +19,31 @@ function useHash() {
   return h;
 }
 
-function EmergencyBanner({ emergencies, company }) {
+const HIDE_MS = 10 * 60 * 1000;
+const HIDE_KEY = 'handled_banner_hidden';
+
+/** Temporary "hide for 10 minutes" for the emergency bar. A brand-new emergency always shows it again. */
+function readHidden() {
+  try { return JSON.parse(localStorage.getItem(HIDE_KEY) || 'null'); } catch { return null; }
+}
+export function bannerHidden(emergencies) {
+  const h = readHidden();
+  return !!h && Date.now() < h.until && emergencies.every((t) => h.ids.includes(t.id));
+}
+
+function EmergencyBanner({ emergencies, company, onHide }) {
   const { refresh, toast } = useApp();
   if (!emergencies.length) return null;
   const ack = async (id) => {
     try { await api.post(`/tickets/${id}/ack-emergency`); await refresh(); } catch (e) { toast(e.message, 'err'); }
   };
+  const hide = () => {
+    try { localStorage.setItem(HIDE_KEY, JSON.stringify({ until: Date.now() + HIDE_MS, ids: emergencies.map((t) => t.id) })); } catch { /* hiding just won't persist */ }
+    onHide();
+  };
   return (
     <div className="emergency-banner" role="alert">
-      {emergencies.map((t) => (
+      {emergencies.map((t, i) => (
         <div className="inner" key={t.id}>
           <span className="siren"><Siren size={22} /></span>
           <strong>EMERGENCY</strong>
@@ -39,6 +56,7 @@ function EmergencyBanner({ emergencies, company }) {
           </div>
           <button className="btn sm ghost" onClick={() => go(`/tickets/${t.id}`)}>Open work order</button>
           {!t.emergency_ack && <button className="btn sm" onClick={() => ack(t.id)}><Check size={14} /> I'm on it</button>}
+          {i === 0 && <button className="btn sm ghost" onClick={hide} title="The bar comes back in 10 minutes. The work order stays at the top of your list.">Hide for 10 min</button>}
         </div>
       ))}
     </div>
@@ -49,7 +67,8 @@ export default function App() {
   useTick();
   const route = useHash();
   const [dash, refresh] = usePoll(() => api.get('/dashboard'), 3000);
-  const [status] = usePoll(() => api.get('/status'), 30000);
+  const [status, refreshStatus] = usePoll(() => api.get('/status'), 30000);
+  const [, bump] = useState(0);
   const [toasts, setToasts] = useState([]);
 
   const toast = useCallback((msg, kind = 'ok', ticketId) => {
@@ -58,7 +77,8 @@ export default function App() {
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4500);
   }, []);
 
-  const ctx = { dash, refresh, toast, status: status || dash?.ai ? { ...status, ...dash?.ai } : null };
+  const hidden = dash ? bannerHidden(dash.emergencies) : false;
+  const ctx = { dash, refresh, refreshStatus, toast, bannerHidden: hidden, status: status || dash?.ai ? { ...status, ...dash?.ai } : null };
 
   const mock = ctx.status?.mock;
   const parts = route.split('/').filter(Boolean);
@@ -66,8 +86,9 @@ export default function App() {
   if (parts[0] === 'tickets' && parts[1]) page = <Ticket key={parts[1]} id={Number(parts[1])} />;
   else if (parts[0] === 'vendors') page = <Vendors />;
   else if (parts[0] === 'properties') page = <Properties />;
+  else if (parts[0] === 'preferences') page = <Preferences />;
   else page = <Home />;
-  const section = parts[0] === 'vendors' ? 'vendors' : parts[0] === 'properties' ? 'properties' : 'home';
+  const section = ['vendors', 'properties', 'preferences'].includes(parts[0]) ? parts[0] : 'home';
 
   return (
     <AppCtx.Provider value={ctx}>
@@ -87,6 +108,7 @@ export default function App() {
             </a>
             <a href="#/vendors" className={section === 'vendors' ? 'active' : ''}>Vendors</a>
             <a href="#/properties" className={section === 'properties' ? 'active' : ''}>Properties</a>
+            <a href="#/preferences" className={section === 'preferences' ? 'active' : ''}>Preferences</a>
             {import.meta.env.VITE_STATIC === '1' && <a href="../index.html" className="back">&larr; Back to site</a>}
           </nav>
           {ctx.status && (
@@ -100,7 +122,7 @@ export default function App() {
           )}
         </div>
       </header>
-      {dash && <EmergencyBanner emergencies={dash.emergencies} company={status?.company} />}
+      {dash && !hidden && <EmergencyBanner emergencies={dash.emergencies} company={status?.company} onHide={() => bump((n) => n + 1)} />}
       <main className="page">{dash ? page : <p className="empty">Loading your maintenance line…</p>}</main>
       <div className="toasts">
         {toasts.map((t) => (

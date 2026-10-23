@@ -50,6 +50,50 @@ function parseTicket(row) {
 export function getCompany() {
   return db.prepare('SELECT * FROM company LIMIT 1').get();
 }
+export function updateCompany(c) {
+  const f = ['name', 'pm_name', 'phone', 'email', 'address', 'maintenance_line'];
+  db.prepare(`UPDATE company SET ${f.map((k) => `${k} = ?`).join(', ')} WHERE id = 1`).run(...f.map((k) => String(c[k] ?? '').trim()));
+  return getCompany();
+}
+
+// ---------- preferences (what goes into drafts, how long to wait on vendors) ----------
+export const DEFAULT_PREFS = {
+  draft: {
+    work_order: true, priority: true, cause: true, address: true,
+    tenant_name: true, tenant_phone: true, language: true, access: true, photos: true,
+    cost_cap: true, cost_cap_amount: '', signature: true,
+    intro: '', footer: '',
+  },
+  vendor_followup_hours: 24,
+};
+export function getPrefs() {
+  let saved = {};
+  try { saved = JSON.parse(db.prepare("SELECT value FROM settings WHERE key = 'prefs'").get()?.value || '{}'); } catch { /* fall back to defaults */ }
+  return { ...DEFAULT_PREFS, ...saved, draft: { ...DEFAULT_PREFS.draft, ...(saved.draft || {}) } };
+}
+export function setPrefs(p) {
+  const hours = Math.min(168, Math.max(1, Math.round(Number(p.vendor_followup_hours) || DEFAULT_PREFS.vendor_followup_hours)));
+  const draft = { ...DEFAULT_PREFS.draft };
+  for (const k of Object.keys(draft)) if (p.draft && k in p.draft) draft[k] = typeof draft[k] === 'boolean' ? !!p.draft[k] : String(p.draft[k] ?? '');
+  db.prepare("INSERT INTO settings (key, value) VALUES ('prefs', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(JSON.stringify({ draft, vendor_followup_hours: hours }));
+  return getPrefs();
+}
+
+// ---------- photos and videos from tenants ----------
+export const addMedia = (ticketId, { kind = 'photo', name = '', url, source = 'upload', at }) =>
+  db.prepare('INSERT INTO media (ticket_id, kind, name, url, source, created_at) VALUES (?,?,?,?,?,?)').run(ticketId, kind === 'video' ? 'video' : 'photo', name, url, source, at || nowIso()).lastInsertRowid;
+export const mediaFor = (ticketId) => db.prepare('SELECT * FROM media WHERE ticket_id = ? ORDER BY id').all(ticketId);
+export const mediaCount = (ticketId) => db.prepare('SELECT COUNT(*) c FROM media WHERE ticket_id = ?').get(ticketId).c;
+
+/** The vendor's primary contact methods, e.g. [{ label: 'Company phone', value: '(323) 555-0201' }]. */
+export function vendorChannels(v) {
+  if (!v) return [];
+  return [
+    v.primary_company && v.phone && { label: 'Company phone', value: v.phone },
+    v.primary_personal && v.personal_phone && { label: 'Personal phone', value: v.personal_phone },
+    v.primary_email && v.email && { label: 'Email', value: v.email },
+  ].filter(Boolean);
+}
 export function getTicket(id) {
   return parseTicket(db.prepare('SELECT * FROM tickets WHERE id = ?').get(id));
 }
@@ -114,7 +158,7 @@ export function getUnit(unitId) {
   return db
     .prepare(
       `SELECT u.id, u.number, p.id AS property_id, p.name AS property_name, p.address, p.neighborhood,
-              p.approval_limit, p.owner_name, p.owner_email
+              p.approval_limit, p.owner_name, p.owner_email, p.company
        FROM units u JOIN properties p ON p.id = u.property_id WHERE u.id = ?`,
     )
     .get(unitId);
@@ -147,6 +191,8 @@ export function ticketDetail(id) {
     tenant,
     unit,
     vendor: getVendor(t.vendor_id),
+    vendor_channels: vendorChannels(getVendor(t.vendor_id)),
+    media: mediaFor(id),
     messages: db.prepare('SELECT * FROM messages WHERE ticket_id = ? ORDER BY id').all(id),
     history: db.prepare('SELECT * FROM status_history WHERE ticket_id = ? ORDER BY id').all(id),
     dispatches,
@@ -168,8 +214,8 @@ export function listBrief() {
       created_at: t.created_at, updated_at: t.updated_at, language: t.language,
       tenant_name: tenant?.name || null, from_phone: t.from_phone,
       unit_label: unit ? `Unit ${unit.number} · ${unit.property_name}` : null,
-      pending_dispatch_kind: pd?.kind || null,
-      owner_state: t.owner_state, flags: t.flags.filter((f) => !f.resolved),
+      media_count: mediaCount(id),
+      flags: t.flags.filter((f) => !f.resolved),
       emergency_ack: t.emergency_ack, cost_estimate: t.cost_estimate,
       last_message: last?.body || '', last_sender: last?.sender || '',
     };
@@ -182,7 +228,7 @@ export function approvalQueue() {
     .map(({ id }) => {
       const d = db.prepare('SELECT d.*, v.name AS vendor_name, v.trade AS vendor_trade, v.phone AS vendor_phone, v.rate AS vendor_rate FROM dispatches d LEFT JOIN vendors v ON v.id = d.vendor_id WHERE d.id = ?').get(id);
       const t = ticketDetail(d.ticket_id);
-      return { ...d, ticket: { ...t, messages: undefined, history: undefined } };
+      return { ...d, vendor_channels: vendorChannels(getVendor(d.vendor_id)), ticket: { ...t, messages: undefined, history: undefined } };
     })
     .sort((a, b) => {
       const rank = { emergency: 0, urgent: 1, routine: 2 };

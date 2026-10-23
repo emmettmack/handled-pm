@@ -5,7 +5,6 @@ import { enqueue, draftAndQueue } from './triage.js';
 import { sendToTenant } from './outbound.js';
 import { T } from './templates.js';
 
-export const VENDOR_RESPONSE_MINUTES = 15;
 const fail = (msg) => Object.assign(new Error(msg), { status: 400 });
 
 function getDispatch(id) {
@@ -20,18 +19,14 @@ export function approveDispatch(id, editedText) {
   const text = (editedText ?? '').trim() || d.text;
   const edited = text !== d.text ? 1 : 0;
   const now = S.nowIso();
-  if (d.kind === 'owner') {
-    db.prepare("UPDATE dispatches SET state='approved', text=?, edited=?, decided_at=? WHERE id=?").run(text, edited, now, id);
-    S.updateTicket(d.ticket_id, { owner_state: 'requested' });
-    S.addNote(d.ticket_id, 'You approved the owner approval request. (Demo: nothing was actually sent.) Waiting on the owner. No vendor has been contacted.');
-    return;
-  }
-  const due = S.minsFromNow(VENDOR_RESPONSE_MINUTES);
-  db.prepare("UPDATE dispatches SET state='approved', text=?, edited=?, decided_at=?, response_due_at=? WHERE id=?").run(text, edited, now, due, id);
+  const hours = S.getPrefs().vendor_followup_hours;
+  const via = S.vendorChannels(S.getVendor(d.vendor_id)).map((c) => c.label.toLowerCase()).join(' and ');
+  db.prepare("UPDATE dispatches SET state='approved', text=?, edited=?, decided_at=?, response_due_at=? WHERE id=?").run(text, edited, now, S.minsFromNow(hours * 60), id);
   S.updateTicket(d.ticket_id, { vendor_id: d.vendor_id });
   S.resolveFlag(d.ticket_id, 'no_response', 'redispatched');
+  S.resolveFlag(d.ticket_id, 'over_limit', 'approved');
   S.setStatus(d.ticket_id, 'dispatched', `Sent to ${d.vendor_name}${edited ? ' (edited by you)' : ''}`);
-  S.addNote(d.ticket_id, `Dispatch ${edited ? '(your edited version) ' : ''}approved and sent to ${d.vendor_name}. (Demo: nothing was actually sent.) Waiting for them to confirm within ${VENDOR_RESPONSE_MINUTES} minutes.`);
+  S.addNote(d.ticket_id, `Dispatch ${edited ? '(your edited version) ' : ''}approved and sent to ${d.vendor_name}${via ? ` by ${via}` : ''}. (Demo: nothing was actually sent.) If they haven't replied in ${hours} hours, this work order comes back to the top of your list.`);
 }
 
 export function rejectDispatch(id, note) {
@@ -45,17 +40,10 @@ export function rejectDispatch(id, note) {
 export function redraft(ticketId, note) {
   const t = S.getTicket(ticketId);
   if (!t) throw fail('Ticket not found');
-  const last = db.prepare("SELECT * FROM dispatches WHERE ticket_id = ? AND state = 'rejected' ORDER BY id DESC LIMIT 1").get(ticketId);
-  const exclude = last && last.kind === 'vendor' ? [last.vendor_id] : [];
+  const last = db.prepare("SELECT * FROM dispatches WHERE ticket_id = ? AND state IN ('rejected', 'no_response') ORDER BY id DESC LIMIT 1").get(ticketId);
+  const exclude = last ? [last.vendor_id] : [];
+  S.resolveFlag(ticketId, 'no_response', 'redrafted');
   return enqueue(ticketId, () => draftAndQueue(ticketId, { excludeVendorIds: exclude, note: note || last?.pm_note || '' }));
-}
-
-export function ownerApproved(ticketId) {
-  const t = S.getTicket(ticketId);
-  if (t.owner_state !== 'requested') throw fail('No owner request is waiting.');
-  S.updateTicket(ticketId, { owner_approved: 1, owner_state: 'approved' });
-  S.addNote(ticketId, 'Owner approved the spend (simulated reply). The assistant is now drafting the vendor dispatch for your OK.');
-  return enqueue(ticketId, () => draftAndQueue(ticketId));
 }
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -79,27 +67,26 @@ export function advanceStatus(ticketId, status) {
   if (status === 'resolved') sendToTenant(t, T.resolved(t.language));
 }
 
-/** Vendor didn't answer in time: flag it, draft the next-best vendor. */
+/** Vendor didn't answer in the PM's chosen window: flag the work order so it comes back to the top. Nothing is sent. */
 export function markNoResponse(ticketId) {
   const t = S.getTicket(ticketId);
   const d = db.prepare("SELECT d.*, v.name AS vendor_name FROM dispatches d JOIN vendors v ON v.id = d.vendor_id WHERE d.ticket_id=? AND d.kind='vendor' AND d.state='approved' ORDER BY d.id DESC LIMIT 1").get(ticketId);
   if (!d || t.status !== 'dispatched') return;
+  const hours = S.getPrefs().vendor_followup_hours;
   db.prepare("UPDATE dispatches SET state='no_response' WHERE id=?").run(d.id);
-  S.addFlag(ticketId, 'no_response', `${d.vendor_name} didn't respond within ${VENDOR_RESPONSE_MINUTES} minutes. A new dispatch to the next best vendor is ready for your OK.`);
-  S.addNote(ticketId, `No response from ${d.vendor_name} after ${VENDOR_RESPONSE_MINUTES} minutes. Drafting a dispatch to the next best vendor.`);
-  const tried = db.prepare("SELECT DISTINCT vendor_id FROM dispatches WHERE ticket_id=? AND kind='vendor'").all(ticketId).map((r) => r.vendor_id);
-  return draftAndQueue(ticketId, { excludeVendorIds: tried, redispatch: true });
+  S.addFlag(ticketId, 'no_response', `${d.vendor_name} hasn't replied in ${hours} ${hours === 1 ? 'hour' : 'hours'}. Give them a call, or draft a dispatch to a different vendor.`);
+  S.addNote(ticketId, `No reply from ${d.vendor_name} after ${hours} ${hours === 1 ? 'hour' : 'hours'}. Brought back to the top of your list. Nothing was sent.`);
 }
 
 export function skipTimer(ticketId) {
   db.prepare("UPDATE dispatches SET response_due_at=? WHERE ticket_id=? AND kind='vendor' AND state='approved'").run(S.minsAgo(1), ticketId);
-  return enqueue(ticketId, () => markNoResponse(ticketId));
+  markNoResponse(ticketId);
 }
 
 export function startScheduler() {
   setInterval(() => {
     const due = db.prepare("SELECT DISTINCT ticket_id FROM dispatches WHERE kind='vendor' AND state='approved' AND response_due_at IS NOT NULL AND response_due_at <= ?").all(S.nowIso());
-    for (const { ticket_id } of due) enqueue(ticket_id, () => markNoResponse(ticket_id));
+    for (const { ticket_id } of due) markNoResponse(ticket_id);
   }, 5000);
 }
 

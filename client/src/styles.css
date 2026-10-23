@@ -287,3 +287,45 @@ table.plain tr:last-child td { border: 0; }
 .stat.good .num { color: #1f7a55; }
 
 .nav a.back { margin-left: 12px; opacity: .8; font-size: 13.5px; }
+
+/* ---------- vendors: contact methods, two-step remove ---------- */
+.contact-box { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 4px; margin-bottom: 14px; background: #faf9fe; }
+.contact-title { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+.contact-row { display: flex; align-items: flex-end; gap: 14px; }
+.contact-row .field { flex: 1; margin-bottom: 10px; }
+.primary-check { white-space: nowrap; margin-bottom: 18px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 9px; background: #fff; }
+.primary-check.on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand-2); font-weight: 600; }
+.contact-note { font-size: 12.5px; color: var(--ink-2); margin: 2px 0 10px; }
+.chan-label { color: var(--muted); font-size: 12px; margin-left: 6px; }
+.primary-tag { font-size: 11px; font-weight: 600; color: var(--brand-2); background: var(--brand-soft); border-radius: 99px; padding: 1px 8px; margin-left: 6px; }
+.remove-zone { margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--line); }
+.danger-link { color: #d4262c; padding-left: 0; }
+.remove-confirm { display: flex; flex-direction: column; gap: 8px; background: #fdecec; border: 1px solid #f5c2c4; border-radius: 12px; padding: 12px 14px; font-size: 13.5px; }
+
+/* ---------- sorting, grouping, emergency headline ---------- */
+.sortbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+.group-row td { background: var(--brand-soft); color: var(--brand-2); font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: .06em; padding: 7px 16px; }
+.headline-emergency { display: flex; align-items: center; gap: 14px; padding: 14px 18px; margin-bottom: 18px; background: #d4262c; color: #fff; border-color: #d4262c; cursor: pointer; }
+.headline-emergency div { flex: 1; display: flex; flex-direction: column; }
+.headline-emergency span { font-size: 13px; opacity: .9; }
+
+/* ---------- preferences ---------- */
+.pref-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0 16px; }
+.prefs-draft { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
+@media (max-width: 860px) { .prefs-draft { grid-template-columns: 1fr; } }
+.toggles { display: grid; gap: 8px; margin-bottom: 14px; }
+.field.indent { margin: 4px 0 0 26px; }
+.hint-small { font-size: 12.5px; color: var(--muted); margin: 4px 0 12px; }
+.draft.sample { white-space: pre-wrap; max-height: 460px; overflow: auto; }
+.sends-to { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
+
+/* ---------- photos and videos ---------- */
+.media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+.media-tile { position: relative; padding: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #000; cursor: pointer; aspect-ratio: 4 / 3; }
+.media-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.media-tile .play { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,.6); color: #fff; border-radius: 99px; width: 26px; height: 26px; display: grid; place-items: center; }
+.media-tile .src { position: absolute; left: 0; right: 0; bottom: 0; font-size: 10.5px; color: #fff; background: linear-gradient(transparent, rgba(0,0,0,.7)); padding: 12px 6px 4px; text-align: left; }
+.lightbox { position: relative; max-width: min(92vw, 820px); background: #fff; border-radius: 14px; padding: 12px; }
+.lightbox img, .lightbox video { width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px; display: block; background: #000; }
+.lightbox .cap { font-size: 13px; color: var(--ink-2); padding: 10px 4px 2px; }
+.lightbox .close { position: absolute; top: 14px; right: 14px; z-index: 2; background: rgba(255,255,255,.85); border-radius: 99px; }

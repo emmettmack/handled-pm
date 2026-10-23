@@ -33,6 +33,12 @@ export const T = {
       ? 'Gracias por avisarnos. Estamos coordinando esto y le mantendremos al tanto.'
       : "Thanks for letting us know. We're getting this coordinated and will keep you posted.",
 
+  /** Sent once when a tenant writes in a language other than English or Spanish. `l` is the language on their account. */
+  translateNote: (l) =>
+    es(l)
+      ? 'Puedo escribirle en cualquier idioma usando traducción, pero mi idioma principal es el español, el que eligió al crear su cuenta.'
+      : "I can text with you in any language using translation, but my primary language is English, the one set on your account.",
+
   scheduled: (l, vendor, when) =>
     es(l)
       ? `Buenas noticias: ${vendor} ya está programado para ${when}. Si algo cambia le avisamos.`

@@ -49,11 +49,7 @@
   .cta { margin-top: 34px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; }
   .btn { display: inline-flex; align-items: center; gap: 10px; background: #fff; color: #3a2bc4; font-weight: 600; font-size: 15px; padding: 13px 22px; border-radius: 12px; text-decoration: none; box-shadow: 0 6px 24px rgba(15,8,80,.3); transition: transform .12s; }
   .btn:hover { transform: translateY(-1px); }
-  .cta input { width: min(320px, 86vw); padding: 13px 16px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.14); color: #fff; font: 500 15px Geist, sans-serif; backdrop-filter: blur(8px); outline: none; }
-  .cta input::placeholder { color: rgba(255,255,255,.65); }
-  .cta input:focus { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.6); }
   .btn.ghost { background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.35); box-shadow: none; }
-  .err { margin-top: 10px; min-height: 18px; font-size: 13px; color: #ffd1d3; }
   kbd { font: 500 11px Geist, sans-serif; color: #5b45e8; background: #eceaff; border: 1px solid #d6d1ff; border-radius: 5px; padding: 1px 6px; }
   .note { margin-top: 26px; font-size: 13.5px; color: var(--ink-2); display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
   .note span::before { content: ''; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: #9fe9c0; margin-right: 8px; vertical-align: 2px; }
@@ -84,11 +80,6 @@
   details:last-of-type { border-bottom: 1px solid #e7e4f3; }
   summary { font-weight: 600; cursor: pointer; }
   details p { color: #5a5675; margin-top: 8px; }
-  .final { margin: 90px auto 0; max-width: 1060px; padding: 0 24px 80px; }
-  .box { background: linear-gradient(160deg, #2a1a6e, #4433d6 55%, #3b6df0); color: #fff; border-radius: 24px; padding: 54px 24px; text-align: center; }
-  .box h2 { font-size: clamp(26px, 3.6vw, 38px); letter-spacing: -.03em; font-weight: 500; }
-  .box p { color: rgba(255,255,255,.8); margin: 8px auto 4px; max-width: 46ch; }
-  .skip { color: rgba(255,255,255,.75); font-size: 14px; display: inline-block; margin-top: 14px; }
   .light footer { color: #8a85a6; }
 </style>
 </head>
@@ -134,20 +125,18 @@
 
 <div class="light">
   <section class="sec" id="how">
-    <h2>From text to dispatch in five steps</h2>
-    <p class="lead">Tenants text one dedicated maintenance number. Everything after that is prepared before you look.</p>
+    <h2>Three steps. That's it.</h2>
+    <p class="lead">Your tenants text one number. Handled does the legwork. You make one decision.</p>
     <div class="grid">
-      <div class="c"><div class="num">1</div><h3>Tenant texts</h3><p>"My sink is broken." English or Spanish, from any phone. No app to download.</p></div>
-      <div class="c"><div class="num">2</div><h3>Handled sorts it out</h3><p>It works out the category and how urgent it is, and flags emergencies instantly.</p></div>
-      <div class="c"><div class="num">3</div><h3>It asks what it needs</h3><p>A natural follow-up question when something is unclear. Two at most, then it moves on.</p></div>
-      <div class="c"><div class="num">4</div><h3>It prepares the dispatch</h3><p>A plain-English summary, the best vendor from your list, and a ready-to-send message.</p></div>
-      <div class="c"><div class="num">5</div><h3>You approve</h3><p>Approve, edit, or reject. Nothing goes to a vendor until you do.</p></div>
+      <div class="c"><div class="num">1</div><h3>Tenant makes a request</h3><p>By text or email, in English or Spanish, with photos or video if they have them. No app to download.</p></div>
+      <div class="c"><div class="num">2</div><h3>Handled takes it from there</h3><p>It works out what's wrong and how urgent it is, asks the tenant anything it's missing, and proposes a fix with the right vendor from your list.</p></div>
+      <div class="c"><div class="num">3</div><h3>You approve</h3><p>Read a finished draft, edit it if you like, and send it. Nothing goes out until you do.</p></div>
     </div>
   </section>
 
   <section class="sec" id="peek">
     <h2>What lands in your queue</h2>
-    <p class="lead">Not a pile of tickets to sort. A finished draft you can read in ten seconds.</p>
+    <p class="lead">A finished draft you can read in ten seconds.</p>
     <div class="peek">
       <div>
         <span class="badge">Urgent</span>
@@ -164,7 +153,7 @@
 Priority: URGENT, same or next day
 Job: Kitchen sink leaking under cabinet
 Address: 2830 Hyperion Ave, Unit 4B
-Please reply YES with an arrival window.</div>
+Please confirm you can take this job and tell us when you can be there.</div>
         <div class="ap">Approve &amp; send</div>
       </div>
     </div>
@@ -177,9 +166,8 @@ Please reply YES with an arrival window.</div>
       <div class="c"><h3>An approval queue, not another dashboard</h3><p>Summary, reasoning, vendor and message together. You confirm and move on.</p></div>
       <div class="c"><h3>Your vendors, your rules</h3><p>It only picks from vendors you add, using trade, your preferred flag, and your notes.</p></div>
       <div class="c"><h3>Every work order in one place</h3><p>Full conversation, status from New to Closed, vendor details, and your private notes.</p></div>
-      <div class="c"><h3>Always-on tenant replies</h3><p>Warm, clear answers in seconds, day or night, in the tenant's language.</p></div>
-      <div class="c"><h3>Spanish built in</h3><p>It understands and replies in Spanish, and tells your vendor when a tenant prefers it.</p></div>
-      <div class="c"><h3>Owner approvals handled</h3><p>Over a property's spending limit? You get a drafted owner request instead.</p></div>
+      <div class="c"><h3>Always-on tenant replies</h3><p>Warm, clear answers in seconds, 24/7.</p></div>
+      <div class="c"><h3>Owner limits, flagged for you</h3><p>Set a spending limit for each property. If a repair would go over it, you get a heads-up so you can check with the owner first. Handled never contacts owners on its own.</p></div>
     </div>
   </section>
 
@@ -189,43 +177,20 @@ Please reply YES with an arrival window.</div>
     <div class="grid">
       <div class="c"><span class="tg red">Emergencies</span><h3>Flagged the moment they arrive</h3><p>Gas, flooding, sparks, no heat in freezing weather: red banner, pinned work order, instant safety instructions to the tenant.</p></div>
       <div class="c"><span class="tg">Human approval</span><h3>Nothing sends without your OK</h3><p>Every message to a vendor or owner is a draft until you approve.</p></div>
-      <div class="c"><span class="tg">Liability</span><h3>Never promises money or fault</h3><p>"We'll get this handled" yes. "We'll pay for it" never. Compensation requests are flagged for you.</p></div>
+      <div class="c"><span class="tg">Protected</span><h3>Your word stays yours</h3><p>Handled commits to getting the work done. Anything about money or responsibility comes straight to you, so you decide what to say.</p></div>
       <div class="c"><span class="tg">Security</span><h3>Lockouts are verified first</h3><p>The number must match the tenant on file. If not, it holds the ticket for you.</p></div>
-      <div class="c"><span class="tg">Reliability</span><h3>Silent vendors don't stall repairs</h3><p>No reply in 15 minutes? The next best vendor is drafted for you.</p></div>
+      <div class="c"><span class="tg">Reliability</span><h3>Silent vendors don't stall repairs</h3><p>No reply in the time you choose? The job jumps back to the top of your list.</p></div>
     </div>
   </section>
 
   <section class="sec" id="faq">
     <h2>Questions</h2>
     <details><summary>Can it message vendors on its own?</summary><p>No. Vendor and owner messages are always drafts that you approve first.</p></details>
-    <details><summary>What if it gets something wrong?</summary><p>You see its reasoning next to every draft and can edit or reject it. Emergencies and sensitive cases are escalated to you rather than guessed.</p></details>
-    <details><summary>How long does setup take?</summary><p>Add your vendors and properties, set each owner's spending limit, and point your maintenance number at Handled.</p></details>
+    <details><summary>What if it gets something wrong?</summary><p>You see its reasoning beside every draft and can edit or reject it. For emergencies and sensitive situations, Handled brings you in right away instead of deciding on its own.</p></details>
+    <details><summary>Live in 5 to 10 minutes</summary><p>Add your vendors, add your properties, and point your maintenance number at Handled. That's the whole setup.</p></details>
   </section>
 
-  <div class="final" id="try">
-    <div class="box">
-      <h2>See it with your own details</h2>
-      <p>Enter your phone number or email and we'll put it on the dashboard as your contact.</p>
-      <form class="cta" id="f" novalidate>
-        <input id="c" type="text" inputmode="email" autocomplete="email" placeholder="Your phone number or email" aria-label="Your phone number or email" />
-        <button class="btn" type="submit">See it in action <kbd>Enter</kbd></button>
-      </form>
-      <p class="err" id="err" role="alert"></p>
-      <a class="skip" href="#" id="skip">Or skip this and open the live demo</a>
-    </div>
-  </div>
   <footer style="text-align:center;padding:0 20px 28px;font-size:13px">Built for small property managers, 10 to 300 doors.</footer>
 </div>
-<script>
-  function go(v) { try { localStorage.setItem('handled_contact', v); } catch (x) {} location.href = 'app/'; }
-  document.getElementById('f').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var v = document.getElementById('c').value.trim();
-    var ok = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v) || v.replace(/\D/g, '').length >= 10;
-    if (!ok) { document.getElementById('err').textContent = 'Enter a valid phone number or email.'; return; }
-    go(v);
-  });
-  document.getElementById('skip').addEventListener('click', function (e) { e.preventDefault(); location.href = 'app/'; });
-</script>
 </body>
 </html>
