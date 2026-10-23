@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "AI maintenance coordination demo for small residential property managers",
+  "description": "AI maintenance coordination demo for residential landlords and property managers",
   "scripts": {
     "dev": "concurrently -k -n api,web -c blue,magenta \"npm:dev:server\" \"npm:dev:client\"",
     "dev:server": "node --watch --watch-path=server server/index.js",
