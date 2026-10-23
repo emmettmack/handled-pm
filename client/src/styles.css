@@ -285,3 +285,5 @@ table.plain tr:last-child td { border: 0; }
 .timeline li:last-child .pt { background: var(--brand); }
 .pill.resolved, .pill.closed { background: #e4f4ec; color: #1f7a55; }
 .stat.good .num { color: #1f7a55; }
+
+.nav a.back { margin-left: 12px; opacity: .8; font-size: 13.5px; }

@@ -92,13 +92,15 @@ All inbound texts, from any source, go through one function: `receiveInboundMess
 
 Nothing else in the app changes: triage, the approval queue, and the timers don't know where a message came from.
 
-## Hosting the live dashboard
+## The public demo (GitHub Pages)
 
-The landing page (`site/`) is static and runs on GitHub Pages. The dashboard needs the Node server, so host it separately:
+`site/` is the public site. Its "Live demo" tab opens `site/app/`, the real dashboard running entirely in the browser: the server's routes and logic run against an in-browser SQLite (sql.js), with the built-in sample AI replies. Each visitor gets a fresh copy of the sample data, nothing is shared or sent anywhere.
 
-1. On render.com, choose New > Blueprint and connect this GitHub repo. It reads `render.yaml` and deploys for free.
-2. Copy the service URL (for example `https://handled-pm.onrender.com`) into `site/config.js`, commit and push. The "Live demo" tab then opens the real dashboard.
-3. Demo mode needs no API key. The data resets every 6 hours (`DEMO_RESET_HOURS`). Free instances sleep when idle, so the first load can take about a minute.
+After changing anything in `client/` or `server/`, rebuild it and commit the output:
+
+    npm run build:static
+
+`render.yaml` is an optional blueprint for hosting the full Node server instead (needed only for live AI or real SMS).
 
 ## File map
 

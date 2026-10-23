@@ -87,6 +87,7 @@ export default function App() {
             </a>
             <a href="#/vendors" className={section === 'vendors' ? 'active' : ''}>Vendors</a>
             <a href="#/properties" className={section === 'properties' ? 'active' : ''}>Properties</a>
+            {import.meta.env.VITE_STATIC === '1' && <a href="../index.html" className="back">&larr; Back to site</a>}
           </nav>
           {ctx.status && (
             <span

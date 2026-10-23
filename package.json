@@ -10,13 +10,15 @@
     "dev:client": "vite --config client/vite.config.js",
     "build": "vite build --config client/vite.config.js",
     "start": "npm run build && node server/index.js",
-    "seed": "node server/seed.js"
+    "seed": "node server/seed.js",
+    "build:static": "vite build --config client/vite.static.config.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",
     "better-sqlite3": "^12.11.1",
     "dotenv": "^17.2.0",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "sql.js": "^1.13.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.0.0",

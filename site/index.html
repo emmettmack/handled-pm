@@ -96,7 +96,7 @@
 <div class="wrap">
   <nav>
     <div class="logo"><i><svg viewBox="0 0 24 24" fill="none" stroke="#5b45e8" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-10"/></svg></i> Handled</div>
-    <div class="links"><a class="l" id="live" href="demo.html">Live demo</a><a class="l" href="#how">How it works</a><a class="l" href="#features">Features</a><a class="l" href="#safety">Safety</a><a class="pill" href="#try">Try the demo</a></div>
+    <div class="links"><a class="l" id="live" href="app/">Live demo</a><a class="l" href="#how">How it works</a><a class="l" href="#features">Features</a><a class="l" href="#safety">Safety</a><a class="pill" href="app/">Try the demo</a></div>
   </nav>
   <main>
     <div class="stage" aria-hidden="true">
@@ -126,7 +126,7 @@
     </div>
     <h1>Maintenance, handled.</h1>
     <p class="sub">Tenants text one number. Handled reads every message, finds the right vendor, and drafts the dispatch. You just approve.</p>
-    <div class="cta"><a class="btn" href="#how">See how it works</a><a class="btn ghost" href="#try">Try the demo</a></div>
+    <div class="cta"><a class="btn" href="#how">See how it works</a><a class="btn ghost" href="app/">Try the live demo</a></div>
     <div class="note"><span>Nothing sends without your OK</span><span>Emergencies flagged instantly</span><span>English &amp; Spanish</span></div>
   </main>
   <a class="down" href="#how" aria-label="Scroll">&#8595;</a>
@@ -205,19 +205,19 @@ Please reply YES with an arrival window.</div>
   <div class="final" id="try">
     <div class="box">
       <h2>See it with your own details</h2>
-      <p>Enter your phone number or email and we'll fill the demo in with it.</p>
+      <p>Enter your phone number or email and we'll put it on the dashboard as your contact.</p>
       <form class="cta" id="f" novalidate>
         <input id="c" type="text" inputmode="email" autocomplete="email" placeholder="Your phone number or email" aria-label="Your phone number or email" />
         <button class="btn" type="submit">See it in action <kbd>Enter</kbd></button>
       </form>
       <p class="err" id="err" role="alert"></p>
-      <a class="skip" href="#" id="skip">Or just show me the demo, no details needed</a>
+      <a class="skip" href="#" id="skip">Or skip this and open the live demo</a>
     </div>
   </div>
   <footer style="text-align:center;padding:0 20px 28px;font-size:13px">Built for small property managers, 10 to 300 doors.</footer>
 </div>
 <script>
-  function go(v) { try { localStorage.setItem('handled_contact', v); } catch (x) {} location.href = 'demo.html'; }
+  function go(v) { try { localStorage.setItem('handled_contact', v); } catch (x) {} location.href = 'app/'; }
   document.getElementById('f').addEventListener('submit', function (e) {
     e.preventDefault();
     var v = document.getElementById('c').value.trim();
@@ -225,9 +225,7 @@ Please reply YES with an arrival window.</div>
     if (!ok) { document.getElementById('err').textContent = 'Enter a valid phone number or email.'; return; }
     go(v);
   });
-  document.getElementById('skip').addEventListener('click', function (e) { e.preventDefault(); go('you@yourcompany.com'); });
+  document.getElementById('skip').addEventListener('click', function (e) { e.preventDefault(); location.href = 'app/'; });
 </script>
-<script src="config.js"></script>
-<script>if (window.HANDLED_DASHBOARD_URL) { var a = document.getElementById("live"); a.href = window.HANDLED_DASHBOARD_URL; a.target = "_blank"; a.rel = "noopener"; }</script>
 </body>
 </html>
