@@ -52,7 +52,7 @@ if (fs.existsSync(dist)) {
 const port = Number(process.env.PORT) || 3001;
 app.listen(port, () => {
   const s = ai.aiStatus();
-  console.log(`\n  Handled API running on http://localhost:${port}`);
+  console.log(`\n  Macalisto API running on http://localhost:${port}`);
   console.log(s.mock ? '  AI: DEMO MODE (no ANTHROPIC_API_KEY set, using canned responses)' : `  AI: live, model ${s.model}`);
 });
 A.startScheduler();

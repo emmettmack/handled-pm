@@ -90,7 +90,7 @@ export default function Preferences() {
   const hours = prefs.vendor_followup_hours;
   return (
     <>
-      <div className="page-head"><div><h1>Preferences</h1><p>Set things up once. Handled follows them every time.</p></div></div>
+      <div className="page-head"><div><h1>Preferences</h1><p>Set things up once. Macalisto follows them every time.</p></div></div>
 
       <div className="group-title">Your company</div>
       <CompanyCard />

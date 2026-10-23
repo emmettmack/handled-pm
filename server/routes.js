@@ -28,7 +28,7 @@ const vendorFields = (b) => [b.name, b.trade, b.phone || '', b.personal_phone ||
 function checkVendor(b) {
   if (!b.name || !b.trade) throw fail('Name and trade are required');
   const picks = [['primary_company', 'phone', 'company phone'], ['primary_personal', 'personal_phone', 'personal phone'], ['primary_email', 'email', 'email']].filter(([flag]) => b[flag]);
-  if (!picks.length) throw fail('Pick at least one primary contact so Handled knows how to reach this vendor.');
+  if (!picks.length) throw fail('Pick at least one primary contact so Macalisto knows how to reach this vendor.');
   const missing = picks.find(([, field]) => !String(b[field] || '').trim());
   if (missing) throw fail(`You marked ${missing[2]} as primary but left it blank.`);
 }

@@ -1,4 +1,4 @@
-# Handled: maintenance coordination for landlords and property managers
+# Macalisto: maintenance coordination for landlords and property managers
 
 A sales demo of an AI maintenance line for anyone who rents out a home, from a single house to hundreds of doors.
 Tenants text one number. The AI reads every message, triages it, asks follow-up questions when needed,

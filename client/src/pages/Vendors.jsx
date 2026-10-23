@@ -23,7 +23,7 @@ function VendorForm({ vendor, onClose, onSaved }) {
   const togglePrimary = (c) => (e) => {
     const on = e.target.checked;
     if (!on && primaries.length === 1) { toast('Keep at least one primary contact selected.', 'err'); return; }
-    if (on && primaries.length >= 1 && !window.confirm('More than one primary contact is selected, so Handled will contact all of them at the same time. Uncheck one if you only want one contacted.\n\nContact them all at once?')) return;
+    if (on && primaries.length >= 1 && !window.confirm('More than one primary contact is selected, so Macalisto will contact all of them at the same time. Uncheck one if you only want one contacted.\n\nContact them all at once?')) return;
     setV({ ...v, [c.flag]: on ? 1 : 0 });
   };
 
@@ -66,8 +66,8 @@ function VendorForm({ vendor, onClose, onSaved }) {
             ))}
             <p className="contact-note">
               {primaries.length > 1
-                ? `Handled will contact ${primaries.map((c) => c.label.toLowerCase()).join(' and ')} at the same time. Uncheck one to contact only one.`
-                : 'Handled sends dispatches to every contact marked primary. At least one must stay selected.'}
+                ? `Macalisto will contact ${primaries.map((c) => c.label.toLowerCase()).join(' and ')} at the same time. Uncheck one to contact only one.`
+                : 'Macalisto sends dispatches to every contact marked primary. At least one must stay selected.'}
             </p>
           </div>
 

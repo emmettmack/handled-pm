@@ -97,7 +97,7 @@ export default function App() {
           <a className="brand" href="#/">
             <div className="brand-mark"><Check size={18} strokeWidth={3} /></div>
             <div>
-              <div className="brand-name">Handled</div>
+              <div className="brand-name">Macalisto</div>
               <div className="brand-sub">{status?.company?.name || 'Maintenance line'}</div>
             </div>
           </a>

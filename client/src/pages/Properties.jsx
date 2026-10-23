@@ -70,7 +70,7 @@ export default function Properties() {
           </tbody>
         </table>
       </div>
-      <p style={{ color: 'var(--muted)', marginTop: 12, fontSize: 13.5 }}>When a repair is estimated above a property's limit, the work order is flagged so you can check with the owner first. Handled never contacts owners on its own.</p>
+      <p style={{ color: 'var(--muted)', marginTop: 12, fontSize: 13.5 }}>When a repair is estimated above a property's limit, the work order is flagged so you can check with the owner first. Macalisto never contacts owners on its own.</p>
     </>
   );
 }

@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: handled-pm
+    name: macalisto
     runtime: node
     plan: free
     buildCommand: npm install && npm run build
