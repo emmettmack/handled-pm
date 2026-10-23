@@ -9,6 +9,7 @@ import * as A from './actions.js';
 import { seed } from './seed.js';
 import { routes } from './routes.js';
 import { authenticate, authEnabled } from './auth.js';
+import { inboundSms } from './twilio.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 if (!authEnabled() && !S.getCompany()) seed(); // sample data is for local development only; real accounts start empty
@@ -29,12 +30,9 @@ const wrap = (fn) => async (req, res) => {
 // Health check for the host (no sign-in, reveals nothing).
 app.get('/healthz', (_req, res) => res.send('ok'));
 
-// Twilio-shaped webhook stub, off until texting is connected (it needs Twilio signature validation and
-// routing to the right account first). It sits outside the sign-in check because Twilio can't sign in.
-app.post('/api/webhooks/sms', (req, res) => {
-  if (!process.env.TWILIO_AUTH_TOKEN) return res.status(503).send('Texting is not set up yet.');
-  res.status(501).send('Not implemented.');
-});
+// Incoming texts from Twilio. Outside the sign-in check because Twilio can't sign in; it is protected by Twilio's
+// request signature instead (see twilio.js).
+app.post('/api/webhooks/sms', inboundSms);
 
 // Body parsing comes after the sign-in check so strangers can't make the server buffer large uploads.
 app.use('/api', authenticate, express.json({ limit: '25mb' })); // tenant photos and videos arrive as data URLs

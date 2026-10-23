@@ -21,6 +21,12 @@ export function receiveInboundMessage({ channel = 'sms', from, body, ticketId = 
     const waiting = db.prepare("SELECT id FROM tickets WHERE from_phone = ? AND status = 'needs_info' ORDER BY id DESC LIMIT 1").get(phone);
     if (waiting) ticket = S.getTicket(waiting.id);
   }
+  if (!ticket && channel === 'sms') {
+    // Real texting: a follow-up like "ok thanks" or "he's here" belongs on the open job, not a brand-new one.
+    const dayAgo = S.minsAgo(24 * 60);
+    const open = db.prepare("SELECT id FROM tickets WHERE from_phone = ? AND status NOT IN ('resolved','closed') AND updated_at >= ? ORDER BY id DESC LIMIT 1").get(phone, dayAgo);
+    if (open) ticket = S.getTicket(open.id);
+  }
 
   if (ticket) {
     S.addMessage(ticket.id, 'tenant', text);

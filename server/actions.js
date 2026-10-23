@@ -5,6 +5,7 @@ import * as S from './store.js';
 import { enqueue, draftAndQueue } from './triage.js';
 import { sendToTenant } from './outbound.js';
 import { T } from './templates.js';
+import { sendSms, twilioConfigured } from './sms.js';
 
 const fail = (msg) => Object.assign(new Error(msg), { status: 400 });
 
@@ -21,13 +22,28 @@ export function approveDispatch(id, editedText) {
   const edited = text !== d.text ? 1 : 0;
   const now = S.nowIso();
   const hours = S.getPrefs().vendor_followup_hours;
-  const via = S.vendorChannels(S.getVendor(d.vendor_id)).map((c) => c.label.toLowerCase()).join(' and ');
+  const channels = S.vendorChannels(S.getVendor(d.vendor_id));
+  const via = channels.map((c) => c.label.toLowerCase()).join(' and ');
+  const live = twilioConfigured();
   db.prepare("UPDATE dispatches SET state='approved', text=?, edited=?, decided_at=?, response_due_at=? WHERE id=?").run(text, edited, now, S.minsFromNow(hours * 60), id);
   S.updateTicket(d.ticket_id, { vendor_id: d.vendor_id });
   S.resolveFlag(d.ticket_id, 'no_response', 'redispatched');
   S.resolveFlag(d.ticket_id, 'over_limit', 'approved');
   S.setStatus(d.ticket_id, 'dispatched', `Sent to ${d.vendor_name}${edited ? ' (edited by you)' : ''}`);
-  S.addNote(d.ticket_id, `Dispatch ${edited ? '(your edited version) ' : ''}approved and sent to ${d.vendor_name}${via ? ` by ${via}` : ''}. (Demo: nothing was actually sent.) If they haven't replied in ${hours} hours, this work order comes back to the top of your list.`);
+  if (live) textVendor(d.ticket_id, d.vendor_name, channels, text);
+  S.addNote(d.ticket_id, `Dispatch ${edited ? '(your edited version) ' : ''}approved${live ? '' : ' (Demo: nothing was actually sent.)'}${live ? ` and being texted to ${d.vendor_name}${via ? ` (${via})` : ''}` : ` for ${d.vendor_name}`}. If they haven't replied in ${hours} hours, this work order comes back to the top of your list.`);
+}
+
+/** Texts the vendor's primary phone numbers and records what happened on the job. Email isn't connected yet. */
+async function textVendor(ticketId, vendorName, channels, text) {
+  const phones = channels.filter((c) => c.label !== 'Email');
+  const results = await Promise.all(phones.map(async (c) => ({ c, r: await sendSms(S.normPhone(c.value), text) })));
+  const sent = results.filter((x) => x.r.ok).map((x) => x.c.label.toLowerCase());
+  const failed = results.filter((x) => !x.r.ok);
+  if (sent.length) S.addNote(ticketId, `Texted ${vendorName} (${sent.join(' and ')}).`);
+  for (const f of failed) S.addNote(ticketId, `The text to ${vendorName}'s ${f.c.label.toLowerCase()} did not go through: ${f.r.error}`);
+  if (!phones.length) S.addNote(ticketId, `${vendorName} is set up for email only, and email sending isn't connected yet. Nothing was sent. Please contact them yourself.`);
+  else if (channels.some((c) => c.label === 'Email')) S.addNote(ticketId, 'Email sending is not connected yet, so only the phone contact was used.');
 }
 
 export function rejectDispatch(id, note) {
@@ -48,16 +64,19 @@ export function redraft(ticketId, note) {
 }
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-export function vendorAccepted(ticketId) {
+export function vendorAccepted(ticketId, confirmedTime) {
   const t = S.getTicket(ticketId);
-  const d = db.prepare("SELECT d.*, v.name AS vendor_name FROM dispatches d JOIN vendors v ON v.id = d.vendor_id WHERE d.ticket_id=? AND d.kind='vendor' AND d.state='approved' ORDER BY d.id DESC LIMIT 1").get(ticketId);
+  const d = db.prepare("SELECT d.*, v.name AS vendor_name FROM dispatches d JOIN vendors v ON v.id = d.vendor_id WHERE d.ticket_id=? AND d.kind='vendor' AND d.state IN ('approved','no_response') ORDER BY d.id DESC LIMIT 1").get(ticketId);
   if (!d || t.status !== 'dispatched') throw fail('No dispatch is waiting on a vendor.');
   db.prepare("UPDATE dispatches SET state='accepted' WHERE id=?").run(d.id);
+  S.resolveFlag(ticketId, 'no_response', 'vendor confirmed');
+  S.resolveFlag(ticketId, 'vendor_reply', 'vendor confirmed');
   const tomorrow = new Date(Date.now() + 86400000);
-  const when = t.urgency === 'emergency' ? 'today, arriving within the hour' : t.urgency === 'urgent' ? `tomorrow (${DAYS[tomorrow.getDay()]}) between 9 and 11 AM` : `${DAYS[new Date(Date.now() + 2 * 86400000).getDay()]} between 1 and 3 PM`;
+  const given = String(confirmedTime || '').trim().slice(0, 120); // the time the vendor really confirmed; blank = demo's made-up time
+  const when = given || (t.urgency === 'emergency' ? 'today, arriving within the hour' : t.urgency === 'urgent' ? `tomorrow (${DAYS[tomorrow.getDay()]}) between 9 and 11 AM` : `${DAYS[new Date(Date.now() + 2 * 86400000).getDay()]} between 1 and 3 PM`);
   S.updateTicket(ticketId, { scheduled_for: when });
   S.setStatus(ticketId, 'scheduled', `${d.vendor_name} confirmed for ${when}`);
-  S.addNote(ticketId, `${d.vendor_name} replied YES (simulated): ${when}.`);
+  S.addNote(ticketId, given ? `${d.vendor_name} confirmed: ${when}.` : `${d.vendor_name} replied YES (simulated): ${when}.`);
   sendToTenant(t, T.scheduled(t.language, d.vendor_name, when));
 }
 

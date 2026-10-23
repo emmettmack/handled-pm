@@ -18,6 +18,7 @@ const FLAG = {
   update: { label: 'New tenant message', icon: MessageSquare, red: false },
   no_response: { label: 'Vendor hasn’t replied', icon: Hourglass, red: true },
   over_limit: { label: 'Over owner’s limit', icon: DollarSign, red: false },
+  vendor_reply: { label: 'Vendor replied', icon: MessageSquare, red: false },
   no_vendor: { label: 'No vendor available', icon: TriangleAlert, red: true },
 };
 export function FlagChip({ flag }) {

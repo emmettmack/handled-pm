@@ -16,6 +16,20 @@ const DRAFT_FIELDS = [
   ['signature', 'Your name and number at the end'],
 ];
 
+function TextingCard() {
+  const [a, setA] = useState(null);
+  useEffect(() => { api.get('/account').then(setA).catch(() => {}); }, []);
+  if (!a) return null;
+  return (
+    <div className="card card-pad">
+      {a.texting.connected
+        ? <p><b>Texting is connected.</b> Tenants text <b>{a.texting.number}</b>.</p>
+        : <p><b>Texting isn't connected on this server.</b> Messages in the demo are simulated.</p>}
+      <p className="hint-small" style={{ marginTop: 8 }}>Account ID (used once to link your number to this account): <code>{a.id}</code></p>
+    </div>
+  );
+}
+
 function CompanyCard() {
   const { status, toast, refreshStatus } = useApp();
   const [c, setC] = useState(null);
@@ -94,6 +108,9 @@ export default function Preferences() {
 
       <div className="group-title">Your company</div>
       <CompanyCard />
+
+      <div className="group-title">Texting</div>
+      <TextingCard />
 
       <div className="group-title">What goes in your vendor drafts</div>
       <DraftCard prefs={prefs} setPrefs={setPrefs} save={save} dirty={dirty} />

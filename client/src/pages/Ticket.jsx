@@ -88,6 +88,24 @@ function Composer({ t, reload }) {
   );
 }
 
+/** Record the time the vendor actually confirmed (from their text or a call); the tenant is told right away. */
+function ConfirmTime({ t, reload }) {
+  const { toast } = useApp();
+  const [when, setWhen] = useState('');
+  const confirm = async () => {
+    try { await api.post(`/tickets/${t.id}/vendor-accepted`, { when }); toast('Scheduled. The tenant has been told.'); await reload(); } catch (e) { toast(e.message, 'err'); }
+  };
+  return (
+    <div className="timer" style={{ marginBottom: 10 }}>
+      <div className="label">Did the vendor confirm a time?</div>
+      <div className="composer-row" style={{ marginTop: 6 }}>
+        <input value={when} onChange={(e) => setWhen(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && when.trim() && confirm()} placeholder="e.g. Tuesday, 9 to 11 AM" />
+        <button className="btn sm primary" disabled={!when.trim()} onClick={confirm}><Check size={14} /> Confirm &amp; tell tenant</button>
+      </div>
+    </div>
+  );
+}
+
 function VendorTimer({ t, reload }) {
   const { toast } = useApp();
   const d = t.active_dispatch;
@@ -164,6 +182,7 @@ const FLAG_UI = {
   no_vendor: { icon: TriangleAlert, title: 'No vendor left to try', tone: 'identity' },
   no_response: { icon: Hourglass, title: 'Vendor hasn’t replied', tone: 'identity' },
   over_limit: { icon: DollarSign, title: 'Over the owner’s limit', tone: '' },
+  vendor_reply: { icon: MessageSquare, title: 'Vendor replied', tone: '' },
 };
 
 function FlagCards({ t, reload }) {
@@ -270,6 +289,7 @@ export default function Ticket({ id }) {
 
           <div className="card card-pad">
             <div className="panel-title">Next step</div>
+            {t.status === 'dispatched' && <ConfirmTime t={t} reload={reload} />}
             {t.status === 'dispatched' && t.active_dispatch && <VendorTimer t={t} reload={reload} />}
             {t.status === 'scheduled' && (
               <div><p style={{ marginBottom: 10 }}>{vendorAttempts.at(-1)?.vendor_name} is scheduled for <b>{t.scheduled_for}</b>.</p><button className="btn primary" onClick={() => act('status', { status: 'in_progress' })}><Play size={15} /> Work has started</button></div>

@@ -8,6 +8,8 @@ import { seed } from './seed.js';
 import { receiveInboundMessage } from './intake.js';
 import { pickScenario } from './scenarios.js';
 import { buildText } from './mockAi.js';
+import { currentAccount } from './accounts.js';
+import { twilioConfigured, twilioNumber } from './sms.js';
 
 export const fail = (msg, status = 400) => Object.assign(new Error(msg), { status });
 
@@ -89,7 +91,7 @@ export const routes = [
   ['POST', '/tickets/:id/redraft', ({ params, body }) => { A.redraft(params.id, body?.note); }],
 
   // ---------- lifecycle ----------
-  ['POST', '/tickets/:id/vendor-accepted', ({ params }) => A.vendorAccepted(params.id)],
+  ['POST', '/tickets/:id/vendor-accepted', ({ params, body }) => A.vendorAccepted(params.id, body?.when)],
   ['POST', '/tickets/:id/skip-timer', ({ params }) => { A.skipTimer(params.id); }],
   ['POST', '/tickets/:id/status', ({ params, body }) => A.advanceStatus(params.id, body.status)],
   ['POST', '/tickets/:id/flags/:type', ({ params, body }) => { A.resolveFlagAction(params.id, params.type, body?.action); }],
@@ -130,6 +132,9 @@ export const routes = [
     const vendor = { name: 'Rivera Plumbing' };
     return { text: buildText({ ...SAMPLE, company: S.getCompany(), prefs }, vendor) };
   }],
+
+  // Which account this is, and whether texting is connected (shown under Preferences so the number can be linked)
+  ['GET', '/account', () => ({ id: currentAccount(), texting: { connected: twilioConfigured(), number: twilioNumber() } })],
 
   ['POST', '/demo/reset', () => { seed(); }],
 ];

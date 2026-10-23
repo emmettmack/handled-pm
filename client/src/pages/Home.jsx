@@ -15,8 +15,8 @@ const FILTERS = [
   ['done', 'Resolved & closed', (t) => ['resolved', 'closed'].includes(t.status)],
 ];
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
-const ATTN_ICON = { identity: ShieldAlert, compensation: DollarSign, update: MessageSquare, no_vendor: TriangleAlert, over_limit: DollarSign, no_response: Hourglass };
-const ATTN_TITLE = { identity: 'Confirm who this is', compensation: 'Tenant asked about compensation', update: 'Tenant sent a new message', no_vendor: 'No vendor left to try', over_limit: 'Over the owner’s limit, check with them', no_response: 'Vendor hasn’t replied' };
+const ATTN_ICON = { identity: ShieldAlert, compensation: DollarSign, update: MessageSquare, no_vendor: TriangleAlert, over_limit: DollarSign, no_response: Hourglass, vendor_reply: MessageSquare };
+const ATTN_TITLE = { identity: 'Confirm who this is', compensation: 'Tenant asked about compensation', update: 'Tenant sent a new message', no_vendor: 'No vendor left to try', over_limit: 'Over the owner’s limit, check with them', no_response: 'Vendor hasn’t replied', vendor_reply: 'Vendor replied' };
 const SORTS = [['urgency', 'Urgency'], ['newest', 'Newest request'], ['oldest', 'Oldest request']];
 
 /** Orders any list by urgency or by when the request came in. `get` returns { urgency, created_at } for an item. */
