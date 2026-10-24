@@ -9,7 +9,6 @@ async function request(path, opts = {}) {
   const token = await window.Clerk?.session?.getToken(); // set when signed in with Clerk
   const res = await fetch('/api' + path, { headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, ...opts });
   const data = await res.json().catch(() => ({}));
-  if (res.status === 401) window.Clerk?.signOut(); // expired session: back to the sign-in screen
   if (!res.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
   return data;
 }

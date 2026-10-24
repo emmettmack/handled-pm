@@ -66,7 +66,7 @@ function EmergencyBanner({ emergencies, company, onHide }) {
 export default function App({ accountSlot = null }) {
   useTick();
   const route = useHash();
-  const [dash, refresh] = usePoll(() => api.get('/dashboard'), 3000);
+  const [dash, refresh, dashError] = usePoll(() => api.get('/dashboard'), 3000);
   const [status, refreshStatus] = usePoll(() => api.get('/status'), 30000);
   const [, bump] = useState(0);
   const [toasts, setToasts] = useState([]);
@@ -124,7 +124,11 @@ export default function App({ accountSlot = null }) {
         </div>
       </header>
       {dash && !hidden && <EmergencyBanner emergencies={dash.emergencies} company={status?.company} onHide={() => bump((n) => n + 1)} />}
-      <main className="page">{dash ? page : <p className="empty">Loading your maintenance line…</p>}</main>
+      <main className="page">
+        {dash ? page : dashError ? (
+          <div className="card empty"><b>We couldn't open your workspace</b>{dashError}<span style={{ marginTop: 8 }}>{accountSlot}</span></div>
+        ) : <p className="empty">Loading your maintenance line…</p>}
+      </main>
       <div className="toasts">
         {toasts.map((t) => (
           <div key={t.id} className={`toast ${t.kind === 'err' ? 'err' : ''}`}>{t.msg}</div>
