@@ -2,7 +2,7 @@
 
 ## Unreleased: Phase 1 (branch `phase-1-bugs`)
 
-Not merged, not deployed. See DECISIONS.md D-011: this phase has not been fully tested.
+Not merged, not deployed. Tested: 48 automated tests pass, plus a browser click-through of the demo and a new real account.
 
 ### Fixed
 - **Duplicate work orders.** Texts from the same number now merge into one work order when they are about the same problem; "thanks" no longer opens a work order; "it's leaking again" soon after a close reopens it as a callback; the same problem days later opens a new work order linked to the old one. Twilio retries and double deliveries are recognised by message id and handled once. The webhook now answers immediately and does the work afterwards, so slow photo downloads no longer trigger retries.
@@ -19,3 +19,9 @@ Not merged, not deployed. See DECISIONS.md D-011: this phase has not been fully 
 - Forward-only database migrations (6 so far) with a copy of the old file taken before each upgrade; the browser demo uses the same migrations.
 - Test harness and tests (`npm test`).
 - `SETUP_NEEDED.md`.
+
+### Found and fixed during the test run
+- The Traditional versus Simplified Chinese check treated two characters that are written the same in both scripts as Simplified-only, so some Traditional text was misread.
+- The sample AI's "another language" check still counted Korean, Chinese, Vietnamese and Tagalog as unsupported, so those tenants were told "my primary language is English" instead of receiving the reply in their language.
+- Converting old vendor rates first overwrote the original wording; it is now kept in the vendor's rate notes.
+- Added tests for rates, company names, the work-order view, translations, language detection, STOP/HELP and delivery reports.

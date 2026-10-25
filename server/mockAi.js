@@ -51,8 +51,9 @@ const EMERGENCY_REPLY = {
   heat: ['I\'m sorry you\'re cold. Please use blankets and keep warm in one room, and don\'t use the oven for heat. I\'m alerting the office and getting a technician out as soon as possible.', 'Lamento que tenga frío. Use cobijas y quédense en un solo cuarto, y no use el horno para calentar. Estoy avisando a la oficina y buscando un técnico lo antes posible.'],
 };
 
-// Languages other than English/Spanish: any non-Latin script, or a few very common words in other Latin-script languages.
-const OTHER_LANGUAGE = /[\u0400-\u04FF\u0590-\u06FF\u0900-\u0DFF\u0E00-\u0E7F\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]|\b(bonjour|merci|fuite|évier|s'il vous plaît|olá|obrigad[oa]|vazamento|torneira|hallo|danke|wasserhahn|undicht|ciao|grazie|perdita|rubinetto|salamat|po\b|tubig|xin chào|cảm ơn)\b/i;
+// A language we do NOT support: another script (Russian, Hebrew, Arabic, Hindi, Thai, Japanese...) or a few very common
+// words in other Latin-script languages. Korean, Chinese, Armenian, Vietnamese and Tagalog are supported, so they are not here.
+const OTHER_LANGUAGE = /[Ѐ-ӿ֐-ۿऀ-෿฀-๿぀-ヿ]|\b(bonjour|merci|fuite|évier|s'il vous plaît|olá|obrigad[oa]|vazamento|torneira|hallo|danke|wasserhahn|undicht|ciao|grazie|perdita|rubinetto)\b/i;
 export const detectOtherLanguage = (text) => OTHER_LANGUAGE.test(text);
 
 /** A fast keyword read of what kind of problem a text describes. Used to decide whether two texts are about the same thing. */
@@ -64,8 +65,9 @@ export function quickCategory(text) {
 }
 
 // Traditional-only and Simplified-only characters that are common in everyday messages: enough to tell the two apart.
-const TRADITIONAL = /[體學說話這個們麼來沒為與開關點樣還讓請問題電熱壞漏壓門鎖廚廁馬桶]/;
-const SIMPLIFIED = /[体学说话这个们么来没为与开关点样还让请问题电热坏漏压门锁厨厕马桶]/;
+// (only characters written differently in the two scripts; 漏 and 桶, for example, are identical, so they are left out)
+const TRADITIONAL = /[體學說話這個們麼來沒為與開關點樣還讓請問題電熱壞壓門鎖廚廁馬]/;
+const SIMPLIFIED = /[体学说话这个们么来没为与开关点样还让请问题电热坏压门锁厨厕马]/;
 const TAGALOG = /\b(po|opo|ako|ang|ng|sa|hindi|tubig|sira|bahay|pakiusap|salamat|tulong|may|ay|na|mga|ito|namin|kayo|pwede|paki)\b/gi;
 const VIETNAMESE = /[ăâđêôơưĂÂĐÊÔƠƯạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/;
 

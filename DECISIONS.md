@@ -4,9 +4,9 @@ Product and technical decisions made while planning, each with the reason. Newer
 
 ## Phase 1 (bugs)
 
-**D-011. Phase 1 code was written without running the test suite, at the owner's request.**
-The owner asked to save credits and only make code changes. A test harness and tests exist (`npm test`), but they were last run partway through Phase 1: 33 of 35 passed, and the two failures were fixed in code afterwards without a re-run. Everything added after that point is untested. **Run `npm test` and click through the app before merging or deploying this branch.**
-*Why:* it was an explicit instruction; the cost is that regressions are not yet ruled out.
+**D-011. Phase 1 was first written without running the test suite (owner request), then tested and fixed.**
+The owner asked to save credits and only make code changes, then asked for a full test run and browser click-through. That found and fixed three real bugs (see CHANGELOG). The suite is now 48 tests and all pass.
+*Why:* it was an explicit instruction; the cost was that three bugs sat undetected until the test run.
 
 **D-012. Replies in languages outside English and Spanish are checked through an English copy, and fail closed.**
 The money-and-fault filter can only read English and Spanish. For every other language the model must also return an English translation of its reply; if that is missing, or it promises money or fault, the fixed neutral message in the tenant's language is sent instead.

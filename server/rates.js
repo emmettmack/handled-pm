@@ -40,9 +40,11 @@ export function parseLegacyRate(text) {
 /** Fill the structured fields from old free text, only where nothing structured exists yet. */
 export function backfillVendorRates(d) {
   const rows = d.prepare("SELECT id, rate FROM vendors WHERE rate_hourly_cents IS NULL AND rate_flat_cents IS NULL AND rate_trip_cents IS NULL AND rate IS NOT NULL AND rate != ''").all();
-  const update = d.prepare('UPDATE vendors SET rate_hourly_cents = ?, rate_flat_cents = ?, rate_trip_cents = ?, rate_notes = ? WHERE id = ?');
+  const update = d.prepare('UPDATE vendors SET rate_hourly_cents = ?, rate_flat_cents = ?, rate_trip_cents = ?, rate_notes = ?, rate = ? WHERE id = ?');
   for (const r of rows) {
     const p = parseLegacyRate(r.rate);
-    update.run(p.hourly, p.flat, p.trip, p.notes, r.id);
+    // when the old text was understood, show it in the standard wording; otherwise leave it exactly as it was
+    const shown = p.hourly || p.flat || p.trip ? formatRate({ rate_hourly_cents: p.hourly, rate_flat_cents: p.flat, rate_trip_cents: p.trip }) : r.rate;
+    update.run(p.hourly, p.flat, p.trip, p.notes || r.rate, shown, r.id); // the original wording is always kept in the notes
   }
 }

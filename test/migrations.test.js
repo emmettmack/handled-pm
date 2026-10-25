@@ -35,7 +35,10 @@ for (const name of ['schema-current.sql', 'schema-oldest.sql']) {
     d.prepare("INSERT INTO tickets (title, status) VALUES ('Leaking sink', 'triaged')").run();
     applyMigrations(d);
     assert.equal(d.prepare('SELECT name FROM company').get().name, 'Acme Rentals');
-    assert.equal(d.prepare('SELECT rate FROM vendors').get().rate, '$95/hr');
+    const v = d.prepare('SELECT rate, rate_hourly_cents, rate_notes FROM vendors').get();
+    assert.equal(v.rate_hourly_cents, 9500, 'the old text was read into the structured field');
+    assert.equal(v.rate, '$95 per hour', 'and is shown in the standard wording');
+    assert.equal(v.rate_notes, '$95/hr', 'but the original wording is never lost');
     assert.equal(d.prepare('SELECT title FROM tickets').get().title, 'Leaking sink');
     for (const c of ['personal_phone', 'primary_company', 'primary_personal', 'primary_email']) assert.ok(cols(d, 'vendors').includes(c), `vendors.${c}`);
     assert.ok(cols(d, 'properties').includes('company'));
