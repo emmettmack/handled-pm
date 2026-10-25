@@ -9,10 +9,11 @@ import * as A from './actions.js';
 import { seed } from './seed.js';
 import { routes } from './routes.js';
 import { authenticate, authEnabled } from './auth.js';
+import { isDemo } from './mode.js';
 import { inboundSms } from './twilio.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-if (!authEnabled() && !S.getCompany()) seed(); // sample data is for local development only; real accounts start empty
+if (isDemo() && !S.getCompany()) seed(); // sample data is for local development only; real accounts start empty
 
 const app = express();
 app.use(express.urlencoded({ extended: false })); // Twilio posts form-encoded webhooks
@@ -61,4 +62,4 @@ app.listen(port, () => {
 A.startScheduler();
 
 // Public demo hosting: wipe visitor changes and restore the sample data every N hours.
-if (!authEnabled() && Number(process.env.DEMO_RESET_HOURS) > 0) setInterval(() => seed(), Number(process.env.DEMO_RESET_HOURS) * 3600000);
+if (isDemo() && Number(process.env.DEMO_RESET_HOURS) > 0) setInterval(() => seed(), Number(process.env.DEMO_RESET_HOURS) * 3600000);

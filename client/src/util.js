@@ -25,6 +25,8 @@ export const TRADES = ['plumber', 'electrician', 'HVAC', 'handyman', 'locksmith'
 export const TRADE_LABELS = { plumber: 'Plumbers', electrician: 'Electricians', HVAC: 'Heating & cooling', handyman: 'Handymen', locksmith: 'Locksmiths', appliance: 'Appliance repair', general: 'General contractors', other: 'Other' };
 export const TRADE_OPTION_LABELS = { plumber: 'Plumber', electrician: 'Electrician', HVAC: 'Heating & cooling', handyman: 'Handyman', locksmith: 'Locksmith', appliance: 'Appliance repair', general: 'General contractor', other: 'Other' };
 export const URGENCY_RANK = { emergency: 0, urgent: 1, routine: 2 };
+/** A single home uses the unit name "Main", which reads as "Main house". */
+export const unitName = (n) => (/^main( house)?$/i.test(String(n ?? '').trim()) ? 'Main house' : `Unit ${n}`);
 export const money = (n) => (n == null ? 'n/a' : '$' + Number(n).toLocaleString());
 
 /** Re-render every `ms` so "5 min ago" labels stay fresh between data polls. */

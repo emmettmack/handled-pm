@@ -42,7 +42,7 @@ function Stat({ n, label, tone }) {
 }
 
 export default function Home() {
-  const { dash, refresh, toast, status, bannerHidden } = useApp();
+  const { dash, refresh, toast, status, bannerHidden, demo, setup } = useApp();
   const [filter, setFilter] = useState('open');
   const [sort, setSort] = useState('urgency');
   const [showSim, setShowSim] = useState(false);
@@ -77,13 +77,24 @@ export default function Home() {
           <h1>{greeting()}, {status?.company?.pm_name?.split(' ')[0] || 'there'}</h1>
           <p>{sub}</p>
         </div>
-        <div className="btn-row">
+        {demo && <div className="btn-row">
           <button className="btn" onClick={() => setShowSim(true)}><PenLine size={15} /> Write your own</button>
           <button className="btn primary lg" onClick={quickSimulate} disabled={simulating}>
             {simulating ? <Loader2 size={16} className="spin" /> : <Zap size={16} />} Simulate incoming text
           </button>
-        </div>
+        </div>}
       </div>
+
+      {!demo && setup && (setup.counts.properties === 0 || setup.counts.tenants === 0 || setup.counts.vendors === 0) && (
+        <div className="card checklist">
+          <h3>Finish setting up</h3>
+          <ul>
+            <li className={setup.counts.properties ? 'done' : ''}><a href="#/properties">Add your {status?.homeMode ? 'home' : 'first property'}</a></li>
+            <li className={setup.counts.tenants ? 'done' : ''}><a href="#/tenants">Add a tenant</a></li>
+            <li className={setup.counts.vendors ? 'done' : ''}><a href="#/vendors">Add a vendor you trust</a></li>
+          </ul>
+        </div>
+      )}
 
       {bannerHidden && emergencies.map((t) => (
         <div key={t.id} className="card headline-emergency" onClick={() => go(`/tickets/${t.id}`)}>
@@ -107,7 +118,7 @@ export default function Home() {
           <span className="sub">Review, edit if you like, and approve. Nothing goes out until you do.</span>
         </div>
         {waiting === 0 ? (
-          <div className="card empty"><PartyPopper size={26} style={{ color: 'var(--brand)' }} /><b>You're all caught up</b>New tenant texts will show up here as drafts, ready to approve.</div>
+          <div className="card empty"><PartyPopper size={26} style={{ color: 'var(--brand)' }} /><b>You're all caught up</b>{demo ? 'New tenant texts will show up here as drafts, ready to approve.' : 'When a tenant texts your line, a finished draft will show up here for you to approve.'}</div>
         ) : (
           <>
             {approvals.length > 1 && <SortBar sort={sort} setSort={setSort} />}
@@ -172,7 +183,7 @@ export default function Home() {
         </div>
       </section>
 
-      {showSim && <SimulateModal onClose={() => setShowSim(false)} />}
+      {demo && showSim && <SimulateModal onClose={() => setShowSim(false)} />}
     </>
   );
 }

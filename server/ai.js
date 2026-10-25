@@ -2,6 +2,7 @@
 // With no key set, every call is answered by the rule-based stand-in in mockAi.js ("demo mode").
 import Anthropic from '@anthropic-ai/sdk';
 import * as mock from './mockAi.js';
+import { unitName } from './labels.js';
 
 export const MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
 export const isMock = () => !process.env.ANTHROPIC_API_KEY?.trim();
@@ -75,7 +76,7 @@ TASK: Read the whole conversation and return ONLY a JSON object (no prose, no co
  "identity_claim": { "name": "name the texter gave or null", "unit": "unit number the texter gave or null" }
 }`;
       const user = JSON.stringify({
-        unit: ctx.unit ? `Unit ${ctx.unit.number}, ${ctx.unit.address} (${ctx.unit.neighborhood})` : 'unknown (number not on file)',
+        unit: ctx.unit ? `${unitName(ctx.unit.number)}, ${ctx.unit.address}${ctx.unit.neighborhood ? ` (${ctx.unit.neighborhood})` : ''}` : 'unknown (number not on file)',
         tenant_on_file: ctx.tenant ? ctx.tenant.name : null,
         phone_matches_tenant_on_file: ctx.verified,
         follow_up_rounds_used: ctx.rounds,
@@ -124,7 +125,7 @@ Signed by ${ctx.company.pm_name}, ${ctx.company.name}, ${ctx.company.phone}.${ct
         work_order: t.id,
         title: t.title, category: t.category, urgency: t.urgency, urgency_reason: t.reasoning,
         summary: t.summary, diagnosis: t.diagnosis, estimated_cost: t.cost_estimate, access_notes: t.access_notes,
-        address: ctx.unit ? `${ctx.unit.address}, Unit ${ctx.unit.number} (${ctx.unit.neighborhood})` : null,
+        address: ctx.unit ? `${ctx.unit.address}, ${unitName(ctx.unit.number)}${ctx.unit.neighborhood ? ` (${ctx.unit.neighborhood})` : ''}` : null,
         tenant: ctx.tenant ? { name: ctx.tenant.name, phone: ctx.tenant.phone } : null,
         photos_or_videos_attached: ctx.mediaCount || 0,
         candidates: ctx.vendors.map((v) => ({ id: v.id, name: v.name, trade: v.trade, preferred: !!v.preferred, rate: v.rate, notes: v.notes })),

@@ -1,6 +1,7 @@
 // Rule-based stand-in for the AI, used when ANTHROPIC_API_KEY is not set.
 // Returns the same shapes as the real model calls in ai.js so the rest of the app is unaware.
 import { SCENARIOS, pickScenario } from './scenarios.js';
+import { unitName } from './labels.js';
 
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 const has = (text, re) => re.test(text);
@@ -96,7 +97,7 @@ export async function triage(ctx) {
 
   const [diag, steps] = DIAGNOSIS[category];
   const tradeWord = ({ plumbing: ['plumber', 'plomero'], electrical: ['electrician', 'electricista'], HVAC: ['HVAC technician', 'técnico de aire/calefacción'], appliance: ['appliance technician', 'técnico de electrodomésticos'], lockout: ['locksmith', 'cerrajero'], other: ['handyman', 'técnico de mantenimiento'] }[category])[li];
-  const where = ctx.unit ? `Unit ${ctx.unit.number}, ${ctx.unit.address}` : 'unit not yet confirmed';
+  const where = ctx.unit ? `${unitName(ctx.unit.number)}, ${ctx.unit.address}` : 'unit not yet confirmed';
   const sentence = tenantText.replace(/\s+/g, ' ').trim().slice(0, 220);
   const title = emergency?.title || ({
     plumbing: 'Plumbing issue', electrical: 'Electrical issue', HVAC: 'Heating / cooling issue',
@@ -151,6 +152,8 @@ export async function draftDispatch(ctx) {
 
 export function buildText(ctx, v) {
   const t = ctx.ticket, u = ctx.unit, tenant = ctx.tenant, co = ctx.company;
+  // renting out your own home: speak as the owner, not as a management company
+  const intro = ctx.homeMode ? `this is ${co.pm_name}, the owner of ${u?.address || 'the house'}.` : `this is ${co.pm_name} at ${co.name}.`;
   const p = ctx.prefs.draft;
   const urgencyLine = t.urgency === 'emergency' ? 'EMERGENCY, please respond immediately' : t.urgency === 'urgent' ? 'URGENT, same/next-day if possible' : 'Routine, next available appointment';
   const access = ctx.accessAllowed
@@ -161,7 +164,7 @@ export function buildText(ctx, v) {
     p.priority && `Priority: ${urgencyLine}`,
     `Job: ${t.summary}`,
     p.cause && `Likely cause: ${t.diagnosis}`,
-    p.address && `Address: ${u?.address}, Unit ${u?.number} (${u?.neighborhood})`,
+    p.address && `Address: ${u?.address}, ${unitName(u?.number)}${u?.neighborhood ? ` (${u.neighborhood})` : ''}`,
     (who || (p.language && t.language === 'es')) && `Tenant: ${who}${p.language && t.language === 'es' ? `${who ? ' ' : ''}(prefers Spanish)` : ''}`.trim(),
     // an unverified texter is a safety rule, so access guidance is shown even if switched off
     (p.access || !ctx.accessAllowed) && access,
@@ -170,7 +173,7 @@ export function buildText(ctx, v) {
   ].filter(Boolean).join('\n');
   const ask = `Please confirm you can take this job and tell us when you can be there.${p.cost_cap ? ` Call us before going over $${p.cost_cap_amount || t.cost_estimate || 500}.` : ''}`;
   const sign = p.signature ? `\n\nThank you,\n${co.pm_name}, ${co.name} · ${co.phone}` : '';
-  return `Hi ${v.name} team, this is ${co.pm_name} at ${co.name}.${p.work_order ? ` New work order #${t.id}.` : ''}${p.intro.trim() ? ` ${p.intro.trim()}` : ''}\n\n${lines}\n\n${ask}${sign}`;
+  return `Hi ${v.name} team, ${intro}${p.work_order ? ` New work order #${t.id}.` : ''}${p.intro.trim() ? ` ${p.intro.trim()}` : ''}\n\n${lines}\n\n${ask}${sign}`;
 }
 
 export async function generateTenantMessage({ scenario, language }) {

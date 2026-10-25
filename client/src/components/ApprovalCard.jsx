@@ -3,7 +3,7 @@ import { Check, Pencil, X, Sparkles, Wrench, Send, DollarSign, Camera } from 'lu
 import { api } from '../api.js';
 import { useApp, go } from '../ctx.jsx';
 import { UrgencyBadge } from './Badges.jsx';
-import { timeAgo, CATEGORY_LABELS } from '../util.js';
+import { timeAgo, CATEGORY_LABELS, unitName } from '../util.js';
 
 /** One drafted vendor message waiting for the PM. Nothing sends until Approve. */
 export default function ApprovalCard({ item, compact = false }) {
@@ -26,7 +26,7 @@ export default function ApprovalCard({ item, compact = false }) {
   const reject = () => run(() => api.post(`/dispatches/${item.id}/reject`, { note }), 'Draft rejected. Nothing was sent.');
 
   const overLimit = t.flags?.find((f) => f.type === 'over_limit' && !f.resolved);
-  const unit = t.unit ? `Unit ${t.unit.number} · ${t.unit.property_name}` : 'Unit not confirmed';
+  const unit = t.unit ? `${unitName(t.unit.number)} · ${t.unit.property_name}` : 'Unit not confirmed';
 
   return (
     <div className={`card approval ${t.urgency === 'emergency' ? 'emergency' : ''}`}>

@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { useApp, go } from '../ctx.jsx';
 import ApprovalCard from '../components/ApprovalCard.jsx';
 import { UrgencyBadge, StatusPill } from '../components/Badges.jsx';
-import { usePoll, timeAgo, clock, dayTime, CATEGORY_LABELS, STATUS_LABELS, money } from '../util.js';
+import { usePoll, timeAgo, clock, dayTime, CATEGORY_LABELS, STATUS_LABELS, money, unitName } from '../util.js';
 
 const QUICK = {
   plumbing: ["Kitchen sink, it's leaking under the cabinet", 'Bathroom sink, just draining slowly. No leak.'],
@@ -44,8 +44,8 @@ function Thread({ t }) {
 }
 
 function Composer({ t, reload }) {
-  const { toast } = useApp();
-  const [mode, setMode] = useState('tenant');
+  const { toast, demo } = useApp();
+  const [mode, setMode] = useState(demo ? 'tenant' : 'pm'); // real accounts only message the tenant as themselves
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const closed = ['resolved', 'closed'].includes(t.status);
@@ -70,10 +70,10 @@ function Composer({ t, reload }) {
   return (
     <div className={`composer ${waiting && mode === 'tenant' ? 'waiting' : ''}`}>
       <div className="tabs">
-        <button className={`tab ${mode === 'tenant' ? 'on' : ''}`} onClick={() => setMode('tenant')}>Reply as {t.tenant?.name?.split(' ')[0] || 'the texter'} <span className="demo-tag">demo</span></button>
+        {demo && <button className={`tab ${mode === 'tenant' ? 'on' : ''}`} onClick={() => setMode('tenant')}>Reply as {t.tenant?.name?.split(' ')[0] || 'the texter'} <span className="demo-tag">demo</span></button>}
         <button className={`tab ${mode === 'pm' ? 'on' : ''}`} onClick={() => setMode('pm')}>Message tenant as you</button>
       </div>
-      {waiting && mode === 'tenant' && (
+      {demo && waiting && mode === 'tenant' && (
         <div className="hint"><MessageSquare size={14} /> {idCheck ? 'Waiting for the texter to give their name and unit.' : `Waiting on ${t.tenant?.name?.split(' ')[0] || 'the tenant'}.`} Type their reply to keep the demo going.</div>
       )}
       {mode === 'tenant' && quick.length > 0 && (
@@ -107,7 +107,7 @@ function ConfirmTime({ t, reload }) {
 }
 
 function VendorTimer({ t, reload }) {
-  const { toast } = useApp();
+  const { toast, demo } = useApp();
   const d = t.active_dispatch;
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const i = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(i); }, []);
@@ -121,10 +121,10 @@ function VendorTimer({ t, reload }) {
       <div className="big mono">{String(Math.floor(left / 3600)).padStart(2, '0')}:{String(Math.floor((left % 3600) / 60)).padStart(2, '0')}:{String(left % 60).padStart(2, '0')}</div>
       <div className="bar-track"><div style={{ width: `${pct}%` }} /></div>
       <p style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 10 }}>If they haven't replied by then, this work order comes back to the top of your list. Nothing is sent automatically. You can change the wait in Preferences.</p>
-      <div className="btn-row">
+      {demo && <div className="btn-row">
         <button className="btn sm primary" onClick={() => act('vendor-accepted', 'Vendor confirmed')}><Check size={14} /> Simulate: vendor says YES</button>
         <button className="btn sm" onClick={() => act('skip-timer', 'Skipped ahead')}><FastForward size={14} /> Simulate: no reply in time</button>
-      </div>
+      </div>}
     </div>
   );
 }
@@ -161,7 +161,7 @@ function MediaCard({ t, reload }) {
         </div>
       )}
       <input ref={input} type="file" accept="image/*,video/*" hidden onChange={add} />
-      <button className="btn sm" style={{ marginTop: 10 }} onClick={() => input.current.click()}><Plus size={14} /> Add a photo or video <span className="demo-tag">demo</span></button>
+      <button className="btn sm" style={{ marginTop: 10 }} onClick={() => input.current.click()}><Plus size={14} /> Add a photo or video</button>
       {open && (
         <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && setOpen(null)}>
           <div className="lightbox">
@@ -218,7 +218,7 @@ function FlagCards({ t, reload }) {
 }
 
 export default function Ticket({ id }) {
-  const { refresh, toast } = useApp();
+  const { refresh, toast, demo } = useApp();
   const [t, reloadDetail, error] = usePoll(() => api.get(`/tickets/${id}`), 2000, [id]);
   const [notes, setNotes] = useState(null);
   const reload = async () => { await Promise.all([reloadDetail(), refresh()]); };
@@ -234,7 +234,7 @@ export default function Ticket({ id }) {
   const needsRedraft = t.status === 'triaged' && !pending && !blocked && t.dispatches.length > 0 && t.dispatches[t.dispatches.length - 1].state === 'rejected';
   const isEmergency = t.urgency === 'emergency' && !['resolved', 'closed'].includes(t.status);
   const vendorAttempts = t.dispatches.filter((d) => d.kind === 'vendor');
-  const unit = t.unit ? `Unit ${t.unit.number} · ${t.unit.property_name}, ${t.unit.neighborhood}` : 'Unit not confirmed';
+  const unit = t.unit ? `${unitName(t.unit.number)} · ${t.unit.property_name}${t.unit.neighborhood ? `, ${t.unit.neighborhood}` : ''}` : 'Unit not confirmed';
 
   return (
     <>
@@ -255,9 +255,9 @@ export default function Ticket({ id }) {
         <div className="stack">
           {isEmergency && (
             <div className="card card-pad escalation">
-              <div className="panel-title"><Siren size={14} /> Emergency escalation <span className="demo-tag">demo only</span></div>
+              <div className="panel-title"><Siren size={14} /> Emergency {demo && <span className="demo-tag">demo only</span>}</div>
               <ol>
-                <li><b>Page the property manager by phone</b>, repeating until acknowledged. <span style={{ opacity: 0.75 }}>(Demo: no call is placed.)</span></li>
+                {demo && <li><b>Page the property manager by phone</b>, repeating until acknowledged. <span style={{ opacity: 0.75 }}>(Demo: no call is placed.)</span></li>}
                 <li>Tenant was sent safety instructions.</li>
                 <li>{pending ? 'A dispatch is drafted below. Approve it to send help.' : 'Dispatch is on its way.'}</li>
               </ol>

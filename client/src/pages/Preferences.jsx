@@ -24,7 +24,7 @@ function TextingCard() {
     <div className="card card-pad">
       {a.texting.connected
         ? <p><b>Texting is connected.</b> Tenants text <b>{a.texting.number}</b>.</p>
-        : <p><b>Texting isn't connected on this server.</b> Messages in the demo are simulated.</p>}
+        : <p><b>Texting isn't connected yet.</b> Your number will show here once it's ready.</p>}
       <p className="hint-small" style={{ marginTop: 8 }}>Account ID (used once to link your number to this account): <code>{a.id}</code></p>
     </div>
   );
@@ -88,7 +88,7 @@ function DraftCard({ prefs, setPrefs, save, dirty }) {
 }
 
 export default function Preferences() {
-  const { toast, refresh } = useApp();
+  const { toast, refresh, demo } = useApp();
   const [saved, setSaved] = useState(null);
   const [prefs, setPrefs] = useState(null);
   useEffect(() => { api.get('/prefs').then((p) => { setSaved(p); setPrefs(p); }); }, []);
@@ -126,11 +126,11 @@ export default function Preferences() {
         <p className="hint-small" style={{ marginTop: 10 }}>Nothing is sent automatically. You'll see it flagged and can call the vendor or draft a message to a different one.</p>
       </div>
 
-      <div className="group-title">Demo tools</div>
+      {demo && <><div className="group-title">Demo tools</div>
       <div className="card card-pad btn-row">
         <button className="btn" onClick={reset}><RotateCcw size={15} /> Reset demo data</button>
         <span style={{ color: 'var(--muted)', fontSize: 13.5 }}>Puts the sample work orders back to how they looked on first launch, with fresh timestamps.</span>
-      </div>
+      </div></>}
     </>
   );
 }

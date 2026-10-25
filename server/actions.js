@@ -6,6 +6,7 @@ import { enqueue, draftAndQueue } from './triage.js';
 import { sendToTenant } from './outbound.js';
 import { T } from './templates.js';
 import { sendSms, twilioConfigured } from './sms.js';
+import { isDemo } from './mode.js';
 
 const fail = (msg) => Object.assign(new Error(msg), { status: 400 });
 
@@ -25,13 +26,14 @@ export function approveDispatch(id, editedText) {
   const channels = S.vendorChannels(S.getVendor(d.vendor_id));
   const via = channels.map((c) => c.label.toLowerCase()).join(' and ');
   const live = twilioConfigured();
+  const demo = isDemo();
   db.prepare("UPDATE dispatches SET state='approved', text=?, edited=?, decided_at=?, response_due_at=? WHERE id=?").run(text, edited, now, S.minsFromNow(hours * 60), id);
   S.updateTicket(d.ticket_id, { vendor_id: d.vendor_id });
   S.resolveFlag(d.ticket_id, 'no_response', 'redispatched');
   S.resolveFlag(d.ticket_id, 'over_limit', 'approved');
   S.setStatus(d.ticket_id, 'dispatched', `Sent to ${d.vendor_name}${edited ? ' (edited by you)' : ''}`);
   if (live) textVendor(d.ticket_id, d.vendor_name, channels, text);
-  S.addNote(d.ticket_id, `Dispatch ${edited ? '(your edited version) ' : ''}approved${live ? '' : ' (Demo: nothing was actually sent.)'}${live ? ` and being texted to ${d.vendor_name}${via ? ` (${via})` : ''}` : ` for ${d.vendor_name}`}. If they haven't replied in ${hours} hours, this work order comes back to the top of your list.`);
+  S.addNote(d.ticket_id, `Dispatch ${edited ? '(your edited version) ' : ''}approved${live ? '' : demo ? ' (Demo: nothing was actually sent.)' : ' (Texting is not connected yet, so nothing was sent. Please contact the vendor yourself.)'}${live ? ` and being texted to ${d.vendor_name}${via ? ` (${via})` : ''}` : ` for ${d.vendor_name}`}. If they haven't replied in ${hours} hours, this work order comes back to the top of your list.`);
 }
 
 /** Texts the vendor's primary phone numbers and records what happened on the job. Email isn't connected yet. */

@@ -1,5 +1,6 @@
 // Data access + small helpers. Everything the rest of the server needs from SQLite lives here.
 import { db } from './db.js';
+import { unitName } from './labels.js';
 
 export const nowIso = () => new Date().toISOString();
 export const minsAgo = (m) => new Date(Date.now() - m * 60000).toISOString();
@@ -78,6 +79,22 @@ export function setPrefs(p) {
   db.prepare("INSERT INTO settings (key, value) VALUES ('prefs', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(JSON.stringify({ draft, vendor_followup_hours: hours }));
   return getPrefs();
 }
+
+// ---------- first-run setup (mode, whether the tutorial is finished) ----------
+// mode 'manager' = managing properties for other owners; 'home' = renting out your own home.
+export function getSetup() {
+  let saved = {};
+  try { saved = JSON.parse(db.prepare("SELECT value FROM settings WHERE key = 'setup'").get()?.value || '{}'); } catch { /* use defaults */ }
+  return { mode: 'manager', done: false, ...saved };
+}
+export function setSetup(patch) {
+  const next = { ...getSetup() };
+  if (patch.mode === 'home' || patch.mode === 'manager') next.mode = patch.mode;
+  if (typeof patch.done === 'boolean') next.done = patch.done;
+  db.prepare("INSERT INTO settings (key, value) VALUES ('setup', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(JSON.stringify(next));
+  return next;
+}
+export const isHomeMode = () => getSetup().mode === 'home';
 
 // ---------- photos and videos from tenants ----------
 export const addMedia = (ticketId, { kind = 'photo', name = '', url, source = 'upload', at }) =>
@@ -213,7 +230,7 @@ export function listBrief() {
       id: t.id, title: t.title, category: t.category, urgency: t.urgency, status: t.status,
       created_at: t.created_at, updated_at: t.updated_at, language: t.language,
       tenant_name: tenant?.name || null, from_phone: t.from_phone,
-      unit_label: unit ? `Unit ${unit.number} · ${unit.property_name}` : null,
+      unit_label: unit ? `${unitName(unit.number)} · ${unit.property_name}` : null,
       media_count: mediaCount(id),
       flags: t.flags.filter((f) => !f.resolved),
       emergency_ack: t.emergency_ack, cost_estimate: t.cost_estimate,
@@ -251,7 +268,7 @@ export function db_tenant(id) {
 export function allTenantsWithUnits() {
   return db
     .prepare(
-      `SELECT t.*, u.number AS unit_number, p.name AS property_name
+      `SELECT t.*, u.number AS unit_number, u.property_id, p.name AS property_name
        FROM tenants t JOIN units u ON u.id = t.unit_id JOIN properties p ON p.id = u.property_id`,
     )
     .all();

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { currentAccount, LOCAL_ACCOUNT } from './accounts.js';
+import { isDemo } from './mode.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
@@ -88,7 +89,7 @@ function forAccount(id) {
   d.pragma('foreign_keys = ON');
   migrate(d);
   // A brand-new real account starts empty, with a blank company profile to fill in under Preferences.
-  if (id !== LOCAL_ACCOUNT && !d.prepare('SELECT 1 FROM company').get()) {
+  if ((id !== LOCAL_ACCOUNT || !isDemo()) && !d.prepare('SELECT 1 FROM company').get()) {
     d.prepare("INSERT INTO company (id, name, pm_name, phone, email, address, maintenance_line) VALUES (1, 'My rentals', 'You', '', '', '', '')").run();
   }
   open.set(id, d);

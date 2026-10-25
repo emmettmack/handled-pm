@@ -335,3 +335,32 @@ table.plain tr:last-child td { border: 0; }
 .signin-brand { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 600; font-size: 22px; letter-spacing: -.02em; }
 .signin-brand .brand-mark { display: grid; place-items: center; font-size: 15px; }
 .account-slot { margin-left: 12px; display: inline-flex; align-items: center; }
+
+/* ---------- setup tutorial, checklist ---------- */
+.setup { min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 40px 16px; background: linear-gradient(160deg, #2a1a6e, #4433d6 55%, #3b6df0); }
+.setup-card { width: min(640px, 100%); background: #fff; border-radius: 20px; padding: 30px clamp(20px, 5vw, 40px); box-shadow: 0 30px 80px rgba(15, 8, 80, .35); }
+.setup-brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 18px; margin-bottom: 18px; }
+.setup-steps { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 24px; }
+.setup-steps span { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); background: #f1eff9; border-radius: 99px; padding: 3px 10px; }
+.setup-steps span em { font-style: normal; }
+.setup-steps span.on { background: var(--brand); color: #fff; }
+.setup-steps span.done { background: var(--brand-soft); color: var(--brand-2); }
+.setup-card h1 { font-size: 26px; letter-spacing: -.03em; margin-bottom: 6px; }
+.setup-card h2 { font-size: 22px; letter-spacing: -.02em; margin-bottom: 4px; }
+.setup-card .lead { color: var(--ink-2); margin-bottom: 18px; }
+.howto { padding-left: 20px; margin: 0 0 20px; display: grid; gap: 8px; color: var(--ink-2); }
+.mode-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px; }
+@media (max-width: 560px) { .mode-pick { grid-template-columns: 1fr; } }
+.mode-pick button { text-align: left; display: flex; flex-direction: column; gap: 4px; padding: 14px; border: 1.5px solid var(--line); border-radius: 14px; background: #fff; cursor: pointer; font: inherit; color: var(--ink); }
+.mode-pick button span { font-size: 13px; color: var(--muted); }
+.mode-pick button.on { border-color: var(--brand); background: var(--brand-soft); }
+.setup-nav { display: flex; align-items: center; gap: 10px; margin-top: 22px; }
+.tip { background: var(--brand-soft); border-radius: 12px; padding: 14px 16px; color: #35298f; }
+.tip ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+.checklist { padding: 16px 20px; margin-bottom: 18px; border-color: #d6d1ff; background: #faf9fe; }
+.checklist h3 { margin: 0 0 8px; font-size: 16px; }
+.checklist ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.checklist li a { color: var(--brand-2); font-weight: 500; }
+.checklist li::before { content: '○'; margin-right: 8px; color: var(--muted); }
+.checklist li.done a { color: var(--muted); text-decoration: line-through; }
+.checklist li.done::before { content: '✓'; color: #1f7a55; }

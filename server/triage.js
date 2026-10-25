@@ -2,6 +2,7 @@
 // The model proposes; this file enforces the hard rules (liability, verification, spend cap, 2-round cap).
 import * as ai from './ai.js';
 import { currentAccount } from './accounts.js';
+import { isDemo } from './mode.js';
 import * as S from './store.js';
 import { sendToTenant } from './outbound.js';
 import { T, sanitizeTenantReply, COMPENSATION_ASK } from './templates.js';
@@ -26,7 +27,7 @@ function context(id) {
   const tenant = t.tenant_id ? S.db_tenant(t.tenant_id) : null;
   const unit = S.getUnit(t.unit_id);
   const transcript = S.ticketDetail(id).messages.filter((m) => m.kind === 'sms');
-  return { company: S.getCompany(), prefs: S.getPrefs(), mediaCount: S.mediaCount(id), ticket: t, tenant, unit, transcript, verified: !!(t.verified || t.identity_cleared) };
+  return { company: S.getCompany(), homeMode: S.isHomeMode(), prefs: S.getPrefs(), mediaCount: S.mediaCount(id), ticket: t, tenant, unit, transcript, verified: !!(t.verified || t.identity_cleared) };
 }
 
 function normalizeTriage(r, t) {
@@ -81,7 +82,7 @@ export async function processTicket(id) {
   // ---- Emergency: flag + escalation placeholder (visual only in the demo) ----
   if (r.urgency === 'emergency' && !t.emergency_at) {
     S.updateTicket(id, { emergency_at: S.nowIso() });
-    S.addNote(id, 'EMERGENCY flagged. Escalation step: the live product would page the property manager by phone right now. (Demo only, no call is placed.)');
+    S.addNote(id, isDemo() ? 'EMERGENCY flagged. Escalation step: the live product would page the property manager by phone right now. (Demo only, no call is placed.)' : 'EMERGENCY flagged. The tenant was sent safety instructions. Please review and approve the dispatch right away.');
   }
 
   // ---- Compensation / blame: never answered by the AI, always flagged for the human ----
@@ -143,7 +144,7 @@ export async function draftAndQueue(id, { excludeVendorIds = [], note = '' } = {
   const ctx0 = context(id);
   const unit = ctx0.unit;
   const limit = unit?.approval_limit ?? 500;
-  const overLimit = (t.cost_estimate || 0) > limit;
+  const overLimit = !ctx0.homeMode && (t.cost_estimate || 0) > limit; // no owner to check with when you are the owner
 
   // candidates: same trade (not excluded); fall back to handyman / general if the trade is exhausted
   const trade = t.trade || S.TRADE_FOR_CATEGORY[t.category];
