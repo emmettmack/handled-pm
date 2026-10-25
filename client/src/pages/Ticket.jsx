@@ -106,6 +106,22 @@ function ConfirmTime({ t, reload }) {
   );
 }
 
+/** Two-step delete for a finished work order. */
+function DeleteTicket({ t }) {
+  const { toast, refresh } = useApp();
+  const [sure, setSure] = useState(false);
+  const del = async () => {
+    try { await api.del(`/tickets/${t.id}`); await refresh(); toast('Work order deleted'); go('/'); } catch (e) { toast(e.message, 'err'); }
+  };
+  return sure ? (
+    <div className="remove-confirm" style={{ marginTop: 12 }}>
+      <b>Delete this work order?</b>
+      <span>Its messages, photos and history are removed for good.</span>
+      <div className="btn-row"><button className="btn danger" onClick={del}>Yes, delete it</button><button className="btn" onClick={() => setSure(false)}>Keep it</button></div>
+    </div>
+  ) : <button className="btn link danger-link" style={{ marginTop: 8 }} onClick={() => setSure(true)}>Delete this work order…</button>;
+}
+
 function VendorTimer({ t, reload }) {
   const { toast, demo } = useApp();
   const d = t.active_dispatch;
@@ -303,6 +319,7 @@ export default function Ticket({ id }) {
             {pending && <p>Review the draft on the left and approve it to move this forward.</p>}
             {blocked && <p>Held for you: see the alert on the left.</p>}
             {t.status === 'closed' && <p>This work order is closed.</p>}
+            {['resolved', 'closed'].includes(t.status) && <DeleteTicket t={t} />}
             {!['dispatched', 'scheduled', 'in_progress', 'resolved', 'closed', 'needs_info'].includes(t.status) && !pending && !needsRedraft && !blocked && <p>The assistant is working on this…</p>}
           </div>
 

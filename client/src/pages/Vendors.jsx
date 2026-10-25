@@ -13,6 +13,10 @@ const CHANNELS = [
   { key: 'email', flag: 'primary_email', label: 'Email', hint: '', Icon: Mail },
 ];
 
+// The form asks only for a number; it is stored and shown as "$180 per hour".
+const SIMPLE_RATE = /^\$?\s*(\d+(?:\.\d+)?)\s*(?:\/\s*hr|\/\s*hour|per hour)?$/i;
+const rateNumber = (rate) => String(rate || '').trim().match(SIMPLE_RATE)?.[1] || '';
+
 function VendorForm({ vendor, onClose, onSaved }) {
   const { toast } = useApp();
   const [v, setV] = useState({ ...BLANK, ...vendor });
@@ -71,7 +75,10 @@ function VendorForm({ vendor, onClose, onSaved }) {
             </p>
           </div>
 
-          <div className="field"><label>Typical rate</label><input value={v.rate} onChange={set('rate')} placeholder="e.g. $95/hr" /></div>
+          <div className="field">
+            <label>Preferred rate</label>
+            <span className="money-input rate-input">$<input inputMode="decimal" value={rateNumber(v.rate)} placeholder={v.rate && !rateNumber(v.rate) ? v.rate : '95'} onChange={(e) => { const n = e.target.value.replace(/[^0-9.]/g, ''); setV({ ...v, rate: n ? `$${n} per hour` : '' }); }} /> per hour</span>
+          </div>
           <label className="check"><input type="checkbox" checked={!!v.preferred} onChange={set('preferred')} /> Preferred vendor (tried first)</label>
           <div className="field"><label>Notes for the assistant</label><textarea rows={3} value={v.notes} onChange={set('notes')} placeholder="e.g. 24/7 emergency line, speaks Spanish, great with drain clogs" /></div>
 

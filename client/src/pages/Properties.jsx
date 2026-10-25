@@ -1,5 +1,6 @@
 import { Fragment, useState } from 'react';
 import { Plus, Pencil, X } from 'lucide-react';
+import TenantForm from '../components/TenantForm.jsx';
 import { api } from '../api.js';
 import { useApp } from '../ctx.jsx';
 import { usePoll, unitName } from '../util.js';
@@ -85,54 +86,77 @@ const SORTS = [
   ['owner', 'Owner', (p) => p.owner_name || 'No owner'],
 ];
 
+const pretty = (p) => String(p || '').replace(/^\+1(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3');
+
 export default function Properties() {
   const [props, reload] = usePoll(() => api.get('/properties'), 15000);
+  const [units, reloadUnits] = usePoll(() => api.get('/units'), 15000);
+  const [tenants, reloadTenants] = usePoll(() => api.get('/tenants'), 15000);
   const { status } = useApp();
   const home = !!status?.homeMode;
   const [sort, setSort] = useState('street');
   const [editing, setEditing] = useState(null);
-  if (!props) return null;
+  const [editingTenant, setEditingTenant] = useState(null); // { tenant, units }
+  if (!props || !units || !tenants) return null;
   const by = SORTS.find((s) => s[0] === sort)[2];
   const rows = [...props].sort((a, b) => by(a).localeCompare(by(b)) || street(a).localeCompare(street(b)));
   const grouped = sort !== 'street';
+  const refresh = () => { reload(); reloadUnits(); reloadTenants(); };
 
   return (
     <>
       <div className="page-head">
-        <div><h1>{home ? 'Your home' : 'Properties'}</h1><p>{home ? 'The place you rent out. Vendors are sent to this address.' : 'Every building you manage. Set how much a repair can cost before you want to check with the owner.'}</p></div>
+        <div><h1>{home ? 'Your home' : 'Properties'}</h1><p>{home ? 'The place you rent out, and who lives there. Vendors are sent to this address.' : 'Every building you manage, and the tenants in each unit. Texts from these phone numbers are recognized automatically.'}</p></div>
         <button className="btn primary lg" onClick={() => setEditing({})}><Plus size={16} /> {home ? 'Add a home' : 'Add property'}</button>
       </div>
-      {props.length === 0 && <div className="card empty"><b>No properties yet</b>Add your first one so tenants and repairs have somewhere to belong.</div>}
-      <div className="sortbar">
-        <span>Sort by</span>
-        {SORTS.map(([key, label]) => (
-          <button key={key} className={`filter ${sort === key ? 'on' : ''}`} onClick={() => setSort(key)}>{label}</button>
-        ))}
-      </div>
-      <div className="card" style={{ overflow: 'hidden' }}>
-        <table className="plain">
-          <thead><tr><th>Property</th><th>City</th>{!home && <th>Company</th>}{!home && <th>Owner</th>}<th>Units</th>{!home && <th>Owner limit</th>}<th /></tr></thead>
-          <tbody>
-            {rows.map((p, i) => (
-              <Fragment key={p.id}>
-                {grouped && by(p) !== (i ? by(rows[i - 1]) : null) && (
-                  <tr className="group-row"><td colSpan={7}>{by(p)}</td></tr>
-                )}
-                <tr>
-                  <td><b>{p.name}</b><div style={{ color: 'var(--muted)', fontSize: 13 }}>{p.address}</div></td>
-                  <td>{city(p)}</td>
-                  {!home && <td>{p.company || <span style={{ color: 'var(--muted)' }}>None</span>}</td>}
-                  {!home && <td>{p.owner_name}<div style={{ color: 'var(--muted)', fontSize: 13 }}>{p.owner_email}</div></td>}
-                  <td>{p.unit_count}</td>
-                  {!home && <td><LimitEditor key={p.approval_limit} p={p} onSaved={reload} /></td>}
-                  <td style={{ textAlign: 'right' }}><button className="btn sm" onClick={() => setEditing(p)}><Pencil size={13} /> Edit</button></td>
-                </tr>
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {editing && <PropertyForm property={editing} home={home} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); reload(); }} />}
+      {props.length === 0 && <div className="card empty"><b>No properties yet</b>Add your first one, then add the tenants who live there.</div>}
+      {props.length > 1 && (
+        <div className="sortbar">
+          <span>Sort by</span>
+          {SORTS.map(([key, label]) => <button key={key} className={`filter ${sort === key ? 'on' : ''}`} onClick={() => setSort(key)}>{label}</button>)}
+        </div>
+      )}
+      {rows.map((p, i) => {
+        const mine = units.filter((u) => u.property_id === p.id);
+        const single = mine.length === 1 && /^main( house)?$/i.test(mine[0].number);
+        return (
+          <Fragment key={p.id}>
+            {grouped && by(p) !== (i ? by(rows[i - 1]) : null) && <div className="group-title">{by(p)}</div>}
+            <div className="card property">
+              <div className="property-head">
+                <div>
+                  <h3>{p.name}</h3>
+                  <div className="addr">{p.address}</div>
+                  {!home && <div className="addr">{[p.company, p.owner_name && `Owner: ${p.owner_name}`].filter(Boolean).join(' · ')}</div>}
+                </div>
+                <div className="btn-row">
+                  {!home && <LimitEditor key={p.approval_limit} p={p} onSaved={reload} />}
+                  <button className="btn sm" onClick={() => setEditing(p)}><Pencil size={13} /> Edit</button>
+                </div>
+              </div>
+              {mine.map((u) => {
+                const people = tenants.filter((t) => t.unit_id === u.id);
+                return (
+                  <div key={u.id} className="unit-row">
+                    {!single && <div className="unit-name">{unitName(u.number)}</div>}
+                    <div className="unit-people">
+                      {people.length === 0 && <span className="none">No tenant yet</span>}
+                      {people.map((t) => (
+                        <button key={t.id} className="person" onClick={() => setEditingTenant({ tenant: t, units: mine })} title="Edit tenant">
+                          <b>{t.name}</b> {pretty(t.phone)}{t.language === 'es' ? ' · Spanish' : ''}
+                        </button>
+                      ))}
+                      <button className="btn sm" onClick={() => setEditingTenant({ tenant: { unit_id: u.id }, units: mine })}><Plus size={13} /> Add tenant</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Fragment>
+        );
+      })}
+      {editing && <PropertyForm property={editing} home={home} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); refresh(); }} />}
+      {editingTenant && <TenantForm tenant={editingTenant.tenant} units={editingTenant.units} onClose={() => setEditingTenant(null)} onSaved={() => { setEditingTenant(null); refresh(); }} />}
       {!home && <p style={{ color: 'var(--muted)', marginTop: 12, fontSize: 13.5 }}>When a repair is estimated above a property's limit, the work order is flagged so you can check with the owner first. Macalisto never contacts owners on its own.</p>}
     </>
   );

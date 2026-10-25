@@ -364,3 +364,21 @@ table.plain tr:last-child td { border: 0; }
 .checklist li::before { content: '○'; margin-right: 8px; color: var(--muted); }
 .checklist li.done a { color: var(--muted); text-decoration: line-through; }
 .checklist li.done::before { content: '✓'; color: #1f7a55; }
+
+a.signin-brand { text-decoration: none; }
+
+.rate-input { display: inline-flex; align-items: center; gap: 6px; }
+.rate-input input { width: 90px; }
+
+/* ---------- properties with their tenants ---------- */
+.property { padding: 0; margin-bottom: 14px; overflow: hidden; }
+.property-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; flex-wrap: wrap; padding: 16px 18px; }
+.property-head h3 { margin: 0; font-size: 17px; letter-spacing: -.015em; }
+.property-head .addr { color: var(--muted); font-size: 13px; }
+.unit-row { display: flex; gap: 16px; padding: 12px 18px; border-top: 1px solid var(--line-2); align-items: flex-start; }
+.unit-name { width: 110px; flex: none; font-weight: 600; font-size: 13.5px; padding-top: 6px; }
+.unit-people { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.unit-people .none { color: var(--muted); font-size: 13.5px; }
+.person { border: 1px solid var(--line); background: #fff; border-radius: 99px; padding: 5px 12px; font: inherit; font-size: 13.5px; cursor: pointer; color: var(--ink-2); }
+.person:hover { background: var(--brand-soft); border-color: #d6d1ff; }
+.person b { color: var(--ink); font-weight: 600; margin-right: 4px; }

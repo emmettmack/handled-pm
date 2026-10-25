@@ -8,7 +8,6 @@ import Ticket from './pages/Ticket.jsx';
 import Vendors from './pages/Vendors.jsx';
 import Properties from './pages/Properties.jsx';
 import Preferences from './pages/Preferences.jsx';
-import Tenants from './pages/Tenants.jsx';
 import Setup from './pages/Setup.jsx';
 
 function useHash() {
@@ -71,7 +70,7 @@ export default function App({ accountSlot = null }) {
   const [dash, refresh, dashError] = usePoll(() => api.get('/dashboard'), 3000);
   const [status, refreshStatus] = usePoll(() => api.get('/status'), 30000);
   const [, bump] = useState(0);
-  const [setup, reloadSetup] = usePoll(() => api.get('/setup'), 8000);
+  const [setup, reloadSetup] = usePoll(() => api.get('/setup'), 4000);
   const [toasts, setToasts] = useState([]);
 
   const toast = useCallback((msg, kind = 'ok', ticketId) => {
@@ -89,10 +88,9 @@ export default function App({ accountSlot = null }) {
   if (parts[0] === 'tickets' && parts[1]) page = <Ticket key={parts[1]} id={Number(parts[1])} />;
   else if (parts[0] === 'vendors') page = <Vendors />;
   else if (parts[0] === 'properties') page = <Properties />;
-  else if (parts[0] === 'tenants') page = <Tenants />;
   else if (parts[0] === 'preferences') page = <Preferences />;
   else page = <Home />;
-  const section = ['vendors', 'properties', 'tenants', 'preferences'].includes(parts[0]) ? parts[0] : 'home';
+  const section = ['vendors', 'properties', 'preferences'].includes(parts[0]) ? parts[0] : 'home';
 
   // A new real account walks through setup before seeing the dashboard.
   if (ctx.status && !ctx.demo && setup && !setup.done) {
@@ -121,7 +119,6 @@ export default function App({ accountSlot = null }) {
             </a>
             <a href="#/vendors" className={section === 'vendors' ? 'active' : ''}>Vendors</a>
             <a href="#/properties" className={section === 'properties' ? 'active' : ''}>Properties</a>
-            <a href="#/tenants" className={section === 'tenants' ? 'active' : ''}>Tenants</a>
             <a href="#/preferences" className={section === 'preferences' ? 'active' : ''}>Preferences</a>
             {import.meta.env.VITE_STATIC === '1' && <a href="../index.html" className="back">&larr; Back to site</a>}
             {accountSlot && <span className="account-slot">{accountSlot}</span>}

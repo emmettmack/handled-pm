@@ -76,6 +76,16 @@ function saveTenant(id, b) {
   return { id: Number(id) };
 }
 
+/** Permanently deletes resolved or closed work orders (and their messages, history, drafts and photos). Open ones are never touched. */
+function deleteClosedTickets(onlyId = null) {
+  const ids = db.prepare(`SELECT id FROM tickets WHERE status IN ('resolved','closed')${onlyId ? ' AND id = ?' : ''}`).all(...(onlyId ? [onlyId] : [])).map((r) => r.id);
+  for (const id of ids) {
+    for (const table of ['messages', 'status_history', 'dispatches', 'media']) db.prepare(`DELETE FROM ${table} WHERE ticket_id = ?`).run(id);
+    db.prepare('DELETE FROM tickets WHERE id = ?').run(id);
+  }
+  return ids.length;
+}
+
 const SAMPLE = {
   company: null,
   ticket: { id: 1042, urgency: 'urgent', summary: 'Kitchen sink is leaking under the cabinet. Active but contained leak, tenant is home evenings.', diagnosis: 'Likely a worn supply line or loose fitting under the sink.', access_notes: 'Tenant is home after 5pm.', category: 'plumbing', language: 'es', cost_estimate: 400, title: 'Kitchen sink leak' },
@@ -98,6 +108,11 @@ export const routes = [
       tickets,
       ai: ai.aiStatus(),
     };
+  }],
+  // "closed" must come before ":id" so it isn't read as a ticket number
+  ['DELETE', '/tickets/closed', () => ({ deleted: deleteClosedTickets() })],
+  ['DELETE', '/tickets/:id', ({ params }) => {
+    if (!deleteClosedTickets(params.id)) throw fail('Only resolved or closed work orders can be deleted.');
   }],
   ['GET', '/tickets/:id', ({ params }) => S.ticketDetail(params.id) || (() => { throw fail('Not found', 404); })()],
 

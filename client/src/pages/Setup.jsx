@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { useApp } from '../ctx.jsx';
 import { TRADES, TRADE_OPTION_LABELS } from '../util.js';
 
-const STEPS = ['Welcome', 'About you', 'Your property', 'A tenant', 'A vendor', 'Texting'];
+const STEPS = ['Welcome', 'About you', 'Your property', 'A vendor', 'Texting'];
 
 function Field({ label, children, hint }) {
   return <div className="field"><label>{label}</label>{children}{hint && <span className="hint-small">{hint}</span>}</div>;
@@ -21,11 +21,13 @@ export default function Setup({ setup, onDone }) {
   const co = status?.company || {};
   const [me, setMe] = useState({ pm_name: '', name: '', phone: '', email: '' });
   const [prop, setProp] = useState({ name: '', address: '', owner_name: '', owner_email: '', company: '', approval_limit: '500', units: '' });
-  const [ten, setTen] = useState({ name: '', phone: '', language: 'en', unit_id: '' });
-  const [ven, setVen] = useState({ name: '', trade: 'plumber', phone: '', email: '' });
-  const [units, setUnits] = useState([]);
+  const [ven, setVen] = useState({ name: '', trade: 'plumber', phone: '', email: '', rate: '' });
   const [account, setAccount] = useState(null);
   useEffect(() => { api.get('/account').then(setAccount).catch(() => {}); }, []);
+  // Start from what the sign-in already knows (name, email), plus anything saved earlier under Preferences.
+  const clerkUser = window.Clerk?.user;
+  const filled = !!co.pm_name && co.pm_name !== 'You' && !!(co.phone || co.email);
+  useEffect(() => { setMe((m) => ({ ...m, pm_name: m.pm_name || clerkUser?.fullName || '', email: m.email || clerkUser?.primaryEmailAddress?.emailAddress || '' })); }, [clerkUser?.id]);
   useEffect(() => { setMe((m) => ({ ...m, pm_name: m.pm_name || (co.pm_name === 'You' ? '' : co.pm_name) || '', name: m.name || (co.name === 'My rentals' ? '' : co.name) || '', phone: m.phone || co.phone || '', email: m.email || co.email || '' })); }, [co.pm_name, co.name]);
 
   const run = async (fn) => {
@@ -34,7 +36,7 @@ export default function Setup({ setup, onDone }) {
   };
 
   const next = () => setStep((s) => s + 1);
-  const saveMode = () => run(async () => { await api.put('/setup', { mode }); next(); });
+  const saveMode = () => run(async () => { await api.put('/setup', { mode }); await refreshStatus(); setStep(filled ? 2 : 1); }); // skip "About you" if it's already filled in
   const saveMe = () => run(async () => {
     if (!me.pm_name.trim()) throw new Error('Please enter your name.');
     await api.put('/company', { ...co, ...me, name: home ? `${me.pm_name.trim()}'s rentals` : me.name || co.name });
@@ -43,16 +45,10 @@ export default function Setup({ setup, onDone }) {
   const saveProp = () => run(async () => {
     const p = { ...prop, name: home ? prop.name || prop.address.split(',')[0] : prop.name, units: home ? [] : prop.units };
     await api.post('/properties', p);
-    setUnits(await api.get('/units'));
-    next();
-  });
-  const saveTen = () => run(async () => {
-    const list = units.length ? units : await api.get('/units');
-    await api.post('/tenants', { ...ten, unit_id: Number(ten.unit_id) || list[0]?.id });
     next();
   });
   const saveVen = () => run(async () => {
-    await api.post('/vendors', { name: ven.name, trade: ven.trade, phone: ven.phone, email: ven.email, primary_company: ven.phone ? 1 : 0, primary_email: !ven.phone && ven.email ? 1 : 0 });
+    await api.post('/vendors', { name: ven.name, trade: ven.trade, phone: ven.phone, email: ven.email, rate: ven.rate, primary_company: ven.phone ? 1 : 0, primary_email: !ven.phone && ven.email ? 1 : 0 });
     next();
   });
   const finish = () => run(async () => { await api.put('/setup', { done: true }); await refresh(); onDone(); });
@@ -93,7 +89,7 @@ export default function Setup({ setup, onDone }) {
         {step === 1 && (
           <>
             <h2>About you</h2>
-            <p className="lead">This is how you sign messages to vendors.</p>
+            <p className="lead">We started from what we already know. This is how you sign messages to vendors.</p>
             <Field label="Your name"><input value={me.pm_name} onChange={(e) => setMe({ ...me, pm_name: e.target.value })} autoFocus /></Field>
             {!home && <Field label="Company name"><input value={me.name} onChange={(e) => setMe({ ...me, name: e.target.value })} /></Field>}
             <div className="field-row">
@@ -126,20 +122,6 @@ export default function Setup({ setup, onDone }) {
 
         {step === 3 && (
           <>
-            <h2>Add a tenant</h2>
-            <p className="lead">Macalisto recognizes your tenants by their phone number. Texts from numbers it doesn't know get an identity check first.</p>
-            <Field label="Tenant's name"><input value={ten.name} onChange={(e) => setTen({ ...ten, name: e.target.value })} autoFocus /></Field>
-            <div className="field-row">
-              <Field label="Their phone number"><input value={ten.phone} onChange={(e) => setTen({ ...ten, phone: e.target.value })} placeholder="(805) 555-0100" /></Field>
-              <Field label="Language"><select value={ten.language} onChange={(e) => setTen({ ...ten, language: e.target.value })}><option value="en">English</option><option value="es">Spanish</option></select></Field>
-            </div>
-            {units.length > 1 && <Field label="Unit"><select value={ten.unit_id} onChange={(e) => setTen({ ...ten, unit_id: e.target.value })}><option value="">Choose…</option>{units.map((u) => <option key={u.id} value={u.id}>{u.property_name} · {u.number}</option>)}</select></Field>}
-            <Nav onNext={saveTen} skip disabled={!ten.name.trim() || !ten.phone.trim() || (units.length > 1 && !ten.unit_id)} />
-          </>
-        )}
-
-        {step === 4 && (
-          <>
             <h2>Add a vendor you trust</h2>
             <p className="lead">Macalisto only ever picks from your list, and always asks you first. Add more any time under Vendors.</p>
             <div className="field-row">
@@ -150,11 +132,12 @@ export default function Setup({ setup, onDone }) {
               <Field label="Phone (we text this)"><input value={ven.phone} onChange={(e) => setVen({ ...ven, phone: e.target.value })} /></Field>
               <Field label="Email (optional)"><input value={ven.email} onChange={(e) => setVen({ ...ven, email: e.target.value })} /></Field>
             </div>
+            <Field label="Preferred rate (optional)"><span className="money-input rate-input">$<input inputMode="decimal" value={ven.rate.match(/\d+(\.\d+)?/)?.[0] || ''} placeholder="95" onChange={(e) => { const n = e.target.value.replace(/[^0-9.]/g, ''); setVen({ ...ven, rate: n ? `$${n} per hour` : '' }); }} /> per hour</span></Field>
             <Nav onNext={saveVen} skip disabled={!ven.name.trim() || (!ven.phone.trim() && !ven.email.trim())} />
           </>
         )}
 
-        {step === 5 && (
+        {step === 4 && (
           <>
             <h2>Your texting line</h2>
             {account?.texting?.connected ? (
@@ -165,6 +148,7 @@ export default function Setup({ setup, onDone }) {
             <div className="tip">
               <b>How to use your dashboard</b>
               <ul>
+                <li>Add your tenants under <b>Properties</b>, each one assigned to the home they live in.</li>
                 <li>New texts show up under <b>Ready for your OK</b> as finished drafts.</li>
                 <li>Read the draft, edit it if you like, then <b>Approve &amp; send</b>.</li>
                 <li>Emergencies show a red bar at the top. <b>Preferences</b> controls what goes in your drafts.</li>

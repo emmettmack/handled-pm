@@ -11,7 +11,7 @@ export default function AuthRoot({ publishableKey }) {
       <SignedIn><App accountSlot={<UserButton afterSignOutUrl="/" />} /></SignedIn>
       <SignedOut>
         <div className="signin-page">
-          <div className="signin-brand"><div className="brand-mark"><span>&#10003;</span></div> Macalisto</div>
+          <a className="signin-brand" href="https://macalisto.com"><div className="brand-mark"><span>&#10003;</span></div> Macalisto</a>
           <SignIn routing="hash" />
         </div>
       </SignedOut>

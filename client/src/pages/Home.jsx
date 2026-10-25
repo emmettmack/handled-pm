@@ -45,6 +45,7 @@ export default function Home() {
   const { dash, refresh, toast, status, bannerHidden, demo, setup } = useApp();
   const [filter, setFilter] = useState('open');
   const [sort, setSort] = useState('urgency');
+  const [clearing, setClearing] = useState(false);
   const [showSim, setShowSim] = useState(false);
   const [simulating, setSimulating] = useState(false);
   const { stats, approvals, attention, tickets, emergencies } = dash;
@@ -90,7 +91,7 @@ export default function Home() {
           <h3>Finish setting up</h3>
           <ul>
             <li className={setup.counts.properties ? 'done' : ''}><a href="#/properties">Add your {status?.homeMode ? 'home' : 'first property'}</a></li>
-            <li className={setup.counts.tenants ? 'done' : ''}><a href="#/tenants">Add a tenant</a></li>
+            <li className={setup.counts.tenants ? 'done' : ''}><a href="#/properties">Add the tenants who live there</a></li>
             <li className={setup.counts.vendors ? 'done' : ''}><a href="#/vendors">Add a vendor you trust</a></li>
           </ul>
         </div>
@@ -157,6 +158,20 @@ export default function Home() {
             </button>
           ))}
         </div>
+        {filter === 'done' && rows.length > 0 && (
+          <div style={{ margin: '0 0 10px' }}>
+            {clearing ? (
+              <div className="remove-confirm">
+                <b>Delete all {rows.length} resolved and closed work orders?</b>
+                <span>Their messages, photos and history are removed for good. Open work orders are never touched.</span>
+                <div className="btn-row">
+                  <button className="btn danger" onClick={async () => { try { await api.del('/tickets/closed'); await refresh(); toast('Cleared'); } catch (e) { toast(e.message, 'err'); } setClearing(false); }}>Yes, delete them all</button>
+                  <button className="btn" onClick={() => setClearing(false)}>Keep them</button>
+                </div>
+              </div>
+            ) : <button className="btn sm danger" onClick={() => setClearing(true)}>Delete all resolved &amp; closed…</button>}
+          </div>
+        )}
         <div className="card rows">
           {rows.length === 0 && <div className="empty"><Inbox size={22} /><b>Nothing here</b></div>}
           {rows.map((t) => (
