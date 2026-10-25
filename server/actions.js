@@ -48,6 +48,23 @@ async function textVendor(ticketId, vendorName, channels, text) {
   else if (channels.some((c) => c.label === 'Email')) S.addNote(ticketId, 'Email sending is not connected yet, so only the phone contact was used.');
 }
 
+/** Fold a duplicate work order into another: conversation, photos, history and drafts all move; the duplicate disappears. */
+export function mergeTickets(sourceId, targetId) {
+  if (sourceId === targetId) throw fail('Choose a different work order.');
+  const source = S.getTicket(sourceId), target = S.getTicket(targetId);
+  if (!source || !target) throw fail('Work order not found.');
+  if (db.prepare("SELECT 1 FROM dispatches WHERE ticket_id = ? AND kind = 'vendor' AND state IN ('approved','accepted','no_response')").get(sourceId)) {
+    throw fail('A dispatch was already sent for that work order. Merge the other one into it instead.');
+  }
+  const moved = db.prepare('SELECT COUNT(*) c FROM messages WHERE ticket_id = ?').get(sourceId).c;
+  db.prepare("UPDATE dispatches SET state = 'rejected', pm_note = ? WHERE ticket_id = ? AND state = 'pending'").run(`Merged into #${targetId}`, sourceId);
+  for (const table of ['messages', 'media', 'dispatches', 'status_history', 'inbound_messages']) db.prepare(`UPDATE ${table} SET ticket_id = ? WHERE ticket_id = ?`).run(targetId, sourceId);
+  db.prepare('UPDATE tickets SET related_to = ? WHERE related_to = ?').run(targetId, sourceId);
+  db.prepare('DELETE FROM tickets WHERE id = ?').run(sourceId);
+  db.prepare('UPDATE tickets SET updated_at = ? WHERE id = ?').run(S.nowIso(), targetId);
+  S.addNote(targetId, `Merged work order #${sourceId} into this one (${moved} messages moved).`);
+}
+
 export function rejectDispatch(id, note) {
   const d = getDispatch(id);
   if (d.state !== 'pending') throw fail('This draft was already handled.');

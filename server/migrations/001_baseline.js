@@ -53,9 +53,7 @@ CREATE TABLE IF NOT EXISTS status_history (
 );
 `;
 
-const ensureColumn = (d, table, name, def) => {
-  if (!d.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === name)) d.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${def}`);
-};
+import { ensureColumn } from './util.js';
 
 export default {
   id: 1,

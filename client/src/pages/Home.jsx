@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Zap, PenLine, Loader2, ChevronRight, ShieldAlert, DollarSign, MessageSquare, TriangleAlert, Inbox, PartyPopper, Siren, Hourglass, Camera } from 'lucide-react';
+import { Zap, PenLine, Loader2, ChevronRight, ShieldAlert, DollarSign, MessageSquare, TriangleAlert, Inbox, PartyPopper, Siren, Hourglass, Camera, RefreshCw } from 'lucide-react';
 import { api } from '../api.js';
 import { useApp, go } from '../ctx.jsx';
 import ApprovalCard from '../components/ApprovalCard.jsx';
 import SimulateModal from '../components/SimulateModal.jsx';
 import { UrgencyBadge, StatusPill, FlagChip } from '../components/Badges.jsx';
-import { timeAgo, CATEGORY_LABELS, URGENCY_RANK } from '../util.js';
+import { timeAgo, CATEGORY_LABELS, URGENCY_RANK, languageName } from '../util.js';
 
 const FILTERS = [
   ['open', 'All open', (t) => !['resolved', 'closed'].includes(t.status)],
@@ -15,8 +15,8 @@ const FILTERS = [
   ['done', 'Resolved & closed', (t) => ['resolved', 'closed'].includes(t.status)],
 ];
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
-const ATTN_ICON = { identity: ShieldAlert, compensation: DollarSign, update: MessageSquare, no_vendor: TriangleAlert, over_limit: DollarSign, no_response: Hourglass, vendor_reply: MessageSquare };
-const ATTN_TITLE = { identity: 'Confirm who this is', compensation: 'Tenant asked about compensation', update: 'Tenant sent a new message', no_vendor: 'No vendor left to try', over_limit: 'Over the owner’s limit, check with them', no_response: 'Vendor hasn’t replied', vendor_reply: 'Vendor replied' };
+const ATTN_ICON = { identity: ShieldAlert, compensation: DollarSign, update: MessageSquare, no_vendor: TriangleAlert, over_limit: DollarSign, no_response: Hourglass, vendor_reply: MessageSquare, callback: RefreshCw, possible_duplicate: TriangleAlert, language: TriangleAlert };
+const ATTN_TITLE = { identity: 'Confirm who this is', compensation: 'Tenant asked about compensation', update: 'Tenant sent a new message', no_vendor: 'No vendor left to try', over_limit: 'Over the owner’s limit, check with them', no_response: 'Vendor hasn’t replied', vendor_reply: 'Vendor replied', callback: 'Callback: the repair may not have held', possible_duplicate: 'Possible duplicate', language: 'Needs a reply in another language' };
 const SORTS = [['urgency', 'Urgency'], ['newest', 'Newest request'], ['oldest', 'Oldest request']];
 
 /** Orders any list by urgency or by when the request came in. `get` returns { urgency, created_at } for an item. */
@@ -180,7 +180,7 @@ export default function Home() {
               <div className="main">
                 <div className="title">
                   <UrgencyBadge urgency={t.urgency} /> {t.title}
-                  {t.language === 'es' && <span className="chip-flag" style={{ background: '#e8eefc', color: '#2457c5' }}>Spanish</span>}
+                  {t.language && t.language !== 'en' && <span className="chip-flag" style={{ background: '#e8eefc', color: '#2457c5' }}>{languageName(t.language)}</span>}
                   {t.media_count > 0 && <span className="chip-flag"><Camera size={12} /> {t.media_count}</span>}
                   {t.flags.map((f) => <FlagChip key={f.type} flag={f} />)}
                 </div>

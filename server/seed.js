@@ -3,6 +3,7 @@
 import { db } from './db.js';
 import * as S from './store.js';
 import { buildText } from './mockAi.js';
+import { backfillVendorRates } from './rates.js';
 
 const COMPANY = {
   name: 'Sunset Property Management', pm_name: 'Elena Ruiz', phone: '(323) 555-0142',
@@ -61,9 +62,10 @@ export function wipe() {
 
 export function seed() {
   wipe();
-  db.prepare('INSERT INTO company (id,name,pm_name,phone,email,address,maintenance_line) VALUES (1,?,?,?,?,?,?)').run(...Object.values(COMPANY));
+  db.prepare('INSERT INTO company (id,name,pm_name,phone,email,address,maintenance_line,name_confirmed) VALUES (1,?,?,?,?,?,?,1)').run(...Object.values(COMPANY));
   const insV = db.prepare('INSERT INTO vendors (name,trade,phone,email,rate,preferred,notes) VALUES (?,?,?,?,?,?,?)');
   VENDORS.forEach((v) => insV.run(...v));
+  backfillVendorRates(db);
   // One vendor reached through a person's own phone, to show company vs personal numbers
   db.prepare("UPDATE vendors SET personal_phone = '(323) 555-0291', primary_company = 0, primary_personal = 1 WHERE name LIKE 'Rivera%'").run();
 
@@ -87,16 +89,16 @@ export function seed() {
     const created = S.minsAgo(o.ago);
     const id = Number(db.prepare(
       `INSERT INTO tickets (tenant_id, unit_id, from_phone, channel, title, category, urgency, status, language, summary, diagnosis, next_steps,
-        reasoning, trade, access_notes, cost_estimate, followup_rounds, verified, verification_asked, vendor_id,
+        reasoning, trade, access_notes, cost_estimate, cost_estimate_source, followup_rounds, verified, verification_asked, vendor_id,
         emergency_at, scheduled_for, flags, created_at, updated_at, resolved_at, internal_notes)
        VALUES (@tenant_id,@unit_id,@from_phone,'sim',@title,@category,@urgency,@status,@language,@summary,@diagnosis,@next_steps,
-        @reasoning,@trade,@access_notes,@cost_estimate,@followup_rounds,@verified,@verification_asked,@vendor_id,
+        @reasoning,@trade,@access_notes,@cost_estimate,@cost_estimate_source,@followup_rounds,@verified,@verification_asked,@vendor_id,
         @emergency_at,@scheduled_for,@flags,@created_at,@created_at,@resolved_at,@internal_notes)`,
     ).run({
       tenant_id: tn?.id ?? null, unit_id: tn?.unit_id ?? o.unit_id ?? null, from_phone: tn?.phone ?? o.phone,
       title: o.title, category: o.category, urgency: o.urgency, status: o.status, language: tn?.language || o.language || 'en',
       summary: o.summary ?? null, diagnosis: o.diagnosis ?? null, next_steps: JSON.stringify(o.steps || []), reasoning: o.reason ?? null,
-      trade: o.trade ?? null, access_notes: o.access ?? null, cost_estimate: o.cost ?? null, followup_rounds: o.rounds || 0,
+      trade: o.trade ?? null, access_notes: o.access ?? null, cost_estimate: o.cost ?? null, cost_estimate_source: o.cost != null ? 'sample_rules' : null, followup_rounds: o.rounds || 0,
       verified: tn ? 1 : 0, verification_asked: o.verAsked ? 1 : 0, vendor_id: o.vendor ? vendor(o.vendor).id : null,
       emergency_at: o.urgency === 'emergency' ? created : null, scheduled_for: o.scheduled ?? null,
       flags: JSON.stringify(o.flags || []), created_at: created, resolved_at: o.resolvedAgo != null ? S.minsAgo(o.resolvedAgo) : null,

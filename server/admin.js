@@ -5,6 +5,7 @@
 import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 import { createClerkClient } from '@clerk/backend';
 import { accountIds, accountFile, accountExists, closeAccount, rawDb, backupAll, DATA_DIR } from './db.js';
 import { runAs, currentAccount, LOCAL_ACCOUNT } from './accounts.js';
@@ -276,6 +277,18 @@ router.delete('/numbers/:number', h(async (req) => {
 router.get('/system', h(async () => systemInfo()));
 router.get('/backups', h(async () => ({ backups: listBackups(), keep: KEEP })));
 router.post('/backups', h(async (req) => { const r = await runBackup(); R.logAudit(who(req), 'backup', r.name, `${r.accounts} accounts`); return r; }));
+// One backup folder as a .tar.gz, so a copy can be kept off the server.
+router.get('/backups/:name/download', (req, res) => {
+  const name = req.params.name;
+  const dir = path.join(BACKUP_DIR, name);
+  if (!/^[0-9TZ-]+$/.test(name) || !fs.existsSync(dir)) return res.status(404).json({ error: 'No such backup.' });
+  R.logAudit(who(req), 'download_backup', name);
+  res.setHeader('Content-Type', 'application/gzip');
+  res.setHeader('Content-Disposition', `attachment; filename="macalisto-backup-${name}.tar.gz"`);
+  const tar = spawn('tar', ['-czf', '-', '-C', dir, '.']);
+  tar.stdout.pipe(res);
+  tar.on('error', () => res.destroy());
+});
 router.get('/audit', h(async () => ({ audit: R.listAudit(150) })));
 router.get('/announcement', h(async () => R.getKv('announcement', { text: '', level: 'info', active: false })));
 router.put('/announcement', h(async (req) => {

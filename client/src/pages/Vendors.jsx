@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Plus, Star, Phone, Mail, Pencil, X, User } from 'lucide-react';
 import { api } from '../api.js';
 import { useApp } from '../ctx.jsx';
-import { usePoll, TRADES, TRADE_LABELS, TRADE_OPTION_LABELS } from '../util.js';
+import { usePoll, TRADES, TRADE_LABELS, TRADE_OPTION_LABELS, LANGUAGES } from '../util.js';
 
 const BLANK = { name: '', trade: 'plumber', phone: '', personal_phone: '', email: '', rate: '', preferred: false, notes: '', primary_company: 1, primary_personal: 0, primary_email: 0 };
 
@@ -13,14 +13,23 @@ const CHANNELS = [
   { key: 'email', flag: 'primary_email', label: 'Email', hint: '', Icon: Mail },
 ];
 
-// The form asks only for a number; it is stored and shown as "$180 per hour".
-const SIMPLE_RATE = /^\$?\s*(\d+(?:\.\d+)?)\s*(?:\/\s*hr|\/\s*hour|per hour)?$/i;
-const rateNumber = (rate) => String(rate || '').trim().match(SIMPLE_RATE)?.[1] || '';
+// Rates are typed in dollars and stored in cents: hourly, a flat job price, and a trip or diagnostic charge.
+const dollars = (cents) => (cents === null || cents === undefined || cents === '' ? '' : String(cents / 100));
+const toCents = (text) => (String(text).trim() === '' ? null : Math.round(parseFloat(text) * 100));
+const rateProblem = (text, label) => {
+  const t = String(text).trim();
+  if (!t) return null;
+  if (!/^\d{1,5}(\.\d{1,2})?$/.test(t)) return `${label}: enter a dollar amount like 95 or 95.50.`;
+  const n = parseFloat(t);
+  return n < 1 || n > 10000 ? `${label}: must be between $1 and $10,000.` : null;
+};
 
 function VendorForm({ vendor, onClose, onSaved }) {
   const { toast } = useApp();
   const [v, setV] = useState({ ...BLANK, ...vendor });
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [rates, setRates] = useState({ hourly: dollars(v.rate_hourly_cents), flat: dollars(v.rate_flat_cents), trip: dollars(v.rate_trip_cents) });
+  const problem = rateProblem(rates.hourly, 'Hourly rate') || rateProblem(rates.flat, 'Flat rate') || rateProblem(rates.trip, 'Trip charge');
   const set = (k) => (e) => setV({ ...v, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
   const primaries = CHANNELS.filter((c) => v[c.flag]);
 
@@ -33,7 +42,8 @@ function VendorForm({ vendor, onClose, onSaved }) {
 
   const save = async () => {
     try {
-      if (v.id) await api.put(`/vendors/${v.id}`, v); else await api.post('/vendors', v);
+      const body = { ...v, rate_hourly_cents: toCents(rates.hourly), rate_flat_cents: toCents(rates.flat), rate_trip_cents: toCents(rates.trip) };
+      if (v.id) await api.put(`/vendors/${v.id}`, body); else await api.post('/vendors', body);
       toast(v.id ? 'Vendor updated' : 'Vendor added');
       onSaved();
     } catch (e) { toast(e.message, 'err'); }
@@ -75,9 +85,20 @@ function VendorForm({ vendor, onClose, onSaved }) {
             </p>
           </div>
 
-          <div className="field">
-            <label>Preferred rate</label>
-            <span className="money-input rate-input">$<input inputMode="decimal" value={rateNumber(v.rate)} placeholder={v.rate && !rateNumber(v.rate) ? v.rate : '95'} onChange={(e) => { const n = e.target.value.replace(/[^0-9.]/g, ''); setV({ ...v, rate: n ? `$${n} per hour` : '' }); }} /> per hour</span>
+          <div className="contact-box">
+            <div className="contact-title">What they charge (all optional)</div>
+            <div className="field-row">
+              {[['hourly', 'Hourly rate', 'per hour'], ['flat', 'Flat job rate', 'per job'], ['trip', 'Trip / diagnostic charge', 'per visit']].map(([k, label, unit]) => (
+                <div className="field" key={k}>
+                  <label>{label}</label>
+                  <span className="money-input rate-input">$<input inputMode="decimal" value={rates[k]} placeholder="0" onChange={(e) => setRates({ ...rates, [k]: e.target.value.replace(/[^0-9.]/g, '') })} /> {unit}</span>
+                </div>
+              ))}
+            </div>
+            {problem && <p className="contact-note" style={{ color: 'var(--emergency)' }}>{problem}</p>}
+          </div>
+          <div className="field"><label>Write messages to this vendor in</label>
+            <select value={v.language || 'en'} onChange={set('language')}>{LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.name}</option>)}</select>
           </div>
           <label className="check"><input type="checkbox" checked={!!v.preferred} onChange={set('preferred')} /> Preferred vendor (tried first)</label>
           <div className="field"><label>Notes for the assistant</label><textarea rows={3} value={v.notes} onChange={set('notes')} placeholder="e.g. 24/7 emergency line, speaks Spanish, great with drain clogs" /></div>
@@ -101,7 +122,7 @@ function VendorForm({ vendor, onClose, onSaved }) {
         </div>
         <div className="modal-foot">
           <button className="btn" onClick={onClose}>Cancel</button>
-          <button className="btn primary" disabled={!v.name.trim()} onClick={save}>{v.id ? 'Save changes' : 'Add vendor'}</button>
+          <button className="btn primary" disabled={!v.name.trim() || !!problem} onClick={save}>{v.id ? 'Save changes' : 'Add vendor'}</button>
         </div>
       </div>
     </div>

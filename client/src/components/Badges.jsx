@@ -19,6 +19,9 @@ const FLAG = {
   no_response: { label: 'Vendor hasn’t replied', icon: Hourglass, red: true },
   over_limit: { label: 'Over owner’s limit', icon: DollarSign, red: false },
   vendor_reply: { label: 'Vendor replied', icon: MessageSquare, red: false },
+  callback: { label: 'Callback', icon: RefreshCw, red: true },
+  possible_duplicate: { label: 'Possible duplicate', icon: TriangleAlert, red: false },
+  language: { label: 'Language help', icon: TriangleAlert, red: false },
   no_vendor: { label: 'No vendor available', icon: TriangleAlert, red: true },
 };
 export function FlagChip({ flag }) {

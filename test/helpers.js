@@ -11,6 +11,7 @@ import crypto from 'node:crypto';
 export function startFakeTwilio() {
   const sent = [];
   const server = http.createServer((req, res) => {
+    if (req.url.startsWith('/media/slow')) { setTimeout(() => { res.setHeader('content-type', 'image/jpeg'); res.end(Buffer.from('fake-image-bytes')); }, 1200); return; }
     if (req.url.startsWith('/media/')) { res.setHeader('content-type', 'image/jpeg'); return res.end(Buffer.from('fake-image-bytes')); }
     let body = '';
     req.on('data', (d) => (body += d));
@@ -68,7 +69,8 @@ export async function boot({ real = true, twilio = false, env = {} } = {}) {
     return { status: res.status, text: await res.text(), sid: p.MessageSid };
   };
 
-  const whenIdle = () => mods.triage.whenIdle();
+  const inbound = await import('../server/twilio.js');
+  const whenIdle = async () => { await inbound.inboundIdle(); await mods.triage.whenIdle(); };
   const close = async () => { await new Promise((r) => server.close(r)); await fake?.close(); fs.rmSync(dir, { recursive: true, force: true }); };
   return { api, sms, base, dir, fake, mods, whenIdle, close };
 }

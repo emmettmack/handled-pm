@@ -3,7 +3,7 @@ import { Plus, Pencil, X } from 'lucide-react';
 import TenantForm from '../components/TenantForm.jsx';
 import { api } from '../api.js';
 import { useApp } from '../ctx.jsx';
-import { usePoll, unitName } from '../util.js';
+import { usePoll, unitName, languageName } from '../util.js';
 
 function LimitEditor({ p, onSaved }) {
   const { toast } = useApp();
@@ -143,7 +143,7 @@ export default function Properties() {
                       {people.length === 0 && <span className="none">No tenant yet</span>}
                       {people.map((t) => (
                         <button key={t.id} className="person" onClick={() => setEditingTenant({ tenant: t, units: mine })} title="Edit tenant">
-                          <b>{t.name}</b> {pretty(t.phone)}{t.language === 'es' ? ' · Spanish' : ''}
+                          <b>{t.name}</b> {pretty(t.phone)}{t.language && t.language !== 'en' ? ` · ${languageName(t.language)}` : ''}
                         </button>
                       ))}
                       <button className="btn sm" onClick={() => setEditingTenant({ tenant: { unit_id: u.id }, units: mine })}><Plus size={13} /> Add tenant</button>

@@ -2,6 +2,32 @@
 
 Product and technical decisions made while planning, each with the reason. Newer entries go on top. If you disagree with one, say so and I'll change it.
 
+## Phase 1 (bugs)
+
+**D-011. Phase 1 code was written without running the test suite, at the owner's request.**
+The owner asked to save credits and only make code changes. A test harness and tests exist (`npm test`), but they were last run partway through Phase 1: 33 of 35 passed, and the two failures were fixed in code afterwards without a re-run. Everything added after that point is untested. **Run `npm test` and click through the app before merging or deploying this branch.**
+*Why:* it was an explicit instruction; the cost is that regressions are not yet ruled out.
+
+**D-012. Replies in languages outside English and Spanish are checked through an English copy, and fail closed.**
+The money-and-fault filter can only read English and Spanish. For every other language the model must also return an English translation of its reply; if that is missing, or it promises money or fault, the fixed neutral message in the tenant's language is sent instead.
+*Why:* a promise of money in Korean must not reach a tenant just because the filter can't read Korean.
+
+**D-013. STOP, START and HELP are honored by the app as well as by Twilio.**
+Twilio blocks texts to someone who replied STOP; the app also records it, skips sending, and tells the PM why. HELP gets a reply that names the service and explains STOP.
+*Why:* carriers require it, and the PM needs to see why a tenant isn't getting texts.
+
+**D-014. Delivery reports carry the account in the callback URL.**
+Twilio's signature covers the whole URL including the account id, so a report can only be applied to the account that sent the text.
+*Why:* one callback address serves every account, and it must not be possible to write into someone else's data.
+
+**D-015. The same message again within ten minutes is stored once.**
+It is treated as a duplicate delivery, not as the tenant repeating themselves.
+*Why:* a tenant who texts the same words twice in a few minutes is far more likely a double send than two messages the PM needs to read twice.
+
+**D-016. Existing accounts start with the company name unconfirmed.**
+Vendors see the person's name until the user confirms a company name; a banner under Preferences asks for it. The demo company is pre-confirmed.
+*Why:* we cannot tell from the data whether an existing name was typed deliberately or autofilled.
+
 ## Phase 0 (planning)
 
 **D-001. In real accounts, never show an invented cost estimate.**

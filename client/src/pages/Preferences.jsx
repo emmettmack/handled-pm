@@ -42,7 +42,7 @@ function CompanyCard() {
     <div className="card card-pad">
       <div className="pref-grid">
         {COMPANY_FIELDS.map(([k, label]) => (
-          <div className="field" key={k}><label>{label}</label><input value={c[k] || ''} onChange={(e) => setC({ ...c, [k]: e.target.value })} /></div>
+          <div className="field" key={k}><label>{label}</label><input value={c[k] || ''} onChange={(e) => setC({ ...c, [k]: e.target.value })} autoComplete={k === 'name' ? 'organization' : 'off'} data-lpignore="true" data-1p-ignore="true" /></div>
         ))}
       </div>
       <div className="btn-row" style={{ marginTop: 14 }}><button className="btn primary" onClick={save}><Check size={15} /> Save company</button></div>
@@ -88,7 +88,7 @@ function DraftCard({ prefs, setPrefs, save, dirty }) {
 }
 
 export default function Preferences() {
-  const { toast, refresh, demo } = useApp();
+  const { toast, refresh, demo, status } = useApp();
   const [saved, setSaved] = useState(null);
   const [prefs, setPrefs] = useState(null);
   useEffect(() => { api.get('/prefs').then((p) => { setSaved(p); setPrefs(p); }); }, []);
@@ -106,6 +106,9 @@ export default function Preferences() {
     <>
       <div className="page-head"><div><h1>Preferences</h1><p>Set things up once. Macalisto follows them every time.</p></div></div>
 
+      {!demo && status?.company && !status.company.name_confirmed && !status.homeMode && (
+        <div className="admin-alert warn" style={{ marginBottom: 12 }}>Add your company name below. Until you do, vendors only see your own name on messages.</div>
+      )}
       <div className="group-title">Your company</div>
       <CompanyCard />
 

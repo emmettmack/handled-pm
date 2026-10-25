@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { routes } from './routes.js';
 import { authenticate } from './auth.js';
-import { inboundSms } from './twilio.js';
+import { inboundSms, inboundStatus } from './twilio.js';
 import { router as adminRouter, requireAdmin, adminMe } from './admin.js';
 import { setMetricSink } from './metrics.js';
 import { bumpMetric, getKv } from './registry.js';
@@ -32,6 +32,7 @@ app.get('/healthz', (_req, res) => res.send('ok'));
 // Incoming texts from Twilio. Outside the sign-in check because Twilio can't sign in; it is protected by Twilio's
 // request signature instead (see twilio.js).
 app.post('/api/webhooks/sms', inboundSms);
+app.post('/api/webhooks/sms-status', inboundStatus);
 
 // Body parsing comes after the sign-in check so strangers can't make the server buffer large uploads.
 app.use('/api', authenticate, express.json({ limit: '25mb' })); // tenant photos and videos arrive as data URLs

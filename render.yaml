@@ -19,6 +19,8 @@ services:
         value: production
       - key: DATA_DIR
         value: /var/data
+      - key: PUBLIC_URL               # where Twilio reaches us; also used to verify its signatures
+        value: https://app.macalisto.com
       - key: CLERK_SECRET_KEY
         sync: false
       - key: VITE_CLERK_PUBLISHABLE_KEY   # baked into the page at build time (public by design)

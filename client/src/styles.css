@@ -396,3 +396,6 @@ a.signin-brand { text-decoration: none; }
 .modal.wide { width: min(760px, 96vw); }
 .site-notice { padding: 9px clamp(16px, 4vw, 40px); background: var(--brand-soft); color: #35298f; font-size: 14px; text-align: center; }
 .site-notice.warn { background: #fdf0e2; color: #9a4308; }
+
+.unconfirmed { background: #fdf0e2; color: #9a4308; border-radius: 10px; padding: 8px 12px; font-size: 13.5px; margin: 0 0 10px; }
+.est-src { display: block; color: var(--muted); font-size: 12px; font-weight: 400; margin-top: 2px; }

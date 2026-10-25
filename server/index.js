@@ -3,7 +3,6 @@ import * as S from './store.js';
 import * as ai from './ai.js';
 import * as A from './actions.js';
 import { seed } from './seed.js';
-import { authEnabled } from './auth.js';
 import { isDemo } from './mode.js';
 import { startBackups } from './admin.js';
 import { app } from './app.js';

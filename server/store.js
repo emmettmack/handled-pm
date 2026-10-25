@@ -1,6 +1,7 @@
 // Data access + small helpers. Everything the rest of the server needs from SQLite lives here.
 import { db } from './db.js';
 import { unitName } from './labels.js';
+import { ticketView } from './ticketView.js';
 
 export const nowIso = () => new Date().toISOString();
 export const minsAgo = (m) => new Date(Date.now() - m * 60000).toISOString();
@@ -53,7 +54,12 @@ export function getCompany() {
 }
 export function updateCompany(c) {
   const f = ['name', 'pm_name', 'phone', 'email', 'address', 'maintenance_line'];
-  db.prepare(`UPDATE company SET ${f.map((k) => `${k} = ?`).join(', ')} WHERE id = 1`).run(...f.map((k) => String(c[k] ?? '').trim()));
+  const prev = getCompany();
+  const name = String(c.name ?? '').trim();
+  // A name only counts as confirmed when the user typed something new, or it was already confirmed and is unchanged.
+  const usable = !!name && name !== 'My rentals' && !name.includes('@');
+  const confirmed = usable && ((prev?.name_confirmed && prev.name === name) || prev?.name !== name) ? 1 : 0;
+  db.prepare(`UPDATE company SET ${f.map((k) => `${k} = ?`).join(', ')}, name_confirmed = ? WHERE id = 1`).run(...f.map((k) => String(c[k] ?? '').trim()), confirmed);
   return getCompany();
 }
 
@@ -95,6 +101,21 @@ export function setSetup(patch) {
   return next;
 }
 export const isHomeMode = () => getSetup().mode === 'home';
+
+// ---------- texting rules: opt-outs and delivery results ----------
+export const isOptedOut = (phone) => !!db.prepare('SELECT 1 FROM opt_outs WHERE phone = ?').get(normPhone(phone));
+export function setOptOut(phone, optedOut, source = 'text') {
+  const p = normPhone(phone);
+  if (optedOut) db.prepare('INSERT INTO opt_outs (phone, opted_out_at, source) VALUES (?,?,?) ON CONFLICT(phone) DO UPDATE SET opted_out_at = excluded.opted_out_at').run(p, nowIso(), source);
+  else db.prepare('DELETE FROM opt_outs WHERE phone = ?').run(p);
+}
+export const setMessageSid = (messageId, sid) => db.prepare('UPDATE messages SET provider_sid = ? WHERE id = ?').run(sid, messageId);
+/** Record the carrier's report on one outgoing text; returns the message so the caller can tell the PM if it failed. */
+export function recordDelivery(sid, status, error = null) {
+  const m = db.prepare('SELECT id, ticket_id FROM messages WHERE provider_sid = ?').get(sid);
+  if (m) db.prepare('UPDATE messages SET delivery_status = ?, delivery_error = ? WHERE id = ?').run(status, error, m.id);
+  return m || null;
+}
 
 // ---------- photos and videos from tenants ----------
 export const addMedia = (ticketId, { kind = 'photo', name = '', url, source = 'upload', at }) =>
@@ -207,10 +228,11 @@ export function ticketDetail(id) {
     ...t,
     tenant,
     unit,
+    view: ticketView({ ...t, dispatches }),
     vendor: getVendor(t.vendor_id),
     vendor_channels: vendorChannels(getVendor(t.vendor_id)),
     media: mediaFor(id),
-    messages: db.prepare('SELECT * FROM messages WHERE ticket_id = ? ORDER BY id').all(id),
+    messages: db.prepare('SELECT * FROM messages WHERE ticket_id = ? ORDER BY created_at, id').all(id),
     history: db.prepare('SELECT * FROM status_history WHERE ticket_id = ? ORDER BY id').all(id),
     dispatches,
     pending_dispatch: dispatches.find((d) => d.state === 'pending') || null,

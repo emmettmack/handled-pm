@@ -202,18 +202,24 @@ function Backups() {
   const [d, reload] = usePoll(() => api.get('/admin/backups'), 30000);
   const [busy, setBusy] = useState(false);
   if (!d) return <p className="empty">Loading…</p>;
+  const download = async (name) => {
+    try {
+      const b = await api.blob(`/admin/backups/${name}/download`);
+      const url = URL.createObjectURL(b); const el = document.createElement('a'); el.href = url; el.download = `macalisto-backup-${name}.tar.gz`; el.click(); URL.revokeObjectURL(url);
+    } catch (e) { toast(e.message, 'err'); }
+  };
   const run = async () => { setBusy(true); try { const r = await api.post('/admin/backups'); toast(`Backed up ${r.accounts} account(s)`); reload(); } catch (e) { toast(e.message, 'err'); } finally { setBusy(false); } };
   return (
     <>
       <div className="card card-pad">
         <p>A copy of every account's data is made automatically about once a day. The last {d.keep} are kept.</p>
-        <p className="hint-small" style={{ margin: '6px 0 12px' }}>These copies live on the same disk as the live data. They protect against mistakes and bad updates, but not against losing the disk itself. Copying them off the server (for example to cloud storage) is a good next step.</p>
+        <p className="hint-small" style={{ margin: '6px 0 12px' }}>Use Download to keep a copy somewhere else. These copies live on the same disk as the live data. They protect against mistakes and bad updates, but not against losing the disk itself. Copying them off the server (for example to cloud storage) is a good next step.</p>
         <button className="btn primary" disabled={busy} onClick={run}>{busy ? 'Backing up…' : 'Back up now'}</button>
       </div>
       <div className="group-title">Backups</div>
       {d.backups.length === 0 ? <div className="card empty">None yet.</div> : (
-        <div className="card" style={{ overflow: 'hidden' }}><table className="plain"><thead><tr><th>Taken</th><th>Databases</th><th>Size</th></tr></thead>
-          <tbody>{d.backups.map((b) => <tr key={b.name}><td>{b.name.replace(/T(\d\d)-(\d\d)-(\d\d)-\d+Z/, ' $1:$2:$3 UTC')}</td><td>{b.files}</td><td>{b.sizeMB} MB</td></tr>)}</tbody></table></div>
+        <div className="card" style={{ overflow: 'hidden' }}><table className="plain"><thead><tr><th>Taken</th><th>Databases</th><th>Size</th><th /></tr></thead>
+          <tbody>{d.backups.map((b) => <tr key={b.name}><td>{b.name.replace(/T(\d\d)-(\d\d)-(\d\d)-\d+Z/, ' $1:$2:$3 UTC')}</td><td>{b.files}</td><td>{b.sizeMB} MB</td><td style={{ textAlign: 'right' }}><button className="btn sm" onClick={() => download(b.name)}><Download size={13} /> Download</button></td></tr>)}</tbody></table></div>
       )}
     </>
   );

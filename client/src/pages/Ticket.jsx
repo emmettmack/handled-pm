@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { useApp, go } from '../ctx.jsx';
 import ApprovalCard from '../components/ApprovalCard.jsx';
 import { UrgencyBadge, StatusPill } from '../components/Badges.jsx';
-import { usePoll, timeAgo, clock, dayTime, CATEGORY_LABELS, STATUS_LABELS, money, unitName } from '../util.js';
+import { usePoll, timeAgo, clock, dayTime, CATEGORY_LABELS, STATUS_LABELS, money, unitName, languageName } from '../util.js';
 
 const QUICK = {
   plumbing: ["Kitchen sink, it's leaking under the cabinet", 'Bathroom sink, just draining slowly. No leak.'],
@@ -106,6 +106,26 @@ function ConfirmTime({ t, reload }) {
   );
 }
 
+/** Fold this work order into another one (for duplicates). Two steps. */
+function MergeTicket({ t }) {
+  const { toast, refresh, dash } = useApp();
+  const [open, setOpen] = useState(false);
+  const [into, setInto] = useState('');
+  const options = dash.tickets.filter((x) => x.id !== t.id && !['resolved', 'closed'].includes(x.status)).sort((a, b) => (b.from_phone === t.from_phone) - (a.from_phone === t.from_phone) || b.id - a.id);
+  if (!options.length) return null;
+  const merge = async () => {
+    try { await api.post(`/tickets/${t.id}/merge`, { into: Number(into) }); await refresh(); toast(`Merged into work order #${into}`); go(`/tickets/${into}`); } catch (e) { toast(e.message, 'err'); }
+  };
+  return open ? (
+    <div className="remove-confirm" style={{ marginTop: 12 }}>
+      <b>Merge this into another work order?</b>
+      <span>Messages, photos and history move over, and this one goes away.</span>
+      <select value={into} onChange={(e) => setInto(e.target.value)}><option value="">Choose a work order…</option>{options.map((o) => <option key={o.id} value={o.id}>#{o.id} · {o.title}{o.from_phone === t.from_phone ? ' · same number' : ''}</option>)}</select>
+      <div className="btn-row"><button className="btn primary" disabled={!into} onClick={merge}>Merge them</button><button className="btn" onClick={() => setOpen(false)}>Cancel</button></div>
+    </div>
+  ) : <button className="btn link" style={{ marginTop: 8 }} onClick={() => setOpen(true)}>A duplicate? Merge into another work order…</button>;
+}
+
 /** Two-step delete for a finished work order. */
 function DeleteTicket({ t }) {
   const { toast, refresh } = useApp();
@@ -199,6 +219,9 @@ const FLAG_UI = {
   no_response: { icon: Hourglass, title: 'Vendor hasn’t replied', tone: 'identity' },
   over_limit: { icon: DollarSign, title: 'Over the owner’s limit', tone: '' },
   vendor_reply: { icon: MessageSquare, title: 'Vendor replied', tone: '' },
+  callback: { icon: TriangleAlert, title: 'Callback: the repair may not have held', tone: 'identity' },
+  possible_duplicate: { icon: TriangleAlert, title: 'Possible duplicate', tone: '' },
+  language: { icon: Languages, title: 'The tenant wrote in another language', tone: 'identity' },
 };
 
 function FlagCards({ t, reload }) {
@@ -260,7 +283,7 @@ export default function Ticket({ id }) {
           <div className="btn-row" style={{ marginBottom: 8 }}>
             <UrgencyBadge urgency={t.urgency} />
             <StatusPill status={t.status} />
-            {t.language === 'es' && <span className="chip-flag" style={{ background: '#e8eefc', color: '#2457c5' }}><Languages size={12} /> Spanish-speaking tenant</span>}
+            {t.language && t.language !== 'en' && <span className="chip-flag" style={{ background: '#e8eefc', color: '#2457c5' }}><Languages size={12} /> {languageName(t.language)}-speaking tenant</span>}
           </div>
           <h1>{t.title}</h1>
           <div className="sub">Work order #{t.id} · {CATEGORY_LABELS[t.category]} · {unit} · opened {timeAgo(t.created_at)}</div>
@@ -297,6 +320,7 @@ export default function Ticket({ id }) {
 
           <div className="card card-pad">
             <div className="panel-title"><Sparkles size={14} /> AI summary</div>
+            {!t.view.verifiedTexter && <p className="unconfirmed">Unconfirmed: this texter hasn't been verified, so treat the details below as a first read.</p>}
             <p>{t.summary || 'The assistant is reading this text…'}</p>
             {t.diagnosis && <><div className="label" style={{ marginTop: 12 }}>Likely cause</div><p style={{ color: 'var(--ink-2)' }}>{t.diagnosis}</p></>}
             {t.next_steps.length > 0 && <><div className="label" style={{ marginTop: 12 }}>Proposed next steps</div><ol className="steps">{t.next_steps.map((s) => <li key={s}>{s}</li>)}</ol></>}
@@ -319,20 +343,20 @@ export default function Ticket({ id }) {
             {pending && <p>Review the draft on the left and approve it to move this forward.</p>}
             {blocked && <p>Held for you: see the alert on the left.</p>}
             {t.status === 'closed' && <p>This work order is closed.</p>}
-            {['resolved', 'closed'].includes(t.status) && <DeleteTicket t={t} />}
+            {['resolved', 'closed'].includes(t.status) ? <DeleteTicket t={t} /> : <MergeTicket t={t} />}
             {!['dispatched', 'scheduled', 'in_progress', 'resolved', 'closed', 'needs_info'].includes(t.status) && !pending && !needsRedraft && !blocked && <p>The assistant is working on this…</p>}
           </div>
 
           <div className="card card-pad">
             <div className="panel-title"><Wrench size={14} /> Vendor</div>
-            {t.vendor ? (
+            {t.view.showVendor && t.vendor ? (
               <>
                 <div style={{ fontWeight: 600 }}>{t.vendor.name}</div>
                 <div style={{ color: 'var(--muted)', fontSize: 13.5 }}>{t.vendor.trade} · {t.vendor.rate}</div>
                 {t.vendor_channels?.map((c) => <div key={c.label} style={{ fontSize: 13.5 }}>{c.label}: {c.value} <span className="primary-tag">Primary</span></div>)}
                 {t.vendor.notes && <p style={{ fontSize: 13.5, marginTop: 6, color: 'var(--ink-2)' }}>{t.vendor.notes}</p>}
               </>
-            ) : <p style={{ color: 'var(--muted)' }}>Not matched yet.</p>}
+            ) : <p style={{ color: 'var(--muted)' }}>{t.view.notice || 'Not matched yet.'}</p>}
             {vendorAttempts.length > 1 && (
               <div style={{ marginTop: 12 }}>
                 <div className="label">Dispatch attempts</div>
@@ -345,9 +369,11 @@ export default function Ticket({ id }) {
               </div>
             )}
             <div className="kv" style={{ marginTop: 14 }}>
-              <dt>Estimate</dt><dd>{money(t.cost_estimate)}{t.unit && t.cost_estimate > t.unit.approval_limit ? <span className="chip-flag" style={{ marginLeft: 8 }}>over {money(t.unit.approval_limit)} limit</span> : null}</dd>
-              <dt>Tenant</dt><dd>{t.tenant ? `${t.tenant.name} · ${t.tenant.phone.replace(/^\+1(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3')}` : 'Not a tenant on file'}</dd>
-              <dt>Access</dt><dd>{t.access_notes || 'Not discussed yet'}</dd>
+              {t.view.showEstimate && (
+                <><dt>Estimate</dt><dd>{money(t.cost_estimate)}{t.unit && t.cost_estimate > t.unit.approval_limit ? <span className="chip-flag" style={{ marginLeft: 8 }}>over {money(t.unit.approval_limit)} limit</span> : null}<small className="est-src">{t.view.estimateLabel}</small></dd></>
+              )}
+              <dt>{t.tenant ? 'Tenant' : 'Texter'}</dt><dd>{t.tenant ? `${t.tenant.name} · ${t.tenant.phone.replace(/^\+1(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3')}` : `Unverified · ${String(t.from_phone || '').replace(/^\+1(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3')}`}</dd>
+              {t.view.showAccess && <><dt>Access</dt><dd>{t.access_notes || 'Not discussed yet'}</dd></>}
             </div>
           </div>
 
