@@ -6,6 +6,8 @@ import { db, accountIds } from './db.js';
 import * as S from './store.js';
 import { receiveInboundMessage } from './intake.js';
 import { twilioConfigured, twilioAuthHeader } from './sms.js';
+import { bump } from './metrics.js';
+import { numberOwner } from './registry.js';
 
 const publicUrl = (req) => (process.env.PUBLIC_URL ? process.env.PUBLIC_URL.replace(/\/$/, '') : `${req.headers['x-forwarded-proto'] || req.protocol}://${req.headers.host}`) + req.originalUrl;
 
@@ -21,6 +23,8 @@ export function validSignature(req) {
 
 /** Which account owns this Twilio number? TWILIO_ROUTES is JSON like {"+18055550100":"user_abc"}; with one signed-up account it's that one. */
 export function accountForNumber(to) {
+  const assigned = numberOwner(to); // numbers assigned on the admin page come first
+  if (assigned) return assigned;
   try {
     const routes = JSON.parse(process.env.TWILIO_ROUTES || '{}');
     if (routes[to]) return routes[to];
@@ -64,6 +68,7 @@ export async function inboundSms(req, res) {
 
   try {
     await runAs(account, async () => {
+      bump('inbound_sms');
       const text = String(body).trim();
       const n = Number(req.body.NumMedia) || 0;
       if (text && vendorReply(from, text)) return;

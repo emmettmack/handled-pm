@@ -13,9 +13,18 @@ async function request(path, opts = {}) {
   return data;
 }
 
+/** Fetches a file (like a data export) with the sign-in token attached. */
+async function blob(path) {
+  const token = await window.Clerk?.session?.getToken();
+  const res = await fetch('/api' + path, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Download failed');
+  return res.blob();
+}
+
 export const api = {
+  blob,
   get: (p) => request(p),
   post: (p, body) => request(p, { method: 'POST', body: JSON.stringify(body || {}) }),
   put: (p, body) => request(p, { method: 'PUT', body: JSON.stringify(body || {}) }),
-  del: (p) => request(p, { method: 'DELETE' }),
+  del: (p, body) => request(p, { method: 'DELETE', ...(body ? { body: JSON.stringify(body) } : {}) }),
 };

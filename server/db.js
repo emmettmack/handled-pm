@@ -7,7 +7,7 @@ import { currentAccount, LOCAL_ACCOUNT } from './accounts.js';
 import { isDemo } from './mode.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
+export const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const LOCAL_FILE = process.env.DB_PATH || path.join(DATA_DIR, 'handled.db');
 
 export const SCHEMA = `
@@ -110,4 +110,26 @@ export function accountIds() {
   const dir = path.join(DATA_DIR, 'accounts');
   const ids = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith('.db')).map((f) => f.slice(0, -3)) : [];
   return fs.existsSync(LOCAL_FILE) ? [LOCAL_ACCOUNT, ...ids] : ids;
+}
+
+// ---------- helpers for the admin tools ----------
+export const accountFile = (id) => (id === LOCAL_ACCOUNT ? LOCAL_FILE : path.join(DATA_DIR, 'accounts', `${id}.db`));
+export const accountExists = (id) => fs.existsSync(accountFile(id));
+export const rawDb = (id) => forAccount(id);
+
+/** Close and forget an account's database handle (before deleting its files). */
+export function closeAccount(id) {
+  open.get(id)?.close();
+  open.delete(id);
+}
+
+/** A consistent copy of every account's database into `dir` (SQLite's own online backup, safe while the app runs). */
+export async function backupAll(dir) {
+  fs.mkdirSync(dir, { recursive: true });
+  const done = [];
+  for (const id of accountIds()) {
+    await forAccount(id).backup(path.join(dir, `${id}.db`));
+    done.push(id);
+  }
+  return done;
 }

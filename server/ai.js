@@ -3,6 +3,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import * as mock from './mockAi.js';
 import { unitName } from './labels.js';
+import { bump } from './metrics.js';
 
 export const MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
 export const isMock = () => !process.env.ANTHROPIC_API_KEY?.trim();
@@ -32,6 +33,7 @@ async function withFallback(real, fallback) {
   try {
     const out = await real();
     lastError = null;
+    bump('ai_calls');
     return out;
   } catch (e) {
     lastError = e.message;

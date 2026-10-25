@@ -9,6 +9,7 @@ import Vendors from './pages/Vendors.jsx';
 import Properties from './pages/Properties.jsx';
 import Preferences from './pages/Preferences.jsx';
 import Setup from './pages/Setup.jsx';
+import Admin from './pages/Admin.jsx';
 
 function useHash() {
   const [h, setH] = useState(window.location.hash.slice(1) || '/');
@@ -71,6 +72,8 @@ export default function App({ accountSlot = null }) {
   const [status, refreshStatus] = usePoll(() => api.get('/status'), 30000);
   const [, bump] = useState(0);
   const [setup, reloadSetup] = usePoll(() => api.get('/setup'), 4000);
+  const [adminInfo] = usePoll(() => api.get('/admin/me').catch(() => ({ admin: false })), 600000);
+  const [notice] = usePoll(() => api.get('/announcement').catch(() => null), 60000);
   const [toasts, setToasts] = useState([]);
 
   const toast = useCallback((msg, kind = 'ok', ticketId) => {
@@ -89,8 +92,9 @@ export default function App({ accountSlot = null }) {
   else if (parts[0] === 'vendors') page = <Vendors />;
   else if (parts[0] === 'properties') page = <Properties />;
   else if (parts[0] === 'preferences') page = <Preferences />;
+  else if (parts[0] === 'admin' && adminInfo?.admin) page = <Admin />;
   else page = <Home />;
-  const section = ['vendors', 'properties', 'preferences'].includes(parts[0]) ? parts[0] : 'home';
+  const section = ['vendors', 'properties', 'preferences', 'admin'].includes(parts[0]) ? parts[0] : 'home';
 
   // A new real account walks through setup before seeing the dashboard.
   if (ctx.status && !ctx.demo && setup && !setup.done) {
@@ -120,6 +124,7 @@ export default function App({ accountSlot = null }) {
             <a href="#/vendors" className={section === 'vendors' ? 'active' : ''}>Vendors</a>
             <a href="#/properties" className={section === 'properties' ? 'active' : ''}>Properties</a>
             <a href="#/preferences" className={section === 'preferences' ? 'active' : ''}>Preferences</a>
+            {adminInfo?.admin && <a href="#/admin" className={section === 'admin' ? 'active' : ''}>Admin</a>}
             {import.meta.env.VITE_STATIC === '1' && <a href="../index.html" className="back">&larr; Back to site</a>}
             {accountSlot && <span className="account-slot">{accountSlot}</span>}
           </nav>
@@ -134,6 +139,7 @@ export default function App({ accountSlot = null }) {
           )}
         </div>
       </header>
+      {notice?.active && notice.text && <div className={`site-notice ${notice.level}`}>{notice.text}</div>}
       {dash && !hidden && <EmergencyBanner emergencies={dash.emergencies} company={status?.company} onHide={() => bump((n) => n + 1)} />}
       <main className="page">
         {dash ? page : dashError ? (

@@ -11,6 +11,10 @@ import { routes } from './routes.js';
 import { authenticate, authEnabled } from './auth.js';
 import { isDemo } from './mode.js';
 import { inboundSms } from './twilio.js';
+import { router as adminRouter, requireAdmin, adminMe, startBackups } from './admin.js';
+import { setMetricSink } from './metrics.js';
+import { bumpMetric, getKv } from './registry.js';
+import { currentAccount } from './accounts.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 if (isDemo() && !S.getCompany()) seed(); // sample data is for local development only; real accounts start empty
@@ -38,6 +42,14 @@ app.post('/api/webhooks/sms', inboundSms);
 // Body parsing comes after the sign-in check so strangers can't make the server buffer large uploads.
 app.use('/api', authenticate, express.json({ limit: '25mb' })); // tenant photos and videos arrive as data URLs
 
+// Usage counters for the admin page
+setMetricSink((key, n) => bumpMetric(currentAccount(), key, n));
+
+// Site-wide notice from the admin page (shown to every signed-in user); and who is an admin
+app.get('/api/announcement', wrap(() => getKv('announcement', { text: '', level: 'info', active: false })));
+app.get('/api/admin/me', adminMe);
+app.use('/api/admin', requireAdmin, adminRouter);
+
 // Every JSON route lives in routes.js (shared with the static browser demo).
 for (const [method, path, handler] of routes) {
   app[method.toLowerCase()]('/api' + path, wrap((req) => {
@@ -60,6 +72,7 @@ app.listen(port, () => {
   console.log(s.mock ? '  AI: DEMO MODE (no ANTHROPIC_API_KEY set, using canned responses)' : `  AI: live, model ${s.model}`);
 });
 A.startScheduler();
+if (!isDemo() || process.env.BACKUPS === '1') startBackups(); // daily copies of every account's data
 
 // Public demo hosting: wipe visitor changes and restore the sample data every N hours.
 if (isDemo() && Number(process.env.DEMO_RESET_HOURS) > 0) setInterval(() => seed(), Number(process.env.DEMO_RESET_HOURS) * 3600000);
