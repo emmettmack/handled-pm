@@ -1,4 +1,5 @@
-// Copy of the schema in server/db.js (that file opens a native SQLite file, so the browser build can't import it).
+// Migration 1: the schema as it was before migrations existed. Safe on a brand-new database and on one that
+// already has these tables (CREATE TABLE IF NOT EXISTS), and it adds the few columns that were bolted on later.
 export const SCHEMA = `
 CREATE TABLE IF NOT EXISTS company (
   id INTEGER PRIMARY KEY, name TEXT, pm_name TEXT, phone TEXT, email TEXT, address TEXT, maintenance_line TEXT
@@ -51,3 +52,20 @@ CREATE TABLE IF NOT EXISTS status_history (
   status TEXT, note TEXT, created_at TEXT
 );
 `;
+
+const ensureColumn = (d, table, name, def) => {
+  if (!d.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === name)) d.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${def}`);
+};
+
+export default {
+  id: 1,
+  name: 'baseline',
+  up(d) {
+    d.exec(SCHEMA);
+    ensureColumn(d, 'vendors', 'personal_phone', "TEXT DEFAULT ''");
+    ensureColumn(d, 'vendors', 'primary_company', 'INTEGER DEFAULT 1');
+    ensureColumn(d, 'vendors', 'primary_personal', 'INTEGER DEFAULT 0');
+    ensureColumn(d, 'vendors', 'primary_email', 'INTEGER DEFAULT 0');
+    ensureColumn(d, 'properties', 'company', "TEXT DEFAULT ''");
+  },
+};

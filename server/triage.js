@@ -22,6 +22,11 @@ export function enqueue(ticketId, fn) {
   return next;
 }
 
+/** Resolves when no ticket work is in flight (used by tests and by graceful shutdown). */
+export async function whenIdle() {
+  while (queues.size) await Promise.all([...queues.values()]);
+}
+
 function context(id) {
   const t = S.getTicket(id);
   const tenant = t.tenant_id ? S.db_tenant(t.tenant_id) : null;

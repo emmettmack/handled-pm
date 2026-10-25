@@ -3,7 +3,7 @@
 import { SCENARIOS, pickScenario } from './scenarios.js';
 import { unitName } from './labels.js';
 
-const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+const pause = (ms) => new Promise((r) => setTimeout(r, process.env.MOCK_AI_DELAY_MS !== undefined ? Number(process.env.MOCK_AI_DELAY_MS) : ms));
 const has = (text, re) => re.test(text);
 const fmtPhone = (p) => { const d = String(p || '').replace(/\D/g, '').slice(-10); return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`; };
 const first = (n) => (n || '').split(' ')[0];

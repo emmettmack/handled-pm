@@ -4,6 +4,8 @@ import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
 import { DATA_DIR } from './db.js';
+import { applyMigrations } from './migrations/index.js';
+import { REGISTRY_MIGRATIONS } from './migrations/registry.js';
 
 let reg;
 function r() {
@@ -11,12 +13,7 @@ function r() {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   reg = new Database(path.join(DATA_DIR, 'registry.db'));
   reg.pragma('journal_mode = WAL');
-  reg.exec(`
-    CREATE TABLE IF NOT EXISTS numbers (number TEXT PRIMARY KEY, account_id TEXT NOT NULL, label TEXT DEFAULT '', created_at TEXT);
-    CREATE TABLE IF NOT EXISTS audit (id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT, admin TEXT, action TEXT, target TEXT, detail TEXT);
-    CREATE TABLE IF NOT EXISTS metrics (account_id TEXT, day TEXT, key TEXT, n INTEGER DEFAULT 0, PRIMARY KEY (account_id, day, key));
-    CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT);
-  `);
+  applyMigrations(reg, REGISTRY_MIGRATIONS);
   return reg;
 }
 export const registryFile = () => path.join(DATA_DIR, 'registry.db');
