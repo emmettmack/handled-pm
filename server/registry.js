@@ -4,6 +4,8 @@ import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
 import { DATA_DIR } from './db.js';
+import { applyMigrations } from './migrations/index.js';
+import { REGISTRY_MIGRATIONS } from './migrations/registry.js';
 
 let reg;
 function r() {
@@ -11,12 +13,7 @@ function r() {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   reg = new Database(path.join(DATA_DIR, 'registry.db'));
   reg.pragma('journal_mode = WAL');
-  reg.exec(`
-    CREATE TABLE IF NOT EXISTS numbers (number TEXT PRIMARY KEY, account_id TEXT NOT NULL, label TEXT DEFAULT '', created_at TEXT);
-    CREATE TABLE IF NOT EXISTS audit (id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT, admin TEXT, action TEXT, target TEXT, detail TEXT);
-    CREATE TABLE IF NOT EXISTS metrics (account_id TEXT, day TEXT, key TEXT, n INTEGER DEFAULT 0, PRIMARY KEY (account_id, day, key));
-    CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT);
-  `);
+  applyMigrations(reg, REGISTRY_MIGRATIONS);
   return reg;
 }
 export const registryFile = () => path.join(DATA_DIR, 'registry.db');
@@ -55,3 +52,17 @@ export const listAudit = (limit = 100) => r().prepare('SELECT * FROM audit ORDER
 // ---- site-wide settings ----
 export const getKv = (key, fallback = null) => { const v = r().prepare('SELECT value FROM kv WHERE key = ?').get(key)?.value; return v ? JSON.parse(v) : fallback; };
 export const setKv = (key, value) => r().prepare('INSERT INTO kv (key, value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(key, JSON.stringify(value));
+
+// ---- public opt-in pages (/t/<slug>) ----
+export const accountNumber = (accountId) => r().prepare('SELECT number FROM numbers WHERE account_id = ? ORDER BY created_at LIMIT 1').get(accountId)?.number || null;
+export const pageByAccount = (accountId) => r().prepare('SELECT slug FROM public_pages WHERE account_id = ?').get(accountId)?.slug || null;
+export const accountForSlug = (slug) => r().prepare('SELECT account_id FROM public_pages WHERE slug = ?').get(String(slug || '').toLowerCase())?.account_id || null;
+export const setPageSlug = (accountId, slug) => {
+  try {
+    r().prepare('INSERT INTO public_pages (slug, account_id, created_at) VALUES (?,?,?) ON CONFLICT(account_id) DO UPDATE SET slug = excluded.slug')
+      .run(slug, accountId, new Date().toISOString());
+  } catch (e) {
+    if (/UNIQUE/.test(e.message)) throw Object.assign(new Error('That link name is taken. Try another.'), { status: 409 });
+    throw e;
+  }
+};

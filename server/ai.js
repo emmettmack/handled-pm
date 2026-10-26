@@ -4,6 +4,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import * as mock from './mockAi.js';
 import { unitName } from './labels.js';
 import { bump } from './metrics.js';
+import { displayCompany } from './labels.js';
+import { LANGUAGES } from './languages.js';
 
 export const MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
 export const isMock = () => !process.env.ANTHROPIC_API_KEY?.trim();
@@ -42,13 +44,13 @@ async function withFallback(real, fallback) {
   }
 }
 
-const RULES = (company) => `You are the maintenance coordinator for ${company.name}, a residential rental and property management business in Los Angeles. You text with tenants and prepare work orders for the property manager (PM), who approves every vendor dispatch before anything goes out.
+const RULES = (company) => `You are the maintenance coordinator for ${displayCompany(company)}, a residential rental and property management business in Los Angeles. You text with tenants and prepare work orders for the property manager (PM), who approves every vendor dispatch before anything goes out.
 
 VOICE: warm, competent, plain language, like a great office coordinator. Short texts (1-3 sentences). No jargon, no over-apologizing, no emojis.
 
 HARD RULES
 1. NEVER promise or imply money or fault. No paying, reimbursing, refunds, rent credits, rent reductions, covering costs, or compensation. Never say or imply the PM, owner, or company is at fault or responsible. You MAY say "we'll get this handled" and "someone will be out [day]" (only if a time is actually known). If the tenant asks about compensation, damages, rent credit or blame: set compensation_requested=true and reply neutrally that you've passed it to the property manager who will follow up personally, and that the repair is still being arranged.
-2. LANGUAGE: reply to the tenant in the language they wrote in. Every other field is in English. If they write in a language other than English or Spanish, set other_language=true and still answer in their language.
+2. LANGUAGE: reply to the tenant in the language they wrote in. Every other field is in English. Supported languages (use exactly these codes): ${LANGUAGES.map((l) => `${l.code} = ${l.name}`).join(', ')}. If they write in a language outside this list, set other_language=true, set language to "en", and reply in English.
 3. EMERGENCY = danger to a person or major active damage: gas smell, flooding or burst pipe, sparking/smoking outlet or burning smell, fire, no heat in freezing weather, sewage flooding. For emergencies the reply starts with brief safety instructions (gas: leave the unit, no switches or flames, call 911 or SoCalGas 1-800-427-2200 from outside; flooding: shut off the water valve if safe; electrical: stay away, breaker off only if safe, 911 if smoke or flames), says the office is being alerted, and does NOT ask follow-up questions.
 4. URGENT = real impact on daily living but no danger: no hot water, AC out in a heat wave, dead fridge, the only toilet unusable, contained active leak, lockout. ROUTINE = everything else.
 5. FOLLOW-UPS: ask only when a missing detail changes who we send or how urgent it is (which fixture/room, is it leaking, how bad, since when). One short question at a time (two sentences max). Lockouts and emergencies never need follow-ups. When no follow-up rounds remain, do NOT ask: make reasonable assumptions and note them in the summary.
@@ -61,7 +63,7 @@ export async function triage(ctx) {
 
 TASK: Read the whole conversation and return ONLY a JSON object (no prose, no code fence) with exactly these keys:
 {
- "language": "en" | "es",
+ "language": one of the supported codes above,
  "category": "plumbing" | "electrical" | "HVAC" | "appliance" | "lockout" | "other",
  "urgency": "routine" | "urgent" | "emergency",
  "urgency_reason": "one sentence, plain English, why this urgency",
@@ -73,7 +75,8 @@ TASK: Read the whole conversation and return ONLY a JSON object (no prose, no co
  "next_steps": ["2-4 short steps"],
  "estimated_cost": whole-job estimate in USD as a number (labor + parts) for an LA vendor,
  "access_notes": "what the tenant said about being home, pets, entry; or 'Tenant to arrange entry with vendor'",
- "other_language": true if the tenant writes in a language other than English or Spanish, else false,
+ "other_language": true if the tenant writes in a language that is not in the supported list, else false,
+ "reply_english": "an English translation of reply_to_tenant (the same text if it is already English). It is used to check the reply before it is sent",
  "compensation_requested": true | false,
  "identity_claim": { "name": "name the texter gave or null", "unit": "unit number the texter gave or null" }
 }`;
@@ -118,11 +121,11 @@ TASK: Choose the best vendor from the candidate list and write the dispatch mess
 {
  "vendor_id": number (must be one of the candidate ids),
  "reasoning": "2-3 plain-English sentences for the PM: why this vendor (trade match, preferred flag, their notes, language, availability) and why this urgency",
- "text": "the SMS to the vendor, under 120 words, following the PM's draft preferences below, ending by asking them to confirm they can take the job and tell us when they can be there"
+ "text": "the SMS to the vendor, written in the language listed for the vendor you choose (candidates[].language, default English), under 120 words, following the PM's draft preferences below, ending by asking them to confirm they can take the job and tell us when they can be there"
 }
-Rules: ${ctx.accessAllowed ? 'Access instructions may come from access_notes.' : 'The texter is NOT verified. Do NOT include entry instructions; tell the vendor not to enter until the office confirms with the tenant.'} ${t.language === 'es' ? 'Tenant prefers Spanish; mention it to the vendor and favor Spanish-speaking vendors.' : ''}
+Rules: ${ctx.accessAllowed ? 'Access instructions may come from access_notes.' : 'The texter is NOT verified. Do NOT include entry instructions; tell the vendor not to enter until the office confirms with the tenant.'} ${t.language && t.language !== 'en' ? `Tenant prefers ${t.language}; mention it to the vendor and favor vendors who speak it.` : ''}
 PM DRAFT PREFERENCES (always follow): ${draftPrefsPrompt(ctx.prefs.draft)}
-Signed by ${ctx.company.pm_name}, ${ctx.company.name}, ${ctx.company.phone}.${ctx.note ? `\nPM instruction to follow: ${ctx.note}` : ''}`;
+Signed by ${[ctx.company.pm_name, displayCompany(ctx.company) !== ctx.company.pm_name && displayCompany(ctx.company), ctx.company.phone].filter(Boolean).join(', ')}. Never use the account's sign-in name or email in the message.${ctx.note ? `\nPM instruction to follow: ${ctx.note}` : ''}`;
       const user = JSON.stringify({
         work_order: t.id,
         title: t.title, category: t.category, urgency: t.urgency, urgency_reason: t.reasoning,
@@ -130,7 +133,7 @@ Signed by ${ctx.company.pm_name}, ${ctx.company.name}, ${ctx.company.phone}.${ct
         address: ctx.unit ? `${ctx.unit.address}, ${unitName(ctx.unit.number)}${ctx.unit.neighborhood ? ` (${ctx.unit.neighborhood})` : ''}` : null,
         tenant: ctx.tenant ? { name: ctx.tenant.name, phone: ctx.tenant.phone } : null,
         photos_or_videos_attached: ctx.mediaCount || 0,
-        candidates: ctx.vendors.map((v) => ({ id: v.id, name: v.name, trade: v.trade, preferred: !!v.preferred, rate: v.rate, notes: v.notes })),
+        candidates: ctx.vendors.map((v) => ({ id: v.id, name: v.name, trade: v.trade, preferred: !!v.preferred, rate: v.rate, notes: v.notes, language: v.language || 'en' })),
       });
       return callJSON(system, user, 1200);
     },

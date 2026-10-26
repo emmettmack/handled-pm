@@ -4,9 +4,9 @@ import { db } from './browserDb.js';
 import * as A from '../../../server/actions.js';
 import { seed } from '../../../server/seed.js';
 import { routes, fail } from '../../../server/routes.js';
-import { SCHEMA } from './schema.js';
+import { applyMigrations } from '../../../server/migrations/index.js';
 
-db.exec(SCHEMA);
+applyMigrations(db);
 seed();
 A.startScheduler();
 

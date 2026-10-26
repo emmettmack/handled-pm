@@ -10,6 +10,9 @@ import { pickScenario } from './scenarios.js';
 import { buildText } from './mockAi.js';
 import { currentAccount } from './accounts.js';
 import { isDemo } from './mode.js';
+import { companyNameProblem } from './labels.js';
+import { normalizeLanguage } from './languages.js';
+import { formatRate, validateCents } from './rates.js';
 import { twilioConfigured, twilioNumber } from './sms.js';
 
 export const fail = (msg, status = 400) => Object.assign(new Error(msg), { status });
@@ -31,11 +34,20 @@ async function randomTenantText() {
   return { tenantId: tenant?.id ?? null, body: await ai.generateTenantMessage({ scenario, tenant, language }) };
 }
 
-const vendorFields = (b) => [b.name, b.trade, b.phone || '', b.personal_phone || '', b.email || '', b.rate || '', b.preferred ? 1 : 0, b.notes || '', b.primary_company ? 1 : 0, b.primary_personal ? 1 : 0, b.primary_email ? 1 : 0];
+const cents = (v) => (v === null || v === undefined || v === '' ? null : Number(v));
+const vendorFields = (b) => [
+  b.name, b.trade, b.phone || '', b.personal_phone || '', b.email || '', formatRate({ ...b, rate: b.rate_notes || b.rate }), b.preferred ? 1 : 0, b.notes || '',
+  b.primary_company ? 1 : 0, b.primary_personal ? 1 : 0, b.primary_email ? 1 : 0,
+  cents(b.rate_hourly_cents), cents(b.rate_flat_cents), cents(b.rate_trip_cents), b.rate_notes || '', normalizeLanguage(b.language),
+];
 
 /** Every vendor needs at least one primary contact method, and each primary one needs a value to reach them at. */
 function checkVendor(b) {
   if (!b.name || !b.trade) throw fail('Name and trade are required');
+  for (const [k, label] of [['rate_hourly_cents', 'The hourly rate'], ['rate_flat_cents', 'The flat rate'], ['rate_trip_cents', 'The trip charge']]) {
+    const problem = validateCents(b[k], label);
+    if (problem) throw fail(problem);
+  }
   const picks = [['primary_company', 'phone', 'company phone'], ['primary_personal', 'personal_phone', 'personal phone'], ['primary_email', 'email', 'email']].filter(([flag]) => b[flag]);
   if (!picks.length) throw fail('Pick at least one primary contact so Macalisto knows how to reach this vendor.');
   const missing = picks.find(([, field]) => !String(b[field] || '').trim());
@@ -70,7 +82,7 @@ function saveTenant(id, b) {
   if (!b.unit_id || !db.prepare('SELECT 1 FROM units WHERE id = ?').get(b.unit_id)) throw fail('Choose which unit they live in.');
   const dupe = db.prepare('SELECT id FROM tenants WHERE phone = ? AND id != ?').get(phone, id || 0);
   if (dupe) throw fail('Another tenant already uses that phone number.');
-  const vals = [name, phone, b.unit_id, b.language === 'es' ? 'es' : 'en'];
+  const vals = [name, phone, b.unit_id, normalizeLanguage(b.language)];
   if (id) db.prepare('UPDATE tenants SET name=?, phone=?, unit_id=?, language=? WHERE id=?').run(...vals, id);
   else id = db.prepare('INSERT INTO tenants (name,phone,unit_id,language) VALUES (?,?,?,?)').run(...vals).lastInsertRowid;
   return { id: Number(id) };
@@ -133,7 +145,12 @@ export const routes = [
     const t = S.getTicket(params.id);
     return receiveInboundMessage({ channel: 'sim', from: t.from_phone, body: body.body, ticketId: t.id });
   })],
+  // PM inbox: every conversation, newest first; opening one marks it read; the assistant can be paused or handed back.
+  ['GET', '/inbox', () => S.inboxList()],
+  ['POST', '/tickets/:id/read', ({ params }) => { S.markRead(params.id); }],
+  ['POST', '/tickets/:id/assistant', ({ params, body }) => { A.setAssistant(params.id, !!body?.on); }],
   ['POST', '/tickets/:id/pm-message', ({ params, body }) => A.pmMessage(params.id, body.body)],
+  ['POST', '/tickets/:id/merge', ({ params, body }) => { A.mergeTickets(params.id, Number(body?.into)); return { into: Number(body.into) }; }],
   ['POST', '/tickets/:id/notes', ({ params, body }) => S.updateTicket(params.id, { internal_notes: String(body.notes ?? '') })],
   // Photos and videos a tenant sent by text or email, or uploaded to the tenant portal (url is a data: URL or a hosted file)
   ['POST', '/tickets/:id/media', ({ params, body }) => {
@@ -161,12 +178,12 @@ export const routes = [
   ['GET', '/vendors', () => db.prepare('SELECT * FROM vendors WHERE active = 1 ORDER BY trade, preferred DESC, name').all()],
   ['POST', '/vendors', ({ body }) => {
     checkVendor(body);
-    const r = db.prepare('INSERT INTO vendors (name,trade,phone,personal_phone,email,rate,preferred,notes,primary_company,primary_personal,primary_email) VALUES (?,?,?,?,?,?,?,?,?,?,?)').run(...vendorFields(body));
+    const r = db.prepare('INSERT INTO vendors (name,trade,phone,personal_phone,email,rate,preferred,notes,primary_company,primary_personal,primary_email,rate_hourly_cents,rate_flat_cents,rate_trip_cents,rate_notes,language) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(...vendorFields(body));
     return S.getVendor(r.lastInsertRowid);
   }],
   ['PUT', '/vendors/:id', ({ params, body }) => {
     checkVendor(body);
-    db.prepare('UPDATE vendors SET name=?, trade=?, phone=?, personal_phone=?, email=?, rate=?, preferred=?, notes=?, primary_company=?, primary_personal=?, primary_email=? WHERE id=?').run(...vendorFields(body), params.id);
+    db.prepare('UPDATE vendors SET name=?, trade=?, phone=?, personal_phone=?, email=?, rate=?, preferred=?, notes=?, primary_company=?, primary_personal=?, primary_email=?, rate_hourly_cents=?, rate_flat_cents=?, rate_trip_cents=?, rate_notes=?, language=? WHERE id=?').run(...vendorFields(body), params.id);
     return S.getVendor(params.id);
   }],
   ['DELETE', '/vendors/:id', ({ params }) => { db.prepare('UPDATE vendors SET active = 0 WHERE id = ?').run(params.id); }],
@@ -210,7 +227,8 @@ export const routes = [
 
   // ---------- company + preferences ----------
   ['PUT', '/company', ({ body }) => {
-    if (!String(body.name || '').trim() || !String(body.pm_name || '').trim()) throw fail('Company name and your name are required');
+    if (!String(body.pm_name || '').trim()) throw fail('Please enter your name.');
+    if (!S.isHomeMode()) { const problem = companyNameProblem(body.name, body.email); if (problem) throw fail(problem); } // home owners need no company name
     return S.updateCompany(body);
   }],
   ['GET', '/prefs', () => S.getPrefs()],

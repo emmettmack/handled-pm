@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { api } from '../api.js';
 import { useApp } from '../ctx.jsx';
-import { unitName } from '../util.js';
+import { unitName, LANGUAGES } from '../util.js';
 
 const BLANK = { name: '', phone: '', language: 'en', unit_id: '' };
 const pretty = (p) => String(p || '').replace(/^\+1(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3');
@@ -32,7 +32,7 @@ export default function TenantForm({ tenant, units, onClose, onSaved }) {
           <div className="field"><label>Name</label><input value={t.name} onChange={set('name')} autoFocus /></div>
           <div className="field-row">
             <div className="field"><label>Phone number</label><input value={t.phone} onChange={set('phone')} placeholder="(805) 555-0100" /></div>
-            <div className="field"><label>Language</label><select value={t.language} onChange={set('language')}><option value="en">English</option><option value="es">Spanish</option></select></div>
+            <div className="field"><label>Language</label><select value={t.language} onChange={set('language')}>{LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.name}</option>)}</select></div>
           </div>
           <div className="field"><label>Unit</label>
             <select value={t.unit_id} onChange={set('unit_id')}><option value="">Choose…</option>{units.map((u) => <option key={u.id} value={u.id}>{u.property_name} · {unitName(u.number)}</option>)}</select>

@@ -1,9 +1,9 @@
 // Rule-based stand-in for the AI, used when ANTHROPIC_API_KEY is not set.
 // Returns the same shapes as the real model calls in ai.js so the rest of the app is unaware.
 import { SCENARIOS, pickScenario } from './scenarios.js';
-import { unitName } from './labels.js';
+import { unitName, displayCompany, senderLine } from './labels.js';
 
-const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+const pause = (ms) => new Promise((r) => setTimeout(r, process.env.MOCK_AI_DELAY_MS !== undefined ? Number(process.env.MOCK_AI_DELAY_MS) : ms));
 const has = (text, re) => re.test(text);
 const fmtPhone = (p) => { const d = String(p || '').replace(/\D/g, '').slice(-10); return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`; };
 const first = (n) => (n || '').split(' ')[0];
@@ -51,12 +51,35 @@ const EMERGENCY_REPLY = {
   heat: ['I\'m sorry you\'re cold. Please use blankets and keep warm in one room, and don\'t use the oven for heat. I\'m alerting the office and getting a technician out as soon as possible.', 'Lamento que tenga frío. Use cobijas y quédense en un solo cuarto, y no use el horno para calentar. Estoy avisando a la oficina y buscando un técnico lo antes posible.'],
 };
 
-// Languages other than English/Spanish: any non-Latin script, or a few very common words in other Latin-script languages.
-const OTHER_LANGUAGE = /[\u0400-\u04FF\u0590-\u06FF\u0900-\u0DFF\u0E00-\u0E7F\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]|\b(bonjour|merci|fuite|évier|s'il vous plaît|olá|obrigad[oa]|vazamento|torneira|hallo|danke|wasserhahn|undicht|ciao|grazie|perdita|rubinetto|salamat|po\b|tubig|xin chào|cảm ơn)\b/i;
+// A language we do NOT support: another script (Russian, Hebrew, Arabic, Hindi, Thai, Japanese...) or a few very common
+// words in other Latin-script languages. Korean, Chinese, Armenian, Vietnamese and Tagalog are supported, so they are not here.
+const OTHER_LANGUAGE = /[Ѐ-ӿ֐-ۿऀ-෿฀-๿぀-ヿ]|\b(bonjour|merci|fuite|évier|s'il vous plaît|olá|obrigad[oa]|vazamento|torneira|hallo|danke|wasserhahn|undicht|ciao|grazie|perdita|rubinetto)\b/i;
 export const detectOtherLanguage = (text) => OTHER_LANGUAGE.test(text);
 
+/** A fast keyword read of what kind of problem a text describes. Used to decide whether two texts are about the same thing. */
+export function quickCategory(text) {
+  const t = String(text || '');
+  if (/water heater|hot water|agua caliente|calentador/i.test(t)) return 'plumbing';
+  for (const [c, re] of CATEGORIES) if (has(t, re)) return c;
+  return 'other';
+}
+
+// Traditional-only and Simplified-only characters that are common in everyday messages: enough to tell the two apart.
+// (only characters written differently in the two scripts; 漏 and 桶, for example, are identical, so they are left out)
+const TRADITIONAL = /[體學說話這個們麼來沒為與開關點樣還讓請問題電熱壞壓門鎖廚廁馬]/;
+const SIMPLIFIED = /[体学说话这个们么来没为与开关点样还让请问题电热坏压门锁厨厕马]/;
+const TAGALOG = /\b(po|opo|ako|ang|ng|sa|hindi|tubig|sira|bahay|pakiusap|salamat|tulong|may|ay|na|mga|ito|namin|kayo|pwede|paki)\b/gi;
+const VIETNAMESE = /[ăâđêôơưĂÂĐÊÔƠƯạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/;
+
+/** Which supported language is this text written in? (The sample AI's guess; a live model does this itself.) */
 export function detectLanguage(text) {
-  return SPANISH.test(text) ? 'es' : 'en';
+  const t = String(text || '');
+  if (/[\uAC00-\uD7AF]/.test(t)) return 'ko';
+  if (/[\u0530-\u058F]/.test(t)) return 'hy';
+  if (/[\u4E00-\u9FFF]/.test(t)) return TRADITIONAL.test(t) && !SIMPLIFIED.test(t) ? 'zh-Hant' : 'zh-Hans';
+  if (VIETNAMESE.test(t)) return 'vi';
+  if ((t.match(TAGALOG) || []).length >= 2) return 'tl';
+  return SPANISH.test(t) ? 'es' : 'en';
 }
 
 function costFor(category, urgency, text) {
@@ -133,7 +156,7 @@ export function scoreVendor(v, { urgency, language, text }) {
   if (urgency !== 'routine' && /24\/7|emergency|after.?hours|same.?day|fast/.test(notes)) { s += 2; why.push('fast / available after hours'); }
   if (urgency !== 'routine' && /slower|next.?day/.test(notes)) { s -= 1; }
   if (/clog|drain|sewer|rooter/i.test(text) && /drain|sewer|rooter/.test(notes)) { s += 3; why.push('strong on drain and sewer work'); }
-  const rate = parseFloat(String(v.rate || '').replace(/[^0-9.]/g, '')) || 100;
+  const rate = (v.rate_hourly_cents ? v.rate_hourly_cents / 100 : parseFloat(String(v.rate || '').replace(/[^0-9.]/g, ''))) || 100;
   s += (200 - rate) / 400;
   return { s, why };
 }
@@ -153,7 +176,7 @@ export async function draftDispatch(ctx) {
 export function buildText(ctx, v) {
   const t = ctx.ticket, u = ctx.unit, tenant = ctx.tenant, co = ctx.company;
   // renting out your own home: speak as the owner, not as a management company
-  const intro = ctx.homeMode ? `this is ${co.pm_name}, the owner of ${u?.address || 'the house'}.` : `this is ${co.pm_name} at ${co.name}.`;
+  const intro = ctx.homeMode ? `this is ${co.pm_name}, the owner of ${u?.address || 'the house'}.` : senderLine(co);
   const p = ctx.prefs.draft;
   const urgencyLine = t.urgency === 'emergency' ? 'EMERGENCY, please respond immediately' : t.urgency === 'urgent' ? 'URGENT, same/next-day if possible' : 'Routine, next available appointment';
   const access = ctx.accessAllowed
@@ -171,8 +194,9 @@ export function buildText(ctx, v) {
     p.photos && ctx.mediaCount > 0 && `Photos/videos: ${ctx.mediaCount} from the tenant ${ctx.mediaCount === 1 ? 'is' : 'are'} attached.`,
     p.footer.trim() && p.footer.trim(),
   ].filter(Boolean).join('\n');
-  const ask = `Please confirm you can take this job and tell us when you can be there.${p.cost_cap ? ` Call us before going over $${p.cost_cap_amount || t.cost_estimate || 500}.` : ''}`;
-  const sign = p.signature ? `\n\nThank you,\n${co.pm_name}, ${co.name} · ${co.phone}` : '';
+  const ask = `Please confirm you can take this job and tell us when you can be there.${p.cost_cap && (p.cost_cap_amount || t.cost_estimate) ? ` Call us before going over $${p.cost_cap_amount || t.cost_estimate}.` : ''}`;
+  const biz = displayCompany(co);
+  const sign = p.signature ? `\n\nThank you,\n${[co.pm_name, biz !== co.pm_name && biz, co.phone].filter(Boolean).join(co.phone && !biz ? ' · ' : ', ').replace(/, (\(?\d)/, ' · $1')}` : '';
   return `Hi ${v.name} team, ${intro}${p.work_order ? ` New work order #${t.id}.` : ''}${p.intro.trim() ? ` ${p.intro.trim()}` : ''}\n\n${lines}\n\n${ask}${sign}`;
 }
 

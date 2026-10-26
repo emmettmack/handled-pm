@@ -1,6 +1,7 @@
 // Data access + small helpers. Everything the rest of the server needs from SQLite lives here.
 import { db } from './db.js';
 import { unitName } from './labels.js';
+import { ticketView } from './ticketView.js';
 
 export const nowIso = () => new Date().toISOString();
 export const minsAgo = (m) => new Date(Date.now() - m * 60000).toISOString();
@@ -53,7 +54,12 @@ export function getCompany() {
 }
 export function updateCompany(c) {
   const f = ['name', 'pm_name', 'phone', 'email', 'address', 'maintenance_line'];
-  db.prepare(`UPDATE company SET ${f.map((k) => `${k} = ?`).join(', ')} WHERE id = 1`).run(...f.map((k) => String(c[k] ?? '').trim()));
+  const prev = getCompany();
+  const name = String(c.name ?? '').trim();
+  // A name only counts as confirmed when the user typed something new, or it was already confirmed and is unchanged.
+  const usable = !!name && name !== 'My rentals' && !name.includes('@');
+  const confirmed = usable && ((prev?.name_confirmed && prev.name === name) || prev?.name !== name) ? 1 : 0;
+  db.prepare(`UPDATE company SET ${f.map((k) => `${k} = ?`).join(', ')}, name_confirmed = ? WHERE id = 1`).run(...f.map((k) => String(c[k] ?? '').trim()), confirmed);
   return getCompany();
 }
 
@@ -96,10 +102,33 @@ export function setSetup(patch) {
 }
 export const isHomeMode = () => getSetup().mode === 'home';
 
+// ---------- texting rules: opt-outs and delivery results ----------
+export const isOptedOut = (phone) => !!db.prepare('SELECT 1 FROM opt_outs WHERE phone = ?').get(normPhone(phone));
+export function setOptOut(phone, optedOut, source = 'text') {
+  const p = normPhone(phone);
+  if (optedOut) db.prepare('INSERT INTO opt_outs (phone, opted_out_at, source) VALUES (?,?,?) ON CONFLICT(phone) DO UPDATE SET opted_out_at = excluded.opted_out_at').run(p, nowIso(), source);
+  else db.prepare('DELETE FROM opt_outs WHERE phone = ?').run(p);
+}
+export const setMessageSid = (messageId, sid) => db.prepare('UPDATE messages SET provider_sid = ? WHERE id = ?').run(sid, messageId);
+/** Record the carrier's report on one outgoing text; returns the message so the caller can tell the PM if it failed. */
+export function recordDelivery(sid, status, error = null) {
+  const m = db.prepare('SELECT id, ticket_id FROM messages WHERE provider_sid = ?').get(sid);
+  if (m) db.prepare('UPDATE messages SET delivery_status = ?, delivery_error = ? WHERE id = ?').run(status, error, m.id);
+  return m || null;
+}
+
 // ---------- photos and videos from tenants ----------
-export const addMedia = (ticketId, { kind = 'photo', name = '', url, source = 'upload', at }) =>
-  db.prepare('INSERT INTO media (ticket_id, kind, name, url, source, created_at) VALUES (?,?,?,?,?,?)').run(ticketId, kind === 'video' ? 'video' : 'photo', name, url, source, at || nowIso()).lastInsertRowid;
-export const mediaFor = (ticketId) => db.prepare('SELECT * FROM media WHERE ticket_id = ? ORDER BY id').all(ticketId);
+// The server plugs in file storage (see files.js). Without it (the browser demo) photos stay inline as data URLs.
+let mediaSaver = null;   // (dataUrl) => { file, mime } | null
+let mediaLinker = null;  // (mediaRow) => a short-lived URL the browser can load
+export const setMediaStorage = (saver, linker) => { mediaSaver = saver; mediaLinker = linker; };
+export const addMedia = (ticketId, { kind = 'photo', name = '', url, source = 'upload', at }) => {
+  const saved = mediaSaver && String(url).startsWith('data:') ? mediaSaver(url) : null;
+  return db.prepare('INSERT INTO media (ticket_id, kind, name, url, file, mime, source, created_at) VALUES (?,?,?,?,?,?,?,?)')
+    .run(ticketId, kind === 'video' ? 'video' : 'photo', name, saved ? '' : url, saved?.file ?? null, saved?.mime ?? null, source, at || nowIso()).lastInsertRowid;
+};
+export const mediaFor = (ticketId) => db.prepare('SELECT * FROM media WHERE ticket_id = ? ORDER BY id').all(ticketId)
+  .map((m) => (m.file && mediaLinker ? { ...m, url: mediaLinker(m) } : m));
 export const mediaCount = (ticketId) => db.prepare('SELECT COUNT(*) c FROM media WHERE ticket_id = ?').get(ticketId).c;
 
 /** The vendor's primary contact methods, e.g. [{ label: 'Company phone', value: '(323) 555-0201' }]. */
@@ -129,8 +158,8 @@ export function updateTicket(id, fields) {
 
 export function addMessage(ticketId, sender, body, { kind = 'sms', at } = {}) {
   const info = db
-    .prepare('INSERT INTO messages (ticket_id, sender, body, kind, created_at) VALUES (?,?,?,?,?)')
-    .run(ticketId, sender, body, kind, at || nowIso());
+    .prepare('INSERT INTO messages (ticket_id, sender, body, kind, direction, created_at) VALUES (?,?,?,?,?,?)')
+    .run(ticketId, sender, body, kind, kind === 'sms' ? (sender === 'tenant' ? 'in' : 'out') : null, at || nowIso());
   db.prepare('UPDATE tickets SET updated_at = ? WHERE id = ?').run(nowIso(), ticketId);
   return info.lastInsertRowid;
 }
@@ -207,15 +236,38 @@ export function ticketDetail(id) {
     ...t,
     tenant,
     unit,
+    view: ticketView({ ...t, dispatches }),
     vendor: getVendor(t.vendor_id),
     vendor_channels: vendorChannels(getVendor(t.vendor_id)),
     media: mediaFor(id),
-    messages: db.prepare('SELECT * FROM messages WHERE ticket_id = ? ORDER BY id').all(id),
+    messages: db.prepare('SELECT * FROM messages WHERE ticket_id = ? ORDER BY created_at, id').all(id),
     history: db.prepare('SELECT * FROM status_history WHERE ticket_id = ? ORDER BY id').all(id),
     dispatches,
     pending_dispatch: dispatches.find((d) => d.state === 'pending') || null,
     active_dispatch: dispatches.filter((d) => d.kind === 'vendor' && d.state === 'approved').pop() || null,
   };
+}
+
+export const setAiPaused = (id, paused) => db.prepare('UPDATE tickets SET ai_paused = ? WHERE id = ?').run(paused ? 1 : 0, id);
+export const markRead = (id) => db.prepare('UPDATE tickets SET pm_read_at = ? WHERE id = ?').run(nowIso(), id);
+
+/** Conversations for the PM inbox: newest message first, with an unread flag and whether the assistant is paused. */
+export function inboxList() {
+  const rows = db.prepare(`
+    SELECT t.id, t.title, t.status, t.urgency, t.ai_paused, t.pm_read_at, t.from_phone, t.channel,
+           (SELECT name FROM tenants WHERE id = t.tenant_id) AS tenant_name,
+           (SELECT body FROM messages m WHERE m.ticket_id = t.id AND m.kind = 'sms' ORDER BY m.id DESC LIMIT 1) AS last_body,
+           (SELECT sender FROM messages m WHERE m.ticket_id = t.id AND m.kind = 'sms' ORDER BY m.id DESC LIMIT 1) AS last_sender,
+           (SELECT created_at FROM messages m WHERE m.ticket_id = t.id AND m.kind = 'sms' ORDER BY m.id DESC LIMIT 1) AS last_at,
+           (SELECT MAX(created_at) FROM messages m WHERE m.ticket_id = t.id AND m.sender = 'tenant') AS last_tenant_at
+    FROM tickets t ORDER BY last_at DESC, t.id DESC`).all();
+  return rows.map((r) => ({
+    id: r.id, title: r.title, status: r.status, urgency: r.urgency, ai_paused: !!r.ai_paused,
+    contact: r.tenant_name || r.from_phone || 'Unknown', from_phone: r.from_phone,
+    last_body: r.last_body || '', last_sender: r.last_sender || '', last_at: r.last_at || null,
+    unread: !!r.last_tenant_at && (!r.pm_read_at || r.last_tenant_at > r.pm_read_at),
+    opted_out: !!r.from_phone && r.channel === 'sms' && isOptedOut(r.from_phone),
+  })).filter((r) => r.last_at);
 }
 
 export function listBrief() {

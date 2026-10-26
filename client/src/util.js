@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react';
+import { LANGUAGES, languageName } from '../../server/languages.js';
+
+export { LANGUAGES, languageName };
 
 export function timeAgo(iso) {
   if (!iso) return '';

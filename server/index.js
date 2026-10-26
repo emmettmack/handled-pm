@@ -1,69 +1,14 @@
 import 'dotenv/config';
-import express from 'express';
-import path from 'node:path';
-import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import * as S from './store.js';
 import * as ai from './ai.js';
 import * as A from './actions.js';
 import { seed } from './seed.js';
-import { routes } from './routes.js';
-import { authenticate, authEnabled } from './auth.js';
 import { isDemo } from './mode.js';
-import { inboundSms } from './twilio.js';
-import { router as adminRouter, requireAdmin, adminMe, startBackups } from './admin.js';
-import { setMetricSink } from './metrics.js';
-import { bumpMetric, getKv } from './registry.js';
-import { currentAccount } from './accounts.js';
+import { startBackups } from './admin.js';
+import { moveLegacyMedia } from './files.js';
+import { app } from './app.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 if (isDemo() && !S.getCompany()) seed(); // sample data is for local development only; real accounts start empty
-
-const app = express();
-app.use(express.urlencoded({ extended: false })); // Twilio posts form-encoded webhooks
-
-const wrap = (fn) => async (req, res) => {
-  try {
-    const out = await fn(req, res);
-    if (!res.headersSent) res.json(out ?? { ok: true });
-  } catch (e) {
-    console.error(e);
-    res.status(e.status || 500).json({ error: e.message });
-  }
-};
-
-// Health check for the host (no sign-in, reveals nothing).
-app.get('/healthz', (_req, res) => res.send('ok'));
-
-// Incoming texts from Twilio. Outside the sign-in check because Twilio can't sign in; it is protected by Twilio's
-// request signature instead (see twilio.js).
-app.post('/api/webhooks/sms', inboundSms);
-
-// Body parsing comes after the sign-in check so strangers can't make the server buffer large uploads.
-app.use('/api', authenticate, express.json({ limit: '25mb' })); // tenant photos and videos arrive as data URLs
-
-// Usage counters for the admin page
-setMetricSink((key, n) => bumpMetric(currentAccount(), key, n));
-
-// Site-wide notice from the admin page (shown to every signed-in user); and who is an admin
-app.get('/api/announcement', wrap(() => getKv('announcement', { text: '', level: 'info', active: false })));
-app.get('/api/admin/me', adminMe);
-app.use('/api/admin', requireAdmin, adminRouter);
-
-// Every JSON route lives in routes.js (shared with the static browser demo).
-for (const [method, path, handler] of routes) {
-  app[method.toLowerCase()]('/api' + path, wrap((req) => {
-    const params = Object.fromEntries(Object.entries(req.params).map(([k, v]) => [k, k === 'type' ? v : Number(v)]));
-    return handler({ params, body: req.body || {} });
-  }));
-}
-
-// ---------- static frontend (after `npm run build`) ----------
-const dist = path.join(__dirname, '..', 'client', 'dist');
-if (fs.existsSync(dist)) {
-  app.use(express.static(dist));
-  app.get(/^\/(?!api).*/, (_req, res) => res.sendFile(path.join(dist, 'index.html')));
-}
 
 const port = Number(process.env.PORT) || 3001;
 app.listen(port, () => {
@@ -72,6 +17,7 @@ app.listen(port, () => {
   console.log(s.mock ? '  AI: DEMO MODE (no ANTHROPIC_API_KEY set, using canned responses)' : `  AI: live, model ${s.model}`);
 });
 A.startScheduler();
+if (!isDemo()) { const n = moveLegacyMedia(); if (n) console.log(`[files] moved ${n} photos out of the database`); }
 if (!isDemo() || process.env.BACKUPS === '1') startBackups(); // daily copies of every account's data
 
 // Public demo hosting: wipe visitor changes and restore the sample data every N hours.

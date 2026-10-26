@@ -3,9 +3,10 @@
 import * as ai from './ai.js';
 import { currentAccount } from './accounts.js';
 import { isDemo } from './mode.js';
+import { normalizeLanguage, languageName } from './languages.js';
 import * as S from './store.js';
 import { sendToTenant } from './outbound.js';
-import { T, sanitizeTenantReply, COMPENSATION_ASK } from './templates.js';
+import { T, sanitizeTenantReply, violatesLiability, COMPENSATION_ASK } from './templates.js';
 import { scoreVendor } from './mockAi.js';
 
 export const MAX_FOLLOWUP_ROUNDS = 2;
@@ -22,6 +23,11 @@ export function enqueue(ticketId, fn) {
   return next;
 }
 
+/** Resolves when no ticket work is in flight (used by tests and by graceful shutdown). */
+export async function whenIdle() {
+  while (queues.size) await Promise.all([...queues.values()]);
+}
+
 function context(id) {
   const t = S.getTicket(id);
   const tenant = t.tenant_id ? S.db_tenant(t.tenant_id) : null;
@@ -32,7 +38,8 @@ function context(id) {
 
 function normalizeTriage(r, t) {
   const out = { ...r };
-  out.language = r.language === 'es' ? 'es' : 'en';
+  out.language = normalizeLanguage(r.language);
+  out.reply_english = String(r.reply_english || '');
   out.category = CATS.includes(r.category) ? r.category : 'other';
   out.urgency = r.urgency in URG ? r.urgency : 'routine';
   if (t.urgency === 'emergency') out.urgency = 'emergency'; // once an emergency, always one until a human says otherwise
@@ -71,13 +78,20 @@ export async function processTicket(id) {
   const lang = r.language;
   const lastTenantMsg = [...ctx.transcript].reverse().find((m) => m.sender === 'tenant')?.body || '';
 
+  // A real account without a live model must not show invented dollar figures: the sample AI's numbers are demo-only.
+  const noEstimate = !isDemo() && ai.isMock();
+  const estimate = noEstimate ? { value: null, source: null } : { value: r.estimated_cost, source: ai.isMock() ? 'sample_rules' : 'ai_model' };
   S.updateTicket(id, {
     language: lang, category: r.category, urgency: r.urgency, title: r.title, summary: r.summary,
     diagnosis: r.diagnosis, next_steps: r.next_steps, reasoning: r.urgency_reason,
-    trade: S.TRADE_FOR_CATEGORY[r.category], access_notes: r.access_notes, cost_estimate: r.estimated_cost,
+    trade: S.TRADE_FOR_CATEGORY[r.category], access_notes: r.access_notes, cost_estimate: estimate.value, cost_estimate_source: estimate.source,
   });
   if (t.status === 'new') S.setStatus(id, 'triaged', `Read the text: ${r.category}, ${r.urgency}`);
   t = S.getTicket(id);
+
+  if (!isDemo() && ai.isMock() && lang !== 'en' && lang !== 'es') {
+    S.addFlag(id, 'language', `The tenant wrote in ${languageName(lang)}. Without a live AI model Macalisto can't read or answer in that language, so please follow up with them directly.`);
+  }
 
   // ---- Emergency: flag + escalation placeholder (visual only in the demo) ----
   if (r.urgency === 'emergency' && !t.emergency_at) {
@@ -93,14 +107,19 @@ export async function processTicket(id) {
     compensationReply = true;
   }
   // Tenants writing in a language other than English/Spanish are told once that we can translate, and which language is primary.
-  const accountLang = ctx.tenant?.language === 'es' ? 'es' : 'en';
+  const accountLang = normalizeLanguage(ctx.tenant?.language);
   const transcriptText = ctx.transcript.map((m) => m.body);
   const needsTranslateNote = r.other_language && !transcriptText.includes(T.translateNote('en')) && !transcriptText.includes(T.translateNote('es'));
   const withNote = (text) => (needsTranslateNote ? `${T.translateNote(accountLang)} ${text}` : text);
   const replyWithComp = (text) => {
     const parts = [needsTranslateNote && T.translateNote(accountLang), compensationReply && T.compensation(lang), text].filter(Boolean);
     const body = parts.join(' ');
-    if (body && body.trim()) sendToTenant(t, sanitizeTenantReply(body, lang));
+    if (!body || !body.trim()) return;
+    if (lang === 'en' || lang === 'es') return sendToTenant(t, sanitizeTenantReply(body, lang));
+    // The money/fault filter reads English and Spanish only. For other languages the model also supplies an English copy
+    // to check; if it's missing or promises money or fault, send the fixed neutral message instead (never guess).
+    const safe = r.reply_english && !violatesLiability(r.reply_english);
+    sendToTenant(t, safe ? body : T.liabilitySafe(lang));
   };
 
   // ---- Tenant verification (security): unknown number -> ask for name + unit -> else a human decides ----

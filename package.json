@@ -11,7 +11,8 @@
     "build": "vite build --config client/vite.config.js",
     "start": "npm run build && node server/index.js",
     "seed": "node server/seed.js",
-    "build:static": "vite build --config client/vite.static.config.js"
+    "build:static": "vite build --config client/vite.static.config.js",
+    "test": "node --test \"test/**/*.test.js\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",
