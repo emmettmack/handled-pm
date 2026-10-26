@@ -26,7 +26,7 @@ services:
       - key: VITE_CLERK_PUBLISHABLE_KEY   # baked into the page at build time (public by design)
         value: pk_test_bGl0ZXJhdGUtZ2hvc3QtMTQ5My5jbGVyay5hY2NvdW50cy5kZXYk
       - key: ADMIN_EMAILS            # who can open the Admin page (must be a verified Clerk email)
-        value: emack805@gmail.com
+        value: efmack@usc.edu
       - key: CLERK_AUTHORIZED_PARTIES
         value: https://app.macalisto.com,https://macalisto.onrender.com
       # Optional: set ANTHROPIC_API_KEY for live AI instead of the built-in sample replies.
