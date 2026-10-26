@@ -159,5 +159,16 @@ export function ackEmergency(ticketId) {
 export function pmMessage(ticketId, body) {
   const t = S.getTicket(ticketId);
   if (!body?.trim()) throw fail('Message is empty');
+  if (!t.ai_paused) {
+    S.setAiPaused(ticketId, true);
+    S.addNote(ticketId, 'You replied, so the assistant has paused on this conversation. Turn it back on from the inbox whenever you want it to take over again.');
+  }
   sendToTenant(t, body.trim(), 'pm');
+}
+
+export function setAssistant(ticketId, on) {
+  const t = S.getTicket(ticketId);
+  if (!!t.ai_paused === !on) return;
+  S.setAiPaused(ticketId, !on);
+  S.addNote(ticketId, on ? 'You handed this conversation back to the assistant.' : 'You paused the assistant on this conversation.');
 }

@@ -10,6 +10,7 @@ import Properties from './pages/Properties.jsx';
 import Preferences from './pages/Preferences.jsx';
 import Setup from './pages/Setup.jsx';
 import Admin from './pages/Admin.jsx';
+import Inbox from './pages/Inbox.jsx';
 
 function useHash() {
   const [h, setH] = useState(window.location.hash.slice(1) || '/');
@@ -73,6 +74,8 @@ export default function App({ accountSlot = null }) {
   const [, bump] = useState(0);
   const [setup, reloadSetup] = usePoll(() => api.get('/setup'), 4000);
   const [adminInfo] = usePoll(() => api.get('/admin/me').catch(() => ({ admin: false })), 600000);
+  const [inbox, refreshInbox] = usePoll(() => api.get('/inbox').catch(() => []), 5000);
+  const unread = (inbox || []).filter((c) => c.unread).length;
   const [notice] = usePoll(() => api.get('/announcement').catch(() => null), 60000);
   const [toasts, setToasts] = useState([]);
 
@@ -83,18 +86,19 @@ export default function App({ accountSlot = null }) {
   }, []);
 
   const hidden = dash ? bannerHidden(dash.emergencies) : false;
-  const ctx = { dash, refresh, refreshStatus, toast, bannerHidden: hidden, demo: status?.demo === true, setup, reloadSetup, status: status || dash?.ai ? { ...status, ...dash?.ai } : null };
+  const ctx = { dash, refresh, refreshInbox, refreshStatus, toast, bannerHidden: hidden, demo: status?.demo === true, setup, reloadSetup, status: status || dash?.ai ? { ...status, ...dash?.ai } : null };
 
   const mock = ctx.status?.mock;
   const parts = route.split('/').filter(Boolean);
   let page;
   if (parts[0] === 'tickets' && parts[1]) page = <Ticket key={parts[1]} id={Number(parts[1])} />;
+  else if (parts[0] === 'inbox') page = <Inbox id={parts[1] ? Number(parts[1]) : null} />;
   else if (parts[0] === 'vendors') page = <Vendors />;
   else if (parts[0] === 'properties') page = <Properties />;
   else if (parts[0] === 'preferences') page = <Preferences />;
   else if (parts[0] === 'admin' && adminInfo?.admin) page = <Admin />;
   else page = <Home />;
-  const section = ['vendors', 'properties', 'preferences', 'admin'].includes(parts[0]) ? parts[0] : 'home';
+  const section = ['inbox', 'vendors', 'properties', 'preferences', 'admin'].includes(parts[0]) ? parts[0] : 'home';
 
   // A new real account walks through setup before seeing the dashboard.
   if (ctx.status && !ctx.demo && setup && !setup.done) {
@@ -121,6 +125,7 @@ export default function App({ accountSlot = null }) {
               Work orders
               {dash?.stats.awaiting > 0 && <span className="count">{dash.stats.awaiting}</span>}
             </a>
+            <a href="#/inbox" className={section === 'inbox' ? 'active' : ''}>Inbox{unread > 0 && <span className="count">{unread}</span>}</a>
             <a href="#/vendors" className={section === 'vendors' ? 'active' : ''}>Vendors</a>
             <a href="#/properties" className={section === 'properties' ? 'active' : ''}>Properties</a>
             <a href="#/preferences" className={section === 'preferences' ? 'active' : ''}>Preferences</a>

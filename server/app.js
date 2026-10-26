@@ -8,8 +8,13 @@ import { authenticate } from './auth.js';
 import { inboundSms, inboundStatus } from './twilio.js';
 import { router as adminRouter, requireAdmin, adminMe } from './admin.js';
 import { setMetricSink } from './metrics.js';
-import { bumpMetric, getKv } from './registry.js';
-import { currentAccount } from './accounts.js';
+import { bumpMetric, getKv, accountNumber } from './registry.js';
+import { currentAccount, runAs } from './accounts.js';
+import { isDemo } from './mode.js';
+import { db } from './db.js';
+import { setMediaStorage } from './store.js';
+import { setNumberResolver } from './sms.js';
+import { saveDataUrl, mediaLink, serveFile } from './files.js';
 import { publicPageInfo, updateSlug, servePublicPage } from './publicPage.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -32,6 +37,11 @@ app.get('/healthz', (_req, res) => res.send('ok'));
 
 // Each account's public SMS opt-in page (no sign-in; shows only the company name and texting number).
 app.get('/t/:slug', servePublicPage);
+
+// Photos and videos live in files, served by signed link (see files.js). Demo mode keeps its sample photos inline.
+if (!isDemo()) setMediaStorage(saveDataUrl, mediaLink);
+setNumberResolver(accountNumber); // each account texts from its own registered number
+app.get('/f/:account/:id', (req, res) => serveFile(req, res, runAs, (id) => db.prepare('SELECT file, mime FROM media WHERE id = ?').get(id)));
 
 // Incoming texts from Twilio. Outside the sign-in check because Twilio can't sign in; it is protected by Twilio's
 // request signature instead (see twilio.js).

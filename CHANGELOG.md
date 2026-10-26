@@ -25,3 +25,9 @@ Not merged, not deployed. Tested: 48 automated tests pass, plus a browser click-
 - The sample AI's "another language" check still counted Korean, Chinese, Vietnamese and Tagalog as unsupported, so those tenants were told "my primary language is English" instead of receiving the reply in their language.
 - Converting old vendor rates first overwrote the original wording; it is now kept in the vendor's rate notes.
 - Added tests for rates, company names, the work-order view, translations, language detection, STOP/HELP and delivery reports.
+
+## Inbox and file storage
+- PM inbox: every conversation newest first with an unread dot, a thread view, a reply box that sends from the account's own number, and a per-conversation switch that pauses or hands back the assistant (replying pauses it automatically).
+- A refused text (for example carrier error 30034 while registration is in review) is saved in the thread, marked not delivered, and explained to the PM; nothing crashes.
+- Photos and videos are stored as files under DATA_DIR/files, served by short-lived signed links, and included in backups. Existing photos in the database are moved once at startup (file written before the row changes).
+- Migration 7 adds tickets.ai_paused, tickets.pm_read_at, messages.direction, media.file, media.mime.

@@ -7,9 +7,10 @@ import estimateSource from './003_estimate_source.js';
 import companyName from './004_company_name.js';
 import vendorRates from './005_vendor_rates_language.js';
 import smsCompliance from './006_sms_compliance.js';
+import inbox from './007_inbox.js';
 
 export { SCHEMA };
-export const MIGRATIONS = [baseline, dedupe, estimateSource, companyName, vendorRates, smsCompliance];
+export const MIGRATIONS = [baseline, dedupe, estimateSource, companyName, vendorRates, smsCompliance, inbox];
 
 const ensureTable = (d) => d.exec('CREATE TABLE IF NOT EXISTS schema_version (id INTEGER PRIMARY KEY, name TEXT, applied_at TEXT)');
 

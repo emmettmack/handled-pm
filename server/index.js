@@ -5,6 +5,7 @@ import * as A from './actions.js';
 import { seed } from './seed.js';
 import { isDemo } from './mode.js';
 import { startBackups } from './admin.js';
+import { moveLegacyMedia } from './files.js';
 import { app } from './app.js';
 
 if (isDemo() && !S.getCompany()) seed(); // sample data is for local development only; real accounts start empty
@@ -16,6 +17,7 @@ app.listen(port, () => {
   console.log(s.mock ? '  AI: DEMO MODE (no ANTHROPIC_API_KEY set, using canned responses)' : `  AI: live, model ${s.model}`);
 });
 A.startScheduler();
+if (!isDemo()) { const n = moveLegacyMedia(); if (n) console.log(`[files] moved ${n} photos out of the database`); }
 if (!isDemo() || process.env.BACKUPS === '1') startBackups(); // daily copies of every account's data
 
 // Public demo hosting: wipe visitor changes and restore the sample data every N hours.

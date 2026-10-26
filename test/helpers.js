@@ -10,6 +10,7 @@ import crypto from 'node:crypto';
 /** A stand-in for api.twilio.com: records every text the app sends and serves a tiny image for media downloads. */
 export function startFakeTwilio() {
   const sent = [];
+  const state = { failWith: null }; // e.g. { code: 30034, message: '...' } makes the next sends fail like a carrier refusal
   const server = http.createServer((req, res) => {
     if (req.url.startsWith('/media/slow')) { setTimeout(() => { res.setHeader('content-type', 'image/jpeg'); res.end(Buffer.from('fake-image-bytes')); }, 1200); return; }
     if (req.url.startsWith('/media/')) { res.setHeader('content-type', 'image/jpeg'); return res.end(Buffer.from('fake-image-bytes')); }
@@ -18,12 +19,14 @@ export function startFakeTwilio() {
     req.on('end', () => {
       sent.push({ url: req.url, auth: req.headers.authorization, ...Object.fromEntries(new URLSearchParams(body)) });
       res.setHeader('content-type', 'application/json');
+      if (state.failWith) { res.statusCode = 400; return res.end(JSON.stringify(state.failWith)); }
       res.end(JSON.stringify({ sid: `SM${sent.length}` }));
     });
   });
   return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve({
     url: `http://127.0.0.1:${server.address().port}`,
     sent,
+    state,
     close: () => new Promise((r) => server.close(r)),
   })));
 }

@@ -37,6 +37,7 @@ export function receiveInboundMessage({ channel = 'sms', from, body, ticketId = 
 
   const addTo = (ticket) => {
     S.addMessage(ticket.id, 'tenant', text);
+    if (ticket.ai_paused) return done({ ticketId: ticket.id, isNew: false, paused: true }); // the PM has taken over: no automatic reply
     enqueue(ticket.id, () => (ticket.status === 'needs_info' ? processTicket(ticket.id) : handleUpdate(ticket.id, text)));
     return done({ ticketId: ticket.id, isNew: false });
   };
@@ -67,7 +68,7 @@ export function receiveInboundMessage({ channel = 'sms', from, body, ticketId = 
     S.setStatus(t.id, 'triaged', 'Reopened: the tenant wrote again after it was marked done');
     S.addFlag(t.id, 'callback', 'The tenant wrote again after this was marked done. Check whether the repair held.');
     S.addNote(t.id, 'Reopened because the tenant wrote again within two days of it being closed.');
-    enqueue(t.id, () => handleUpdate(t.id, text));
+    if (!t.ai_paused) enqueue(t.id, () => handleUpdate(t.id, text));
     return done({ ticketId: t.id, isNew: false, reopened: true });
   }
 

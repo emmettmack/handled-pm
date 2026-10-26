@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { createClerkClient } from '@clerk/backend';
+import { FILES_DIR } from './files.js';
 import { accountIds, accountFile, accountExists, closeAccount, rawDb, backupAll, DATA_DIR } from './db.js';
 import { runAs, currentAccount, LOCAL_ACCOUNT } from './accounts.js';
 import * as S from './store.js';
@@ -133,11 +134,21 @@ function listBackups() {
   return fs.readdirSync(BACKUP_DIR).filter((n) => fs.statSync(path.join(BACKUP_DIR, n)).isDirectory()).sort().reverse()
     .map((name) => ({ name, files: fs.readdirSync(path.join(BACKUP_DIR, name)).length, sizeMB: Math.round(dirSize(path.join(BACKUP_DIR, name)) / 10485.76) / 100 }));
 }
+function linkTree(from, to) {
+  if (!fs.existsSync(from)) return;
+  fs.mkdirSync(to, { recursive: true });
+  for (const e of fs.readdirSync(from, { withFileTypes: true })) {
+    const a = path.join(from, e.name), b = path.join(to, e.name);
+    if (e.isDirectory()) linkTree(a, b);
+    else try { fs.linkSync(a, b); } catch { fs.copyFileSync(a, b); }
+  }
+}
 export async function runBackup() {
   const name = new Date().toISOString().replace(/[:.]/g, '-');
   const dir = path.join(BACKUP_DIR, name);
   const done = await backupAll(dir);
   await R.backupRegistry(path.join(dir, 'registry.db'));
+  linkTree(FILES_DIR, path.join(dir, 'files')); // photos are write-once files, so a backup can share them (hard links) instead of copying
   for (const old of listBackups().slice(KEEP)) fs.rmSync(path.join(BACKUP_DIR, old.name), { recursive: true, force: true });
   return { name, accounts: done.length };
 }

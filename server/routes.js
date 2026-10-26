@@ -145,6 +145,10 @@ export const routes = [
     const t = S.getTicket(params.id);
     return receiveInboundMessage({ channel: 'sim', from: t.from_phone, body: body.body, ticketId: t.id });
   })],
+  // PM inbox: every conversation, newest first; opening one marks it read; the assistant can be paused or handed back.
+  ['GET', '/inbox', () => S.inboxList()],
+  ['POST', '/tickets/:id/read', ({ params }) => { S.markRead(params.id); }],
+  ['POST', '/tickets/:id/assistant', ({ params, body }) => { A.setAssistant(params.id, !!body?.on); }],
   ['POST', '/tickets/:id/pm-message', ({ params, body }) => A.pmMessage(params.id, body.body)],
   ['POST', '/tickets/:id/merge', ({ params, body }) => { A.mergeTickets(params.id, Number(body?.into)); return { into: Number(body.into) }; }],
   ['POST', '/tickets/:id/notes', ({ params, body }) => S.updateTicket(params.id, { internal_notes: String(body.notes ?? '') })],
