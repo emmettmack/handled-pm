@@ -126,6 +126,7 @@ export default function App({ accountSlot = null }) {
             <a href="#/preferences" className={section === 'preferences' ? 'active' : ''}>Preferences</a>
             {adminInfo?.admin && <a href="#/admin" className={section === 'admin' ? 'active' : ''}>Admin</a>}
             {import.meta.env.VITE_STATIC === '1' && <a href="../index.html" className="back">&larr; Back to site</a>}
+            {import.meta.env.VITE_STATIC !== '1' && <a href="https://macalisto.com" className="back">&larr; Home page</a>}
             {accountSlot && <span className="account-slot">{accountSlot}</span>}
           </nav>
           {ctx.status && ctx.demo && (
