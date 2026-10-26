@@ -10,6 +10,7 @@ import { router as adminRouter, requireAdmin, adminMe } from './admin.js';
 import { setMetricSink } from './metrics.js';
 import { bumpMetric, getKv } from './registry.js';
 import { currentAccount } from './accounts.js';
+import { publicPageInfo, updateSlug, servePublicPage } from './publicPage.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -29,6 +30,9 @@ const wrap = (fn) => async (req, res) => {
 // Health check for the host (no sign-in, reveals nothing).
 app.get('/healthz', (_req, res) => res.send('ok'));
 
+// Each account's public SMS opt-in page (no sign-in; shows only the company name and texting number).
+app.get('/t/:slug', servePublicPage);
+
 // Incoming texts from Twilio. Outside the sign-in check because Twilio can't sign in; it is protected by Twilio's
 // request signature instead (see twilio.js).
 app.post('/api/webhooks/sms', inboundSms);
@@ -44,6 +48,10 @@ setMetricSink((key, n) => bumpMetric(currentAccount(), key, n));
 app.get('/api/announcement', wrap(() => getKv('announcement', { text: '', level: 'info', active: false })));
 app.get('/api/admin/me', adminMe);
 app.use('/api/admin', requireAdmin, adminRouter);
+
+// The signed-in account's public page link (Preferences)
+app.get('/api/public-page', wrap(() => publicPageInfo()));
+app.put('/api/public-page', wrap((req) => updateSlug(req.body?.slug)));
 
 // Every JSON route lives in routes.js (shared with the static browser demo).
 for (const [method, path, handler] of routes) {

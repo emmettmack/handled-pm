@@ -12,4 +12,11 @@ export const REGISTRY_MIGRATIONS = [
       `);
     },
   },
+  {
+    id: 2,
+    name: 'public_pages',
+    up(d) {
+      d.exec(`CREATE TABLE IF NOT EXISTS public_pages (slug TEXT PRIMARY KEY, account_id TEXT NOT NULL UNIQUE, created_at TEXT);`);
+    },
+  },
 ];

@@ -30,6 +30,34 @@ function TextingCard() {
   );
 }
 
+function PublicPageCard() {
+  const { toast } = useApp();
+  const [p, setP] = useState(null);
+  const [slug, setSlug] = useState('');
+  useEffect(() => { api.get('/public-page').then((x) => { setP(x); setSlug(x.slug || ''); }).catch(() => {}); }, []);
+  if (!p) return null; // the browser demo has no public pages
+  const save = async () => {
+    try { const x = await api.put('/public-page', { slug }); setP(x); setSlug(x.slug); toast('Link saved'); } catch (e) { toast(e.message, 'err'); }
+  };
+  const copy = async () => { try { await navigator.clipboard.writeText(p.url); toast('Link copied'); } catch { toast('Select the link and copy it', 'err'); } };
+  return (
+    <div className="card card-pad">
+      <h3 style={{ marginTop: 0 }}>Your text-us page</h3>
+      <p className="hint-small">A public page that shows tenants the number to text and the consent wording. Use it for your carrier registration, and print it as a flyer.</p>
+      {!p.slug ? <p>Confirm your company name above and your page link will appear here.</p> : (
+        <>
+          <p>Number shown: <b>{p.number}</b>{p.usingDefaultNumber && <span className="hint-small"> (Macalisto's shared number until your own is connected)</span>}</p>
+          <div className="field"><label>Link name</label>
+            <div className="btn-row"><input value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase())} /><button className="btn" onClick={save} disabled={slug === p.slug}>Save</button></div>
+          </div>
+          <p><a href={p.url} target="_blank" rel="noreferrer">{p.url}</a></p>
+          <div className="btn-row"><button className="btn" onClick={copy}>Copy link</button><a className="btn" href={p.flyerUrl} target="_blank" rel="noreferrer">Open printable flyer</a></div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function CompanyCard() {
   const { status, toast, refreshStatus } = useApp();
   const [c, setC] = useState(null);
@@ -114,6 +142,7 @@ export default function Preferences() {
 
       <div className="group-title">Texting</div>
       <TextingCard />
+      <PublicPageCard />
 
       <div className="group-title">What goes in your vendor drafts</div>
       <DraftCard prefs={prefs} setPrefs={setPrefs} save={save} dirty={dirty} />
