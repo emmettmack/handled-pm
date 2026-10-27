@@ -6,6 +6,7 @@ import ApprovalCard from '../components/ApprovalCard.jsx';
 import SimulateModal from '../components/SimulateModal.jsx';
 import { UrgencyBadge, StatusPill, FlagChip } from '../components/Badges.jsx';
 import { timeAgo, CATEGORY_LABELS, URGENCY_RANK, languageName } from '../util.js';
+import { toCsv, downloadCsv } from '../csv.js';
 
 const FILTERS = [
   ['open', 'All open', (t) => !['resolved', 'closed'].includes(t.status)],
@@ -45,6 +46,7 @@ export default function Home() {
   const { dash, refresh, toast, status, bannerHidden, demo, setup } = useApp();
   const [filter, setFilter] = useState('open');
   const [sort, setSort] = useState('urgency');
+  const [exporting, setExporting] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [showSim, setShowSim] = useState(false);
   const [simulating, setSimulating] = useState(false);
@@ -149,7 +151,8 @@ export default function Home() {
       )}
 
       <section className="section">
-        <div className="section-head"><h2>All work orders</h2></div>
+        <div className="section-head"><h2>All work orders</h2><button className="btn sm" style={{ marginLeft: 'auto' }} onClick={() => setExporting((v) => !v)}>Export…</button></div>
+        {exporting && <ExportPanel onDone={() => setExporting(false)} />}
         <SortBar sort={sort} setSort={setSort} />
         <div className="filters">
           {FILTERS.map(([key, label, fn]) => (
@@ -200,5 +203,37 @@ export default function Home() {
 
       {demo && showSim && <SimulateModal onClose={() => setShowSim(false)} />}
     </>
+  );
+}
+
+const RANGES = [['30', 'Last 30 days'], ['90', 'Last 90 days'], ['year', 'This year'], ['all', 'All time']];
+function ExportPanel({ onDone }) {
+  const { toast } = useApp();
+  const [scope, setScope] = useState('closed');
+  const [range, setRange] = useState('30');
+  const [busy, setBusy] = useState(false);
+  const go_ = async () => {
+    setBusy(true);
+    try {
+      const today = new Date();
+      const from = range === 'all' ? '' : range === 'year' ? `${today.getFullYear()}-01-01` : new Date(today.getTime() - Number(range) * 86400000).toISOString().slice(0, 10);
+      const rows = await api.post('/export/work-orders', { scope, from, to: today.toISOString().slice(0, 10) });
+      if (!rows.length) { toast('No work orders match that choice.', 'err'); return; }
+      downloadCsv(`macalisto-work-orders-${today.toISOString().slice(0, 10)}.csv`, toCsv(rows));
+      toast(`Exported ${rows.length} work order${rows.length === 1 ? '' : 's'}`);
+      onDone();
+    } catch (e) { toast(e.message, 'err'); } finally { setBusy(false); }
+  };
+  return (
+    <div className="card card-pad" style={{ marginBottom: 12 }}>
+      <b>Send your work orders to another system</b>
+      <p className="hint-small" style={{ margin: '4px 0 10px' }}>Downloads a spreadsheet you can open in Excel or Sheets, or upload into the software you use for rent and accounting. Your private notes are never included.</p>
+      <div className="btn-row" style={{ alignItems: 'center' }}>
+        <select value={scope} onChange={(e) => setScope(e.target.value)}><option value="closed">Finished jobs</option><option value="all">All jobs</option></select>
+        <select value={range} onChange={(e) => setRange(e.target.value)}>{RANGES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+        <button className="btn primary" disabled={busy} onClick={go_}>{busy ? 'Preparing…' : 'Download spreadsheet'}</button>
+        <button className="btn" onClick={onDone}>Cancel</button>
+      </div>
+    </div>
   );
 }

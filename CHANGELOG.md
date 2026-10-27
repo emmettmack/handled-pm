@@ -37,3 +37,8 @@ Not merged, not deployed. Tested: 48 automated tests pass, plus a browser click-
 
 ## Real conversation
 - Every tenant message is answered by the model with the full conversation and photos; later messages no longer get a fixed acknowledgement. Photos reach the model (up to 4). Follow-up cap raised to 4. Photos are saved before the text is processed.
+
+## Work-order export (generic write-back)
+- Work orders page: Export… downloads a spreadsheet of finished (or all) jobs for a date range, ready to open in Excel/Sheets or upload into another system. Private notes are never included, and text that could run as a spreadsheet formula is defused.
+- Each work order has a Copy summary button that puts a plain-text summary on the clipboard for pasting into any other system.
+- Fixed a flaky test (signature tamper check altered nothing about 1 time in 16).

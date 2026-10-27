@@ -5,6 +5,7 @@ import { useApp, go } from '../ctx.jsx';
 import ApprovalCard from '../components/ApprovalCard.jsx';
 import { UrgencyBadge, StatusPill } from '../components/Badges.jsx';
 import { usePoll, timeAgo, clock, dayTime, CATEGORY_LABELS, STATUS_LABELS, money, unitName, languageName } from '../util.js';
+import { workOrderSummary } from '../csv.js';
 
 const QUICK = {
   plumbing: ["Kitchen sink, it's leaking under the cabinet", 'Bathroom sink, just draining slowly. No leak.'],
@@ -288,6 +289,7 @@ export default function Ticket({ id }) {
           <h1>{t.title}</h1>
           <div className="sub">Work order #{t.id} · {CATEGORY_LABELS[t.category]} · {unit} · opened {timeAgo(t.created_at)}</div>
         </div>
+        <button className="btn sm" title="Copies a plain summary you can paste into any other system" onClick={async () => { try { await navigator.clipboard.writeText(workOrderSummary(t, t.unit ? unit : '')); toast('Summary copied'); } catch { toast('Could not copy. Select the text and copy it yourself.', 'err'); } }}>Copy summary</button>
       </div>
 
       <div className="ticket-cols">
