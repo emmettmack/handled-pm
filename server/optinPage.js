@@ -45,51 +45,50 @@ export function renderOptinPage({ number = DEFAULT_NUMBER, company = null, base 
 <meta property="og:description" content="Text ${shown} to report a repair. See what messages to expect and how to opt out.">
 <meta property="og:type" content="website">
 <meta name="robots" content="index,follow">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234433d6'/%3E%3Cpath d='M9 16.5l5 5 9-10' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23111111'/%3E%3Cpath d='M9 16.5l5 5 9-10' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
-:root{--ink:#161a2b;--muted:#566075;--line:#dfe3ee;--brand:#4433d6;--soft:#f4f6fb}
+:root{--ink:#111;--muted:#555;--line:#cfcfcf}
 *{box-sizing:border-box}
-body{margin:0;font:16px/1.65 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:#fff}
+body{margin:0;font:16px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:#fff}
 header{border-bottom:1px solid var(--line)}
-.bar{max-width:820px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
-.brand{font-weight:700;letter-spacing:-.01em;color:var(--ink);text-decoration:none;font-size:18px}
+.bar{max-width:760px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+.brand{font-weight:700;color:var(--ink);text-decoration:none}
 .bar span{color:var(--muted);font-size:14px}
-main{max-width:820px;margin:0 auto;padding:40px 24px 72px}
-.eyebrow{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
-h1{font-size:clamp(30px,5vw,42px);line-height:1.12;letter-spacing:-.025em;margin:10px 0 14px}
-h2{font-size:20px;margin:44px 0 12px;letter-spacing:-.01em}
+main{max-width:760px;margin:0 auto;padding:32px 24px 64px}
+.eyebrow{font-size:14px;color:var(--muted);font-weight:600}
+h1{font-size:24px;line-height:1.25;margin:6px 0 12px}
+h2{font-size:18px;margin:32px 0 10px}
 p{margin:0 0 12px}
-.lead{font-size:18px;color:#2a3147;max-width:62ch}
-.cta{margin:26px 0 8px;padding:24px;border:1px solid var(--line);border-radius:14px;background:var(--soft)}
+.lead{color:var(--ink)}
+.cta{margin:20px 0 8px;padding:20px;border:1px solid var(--ink);border-radius:4px}
 .cta .label{font-size:14px;color:var(--muted);font-weight:600}
-.number{display:block;font-size:clamp(34px,7vw,52px);font-weight:700;letter-spacing:-.02em;color:var(--brand);text-decoration:none;margin:4px 0 10px}
+.number{display:block;font-size:24px;font-weight:700;color:var(--ink);text-decoration:underline;margin:2px 0 8px}
 .ctaRow{display:flex;gap:24px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.qr{text-align:center;font-size:12px;color:var(--muted)} .qr svg{display:block;width:104px;height:104px;margin:0 auto 4px}
-.consent{margin:0;padding:14px 16px;border-left:4px solid var(--brand);background:#fff;border-radius:0 8px 8px 0;font-size:15.5px;color:#2a3147}
+.ctaRow>div:first-child{flex:1 1 300px}
+.qr{text-align:center;font-size:12px;color:var(--muted)} .qr svg{display:block;width:96px;height:96px;margin:0 auto 4px}
+.consent{margin:0;padding:10px 14px;border-left:3px solid var(--ink)}
 .legal{margin-top:12px;font-size:14px;color:var(--muted)}
-a{color:var(--brand)}
-ol.steps{margin:0;padding-left:22px} ol.steps li{margin:8px 0}
-dl{margin:0;border:1px solid var(--line);border-radius:12px;overflow:hidden}
-dl div{display:grid;grid-template-columns:200px 1fr;gap:16px;padding:12px 16px;border-top:1px solid var(--line)}
+a{color:var(--ink);text-decoration:underline}
+ol.steps{margin:0;padding-left:22px} ol.steps li{margin:6px 0}
+dl{margin:0;border:1px solid var(--line);border-radius:4px}
+dl div{display:grid;grid-template-columns:190px 1fr;gap:16px;padding:10px 14px;border-top:1px solid var(--line)}
 dl div:first-child{border-top:0}
-dt{font-weight:600} dd{margin:0;color:#2a3147}
-.samples{display:grid;gap:10px}
-.msg{padding:12px 16px;border:1px solid var(--line);border-radius:14px 14px 14px 4px;background:var(--soft);max-width:560px;font-size:15.5px}
+dt{font-weight:600} dd{margin:0}
+.samples{display:grid;gap:8px}
+.msg{padding:10px 14px;border:1px solid var(--line);border-radius:4px;max-width:560px}
 .note{font-size:14px;color:var(--muted)}
-.warn{padding:14px 16px;border:1px solid #f0c9c9;background:#fff6f6;border-radius:10px}
-button{font:inherit;font-weight:600;padding:10px 18px;border-radius:10px;border:1px solid var(--brand);background:#fff;color:var(--brand);cursor:pointer;margin-top:28px}
+.warn{padding:12px 14px;border:1px solid var(--ink);border-radius:4px}
+button{font:inherit;font-weight:600;padding:8px 16px;border-radius:4px;border:1px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer;margin-top:24px}
 footer{border-top:1px solid var(--line);color:var(--muted);font-size:14px}
-footer div{max-width:820px;margin:0 auto;padding:20px 24px}
+footer div{max-width:760px;margin:0 auto;padding:18px 24px}
 @media (max-width:620px){dl div{grid-template-columns:1fr;gap:2px} .qr,.note.screen{display:none}}
 @media print{
   @page{margin:.6in}
-  body{font-size:12.5pt}
+  body{font-size:12pt}
   header,button,.screen,footer .links{display:none}
   main{padding:0;max-width:none}
-  .cta{background:#fff;border:2px solid #000}
-  .number{color:#000;font-size:48pt}
-  a{color:#000;text-decoration:none}
-  .consent{border-left-color:#000}
+  .number{font-size:30pt}
+  a{text-decoration:none}
   h2,.cta,dl,.samples{break-inside:avoid}
   .qr{display:block!important}
 }
