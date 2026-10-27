@@ -299,6 +299,36 @@ export function inboxList() {
   })).filter((r) => r.last_at);
 }
 
+/**
+ * One plain row per work order, for the "send it to your other system" export. scope 'closed' = finished jobs closed in the date range;
+ * 'all' = every job opened in the range. Private PM notes are never included.
+ */
+export function exportWorkOrders({ scope = 'closed', from = '', to = '' } = {}) {
+  const start = /^\d{4}-\d{2}-\d{2}$/.test(from) ? `${from}T00:00:00.000Z` : '';
+  const end = /^\d{4}-\d{2}-\d{2}$/.test(to) ? `${to}T23:59:59.999Z` : '';
+  const rows = db.prepare('SELECT * FROM tickets ORDER BY id').all().filter((t) => {
+    const closed = CLOSED_STATUSES.includes(t.status);
+    if (scope === 'closed' && !closed) return false;
+    const when = scope === 'closed' ? (t.resolved_at || t.updated_at || t.created_at) : t.created_at;
+    return (!start || when >= start) && (!end || when <= end);
+  });
+  const SOURCE = { ai_model: 'AI estimate, not a quote', sample_rules: 'Sample estimate', vendor_quote: 'Vendor quote', invoice: 'Invoice' };
+  return rows.map((t) => {
+    const unit = t.unit_id ? db.prepare('SELECT u.number, p.name AS property, p.address FROM units u JOIN properties p ON p.id = u.property_id WHERE u.id = ?').get(t.unit_id) : null;
+    const tenant = t.tenant_id ? db.prepare('SELECT name, phone FROM tenants WHERE id = ?').get(t.tenant_id) : null;
+    const vendor = t.vendor_id ? db.prepare('SELECT name, phone FROM vendors WHERE id = ?').get(t.vendor_id) : null;
+    return {
+      work_order: t.id, status: t.status, opened: t.created_at, closed: CLOSED_STATUSES.includes(t.status) ? (t.resolved_at || t.updated_at) : '',
+      property: unit?.property || '', address: unit?.address || '', unit: unit?.number || '',
+      tenant: tenant?.name || '', tenant_phone: tenant?.phone || t.from_phone || '',
+      issue: t.title || '', category: t.category || '', urgency: t.urgency || '', summary: t.summary || '',
+      vendor: vendor?.name || '', vendor_phone: vendor?.phone || '', scheduled_for: t.scheduled_for || '',
+      estimate_usd: t.cost_estimate ?? '', estimate_source: t.cost_estimate != null ? (SOURCE[t.cost_estimate_source || 'ai_model'] || '') : '',
+      photos: mediaCount(t.id),
+    };
+  });
+}
+
 export function listBrief() {
   const rows = db.prepare('SELECT id FROM tickets ORDER BY id DESC').all();
   return rows.map(({ id }) => {

@@ -102,7 +102,8 @@ test('photos from texts are stored as files and served by a signed link that exp
   assert.equal(ok.status, 200);
   assert.equal(ok.headers.get('content-type'), 'image/jpeg');
   assert.equal(Buffer.from(await ok.arrayBuffer()).toString(), 'fake-image-bytes');
-  assert.equal((await fetch(`${t.base}${d.media[0].url.replace(/sig=./, 'sig=0')}`)).status, 403);
+  const altered = d.media[0].url.replace(/sig=(.)/, (_, c) => `sig=${c === '0' ? '1' : '0'}`); // always a different first character
+  assert.equal((await fetch(`${t.base}${altered}`)).status, 403);
   assert.equal((await fetch(`${t.base}/f/local/${d.media[0].id}`)).status, 403);
   const raw = asLocal(t, () => t.mods.db.db.prepare('SELECT url FROM media WHERE id = ?').get(d.media[0].id));
   assert.equal(raw.url, '', 'no photo bytes left in the database');

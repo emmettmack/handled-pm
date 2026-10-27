@@ -139,6 +139,8 @@ export const routes = [
     return { ...out, body: text, tenant_name: tenant?.name || 'Unknown number' };
   })],
   ['GET', '/tenants', () => S.allTenantsWithUnits()],
+  // Finished (or all) work orders as plain rows, for sending to whatever other system the PM uses. The browser turns them into a spreadsheet.
+  ['POST', '/export/work-orders', ({ body }) => S.exportWorkOrders({ scope: body?.scope === 'all' ? 'all' : 'closed', from: body?.from, to: body?.to })],
 
   // ---------- tenant / PM messaging on a ticket ----------
   ['POST', '/tickets/:id/tenant-reply', demoOnly(({ params, body }) => {
