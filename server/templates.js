@@ -3,6 +3,9 @@
 // translations: a native speaker should review each language before launch (see SETUP_NEEDED.md).
 import { LANGUAGES, normalizeLanguage } from './languages.js';
 
+/** Sent once to each new number on its first text. It matches the opt-in message registered with the carriers, so keep them identical. */
+export const FIRST_CONTACT = "Macalisto: You're opted in to repair request texts from your property manager. Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to opt out.";
+
 export const TEXT = {
   askIdentity: {
     en: "Hi, happy to help. Before we send anyone out I need to confirm who I'm texting. Can you reply with your full name and your unit number?",
@@ -135,6 +138,7 @@ const nativeName = (l) => (l === 'es' ? 'español' : LANGUAGES.find((x) => x.cod
 
 export const T = {
   askIdentity: (l) => pick('askIdentity', l),
+  firstContact: () => FIRST_CONTACT,
   askNameAddress: (l) => pick('askNameAddress', l),
   identityHold: (l) => pick('identityHold', l),
   compensation: (l) => pick('compensation', l),

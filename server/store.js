@@ -110,6 +110,8 @@ export function setSetup(patch) {
 export const isHomeMode = () => getSetup().mode === 'home';
 
 // ---------- texting rules: opt-outs and delivery results ----------
+/** True the first time this number is seen, so the program disclosure goes out once per person. */
+export const markDisclosed = (phone) => db.prepare('INSERT OR IGNORE INTO sms_disclosures (phone, sent_at) VALUES (?, ?)').run(normPhone(phone), nowIso()).changes === 1;
 export const isOptedOut = (phone) => !!db.prepare('SELECT 1 FROM opt_outs WHERE phone = ?').get(normPhone(phone));
 export function setOptOut(phone, optedOut, source = 'text') {
   const p = normPhone(phone);

@@ -86,6 +86,8 @@ async function processInbound(req, account) {
       return;
     }
     if (text && vendorReply(from, text)) return;
+    // First text from this number: send the program disclosure once, before the conversation starts.
+    if (!S.isOptedOut(from) && S.markDisclosed(from)) await sendSms(S.normPhone(from), T.firstContact());
     // Photos are fetched before the text is handled, so the assistant sees them when it reads the message.
     const media = [];
     for (let i = 0; i < Math.min(n, 6); i++) {
