@@ -34,3 +34,6 @@ Not merged, not deployed. Tested: 48 automated tests pass, plus a browser click-
 
 ## Identity flow
 - Unknown numbers are no longer stopped with "confirm who I'm texting". The assistant helps first, then asks once for name and address; a match on file links the work order to that tenant; otherwise the PM is told and approves as usual. Lockouts from people not on file still wait for the PM.
+
+## Real conversation
+- Every tenant message is answered by the model with the full conversation and photos; later messages no longer get a fixed acknowledgement. Photos reach the model (up to 4). Follow-up cap raised to 4. Photos are saved before the text is processed.

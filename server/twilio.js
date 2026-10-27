@@ -86,13 +86,14 @@ async function processInbound(req, account) {
       return;
     }
     if (text && vendorReply(from, text)) return;
-    const out = receiveInboundMessage({ channel: 'sms', from, body: text || '(photo or video)', providerSid });
-    if (out.duplicate) return; // the same message delivered again: nothing more to do
+    // Photos are fetched before the text is handled, so the assistant sees them when it reads the message.
+    const media = [];
     for (let i = 0; i < Math.min(n, 6); i++) {
       const type = req.body[`MediaContentType${i}`] || 'image/jpeg';
       const url = await downloadMedia(req.body[`MediaUrl${i}`], type);
-      if (url && out.ticketId) S.addMedia(out.ticketId, { kind: type.startsWith('video') ? 'video' : 'photo', name: `from-text-${i + 1}`, url, source: 'text' });
+      if (url) media.push({ kind: type.startsWith('video') ? 'video' : 'photo', name: `from-text-${i + 1}`, url, source: 'text' });
     }
+    receiveInboundMessage({ channel: 'sms', from, body: text || (media.length ? '(sent a photo or video)' : '(empty message)'), providerSid, media });
   });
 }
 

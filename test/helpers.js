@@ -31,16 +31,42 @@ export function startFakeTwilio() {
   })));
 }
 
+/** A stand-in for api.anthropic.com. `respond(body)` returns the JSON the "model" answers with; every request is recorded. */
+export function startFakeAnthropic() {
+  const requests = [];
+  const state = { respond: () => ({}) };
+  const server = http.createServer((req, res) => {
+    let raw = '';
+    req.on('data', (d) => (raw += d));
+    req.on('end', () => {
+      const body = JSON.parse(raw || '{}');
+      requests.push(body);
+      const kind = /another message on an existing work order/.test(body.system) ? 'reply' : /Choose the best vendor/.test(body.system) ? 'dispatch' : 'triage';
+      res.setHeader('content-type', 'application/json');
+      res.end(JSON.stringify({ id: 'msg_test', type: 'message', role: 'assistant', model: body.model, stop_reason: 'end_turn', stop_sequence: null, usage: { input_tokens: 1, output_tokens: 1 }, content: [{ type: 'text', text: JSON.stringify(state.respond(kind, body)) }] }));
+    });
+  });
+  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve({
+    url: `http://127.0.0.1:${server.address().port}`, requests, state, close: () => new Promise((r) => server.close(r)),
+  })));
+}
+
 /** Boot the real app. Call once per test file, before anything else imports server code. */
-export async function boot({ real = true, twilio = false, env = {} } = {}) {
+export async function boot({ real = true, twilio = false, anthropic = false, env = {} } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'macalisto-test-'));
-  for (const k of ['ANTHROPIC_API_KEY', 'CLERK_SECRET_KEY', 'ADMIN_EMAILS']) delete process.env[k];
+  for (const k of ['ANTHROPIC_API_KEY', 'ANTHROPIC_BASE_URL', 'CLERK_SECRET_KEY', 'ADMIN_EMAILS']) delete process.env[k];
   Object.assign(process.env, { DATA_DIR: dir, DEMO_MODE: real ? '0' : '1', MOCK_AI_DELAY_MS: '0', NODE_ENV: 'test' }, env);
 
   let fake = null;
   if (twilio) {
     fake = await startFakeTwilio();
     Object.assign(process.env, { TWILIO_ACCOUNT_SID: 'ACtest', TWILIO_AUTH_TOKEN: 'test-token', TWILIO_PHONE_NUMBER: '+15550001111', TWILIO_API_BASE: fake.url, TWILIO_ROUTES: JSON.stringify({ '+15550001111': 'local' }) });
+  }
+
+  let fakeAi = null;
+  if (anthropic) {
+    fakeAi = await startFakeAnthropic();
+    Object.assign(process.env, { ANTHROPIC_API_KEY: 'test-key', ANTHROPIC_BASE_URL: fakeAi.url });
   }
 
   const { app } = await import('../server/app.js');
@@ -74,8 +100,8 @@ export async function boot({ real = true, twilio = false, env = {} } = {}) {
 
   const inbound = await import('../server/twilio.js');
   const whenIdle = async () => { await inbound.inboundIdle(); await mods.triage.whenIdle(); };
-  const close = async () => { await new Promise((r) => server.close(r)); await fake?.close(); fs.rmSync(dir, { recursive: true, force: true }); };
-  return { api, sms, base, dir, fake, mods, whenIdle, close };
+  const close = async () => { await new Promise((r) => server.close(r)); await fake?.close(); await fakeAi?.close(); fs.rmSync(dir, { recursive: true, force: true }); };
+  return { api, sms, base, dir, fake, ai: fakeAi, mods, whenIdle, close };
 }
 
 /** Run a function as the local account (for tests that poke the database directly). */
