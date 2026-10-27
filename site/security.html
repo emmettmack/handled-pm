@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Security and trust · Macalisto</title>
+<meta name="description" content="What protects your data and your tenants, and what is not in place yet." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235b45e8'/%3E%3Cpath d='M9 16.5l5 5 9-10' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" />
+<link rel="stylesheet" href="/site.css" />
+</head>
+<body>
+  <nav>
+    <a class="logo" href="/"><i><svg viewBox="0 0 24 24" fill="none" stroke="#5b45e8" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-10"/></svg></i> Macalisto</a>
+    <div class="links"><a class="l opt" href="/app/">Live demo</a><a class="l opt" href="/#how">How it works</a><a class="l" href="/pricing.html">Pricing</a><a class="l opt" href="/compare.html">Compare</a><a class="l opt" href="/faq.html">FAQ</a><a class="l opt" href="/about.html">About</a><a class="pill" href="https://app.macalisto.com">Log in</a></div>
+  </nav>
+  <main>
+    <div class="eyebrow">Security and trust</div>
+    <h1>What is in place, and what is not.</h1>
+    <p class="lead">You are trusting this with your tenants' names, phone numbers, photos and addresses. Here is the plain version of how it is handled, including the things I have not done yet.</p>
+
+    <h2>In place today</h2>
+    <div class="grid">
+      <div class="card"><h3>Your own database</h3><p>Every account's data lives in its own database file. One customer's data is never read while serving another's.</p></div>
+      <div class="card"><h3>You approve what is sent</h3><p>Every message to a vendor or owner is a draft until you approve it. The assistant never promises money, fault or arrival times.</p></div>
+      <div class="card"><h3>Backups</h3><p>Daily backups of every account, kept for a week, and downloadable so a copy can live somewhere other than the server.</p></div>
+      <div class="card"><h3>Signed requests</h3><p>Texts from Twilio are accepted only if they carry a valid signature. Photos are served through short-lived signed links, not public addresses.</p></div>
+      <div class="card"><h3>Texting rules</h3><p>STOP, START and HELP are honored. People who opt out are never texted. Consent wording is on a <a href="/text">public page</a>.</p></div>
+      <div class="card"><h3>No message contents in admin tools</h3><p>The admin tools I use show usage and system health, not your tenants' messages, names or phone numbers.</p></div>
+    </div>
+
+    <h2>The companies involved</h2>
+    <ul class="tick">
+      <li><strong>Twilio</strong> sends and receives text messages.</li>
+      <li><strong>Anthropic</strong> provides the AI that reads messages and photos.</li>
+      <li><strong>Clerk</strong> handles sign-in.</li>
+      <li><strong>Render</strong> hosts the app and its data.</li>
+    </ul>
+    <p>Details on what each one receives are in the <a href="/privacy.html">privacy policy</a>.</p>
+
+    <h2>Not in place yet</h2>
+    <ul class="tick">
+      <li class="no"><strong>Formal certification.</strong> No SOC 2 or similar audit. For a product this size, I would rather say so than imply it.</li>
+      <li class="no"><strong>Field-level encryption</strong> of tenant details inside the database. Data is protected in transit and by the host's disk, but this extra layer is planned.</li>
+      <li class="no"><strong>Self-serve export and deletion.</strong> Today I do both for you on request.</li>
+      <li class="no"><strong>Team roles.</strong> Each account is one person's login for now.</li>
+    </ul>
+
+    <h2>If something goes wrong</h2>
+    <p>If I find that tenant data was exposed, I will tell the affected customers directly and promptly. To report a problem or ask a question, email <a href="mailto:efmack@usc.edu">efmack@usc.edu</a>.</p>
+    <p class="note">This page describes the product as it is today and will change as it does.</p>
+  </main>
+  <footer><a href="/">Home</a> · <a href="/pricing.html">Pricing</a> · <a href="/compare.html">Compare</a> · <a href="/faq.html">FAQ</a> · <a href="/security.html">Security</a> · <a href="/about.html">About</a> · <a href="/text">Text us</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></footer>
+</body>
+</html>

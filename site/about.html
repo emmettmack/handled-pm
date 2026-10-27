@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>About · Macalisto</title>
+<meta name="description" content="Why Macalisto exists, and who is behind it." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235b45e8'/%3E%3Cpath d='M9 16.5l5 5 9-10' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" />
+<style>
+  :root { --ink: #fff; --ink-2: rgba(255,255,255,.78); --line: rgba(255,255,255,.16); }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    font-family: Geist, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--ink);
+    -webkit-font-smoothing: antialiased; line-height: 1.65;
+    background:
+      radial-gradient(900px 600px at 50% 0%, rgba(125,140,255,.5), transparent 70%),
+      radial-gradient(700px 500px at 85% 100%, rgba(80,200,255,.25), transparent 70%),
+      linear-gradient(160deg, #2a1a6e 0%, #4433d6 48%, #3b6df0 100%);
+    background-attachment: fixed; min-height: 100vh;
+  }
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 22px clamp(20px, 5vw, 56px); }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -.02em; font-size: 18px; color: #fff; text-decoration: none; }
+  .logo i { width: 28px; height: 28px; border-radius: 8px; background: #fff; display: grid; place-items: center; }
+  .logo svg { width: 16px; height: 16px; }
+  .links { display: flex; align-items: center; gap: 24px; }
+  .l { color: var(--ink-2); text-decoration: none; font-size: 15px; font-weight: 500; }
+  .l:hover, .l.on { color: #fff; }
+  .pill { font-size: 14px; font-weight: 500; padding: 8px 16px; border-radius: 99px; border: 1px solid var(--line); color: var(--ink); text-decoration: none; background: rgba(255,255,255,.08); }
+  .pill:hover { background: rgba(255,255,255,.18); }
+  main { max-width: 700px; margin: 0 auto; padding: 36px 24px 90px; }
+  .eyebrow { font-size: 13.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); font-weight: 500; }
+  h1 { font-size: clamp(34px, 5.6vw, 54px); line-height: 1.08; letter-spacing: -.03em; font-weight: 500; margin: 12px 0 22px; }
+  .lead { font-size: clamp(18px, 2.2vw, 21px); color: #fff; line-height: 1.55; }
+  h2 { font-size: 22px; letter-spacing: -.015em; font-weight: 500; margin: 46px 0 10px; }
+  p { color: var(--ink-2); font-size: 17px; margin-top: 14px; }
+  p strong { color: #fff; font-weight: 600; }
+  .card { margin-top: 40px; padding: 22px 24px; border-radius: 16px; border: 1px solid var(--line); background: rgba(255,255,255,.09); }
+  .card p { margin-top: 0; color: #fff; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
+  .btn { display: inline-flex; background: #fff; color: #3a2bc4; font-weight: 600; font-size: 15px; padding: 12px 20px; border-radius: 12px; text-decoration: none; }
+  .btn.ghost { background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.35); }
+  .small { margin-top: 56px; font-size: 14px; color: rgba(255,255,255,.62); }
+  .small a { color: rgba(255,255,255,.8); }
+  footer { text-align: center; font-size: 12.5px; color: rgba(255,255,255,.55); padding: 0 20px 28px; }
+  footer a { color: rgba(255,255,255,.75); }
+  @media (max-width: 560px) { .links .l { display: none; } .links .l.on { display: inline; } }
+</style>
+</head>
+<body>
+  <nav>
+    <a class="logo" href="/"><i><svg viewBox="0 0 24 24" fill="none" stroke="#5b45e8" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-10"/></svg></i> Macalisto</a>
+    <div class="links"><a class="l" href="/app/">Live demo</a><a class="l" href="/#how">How it works</a><a class="l" href="/pricing.html">Pricing</a><a class="l" href="/compare.html">Compare</a><a class="l" href="/faq.html">FAQ</a><a class="l on" href="/about.html">About</a><a class="pill" href="https://app.macalisto.com">Log in</a></div>
+  </nav>
+  <main>
+    <div class="eyebrow">About</div>
+    <h1>I built this because I needed it.</h1>
+    <p class="lead">I'm Emmett Mack. I'm a student at USC, I run track, and I've spent a lot of time around rental properties, from both sides of the lease. Macalisto is what I wished my landlord had.</p>
+
+    <h2>Learning how a rental actually runs</h2>
+    <p>I learned how to run rental properties by being around my family's. Nobody hands you a manual. You find out that a "small" repair is a phone call, a photo, a plumber who may or may not pick up, a tenant waiting for an answer, and a note you forgot to write down. You find out that most of the job is keeping people informed.</p>
+
+    <h2>Then I was the tenant</h2>
+    <p>As a renter, I got to see the other side. My landlord changed management companies more than once, and each change meant a new portal, a new phone number and a new way to ask for things. Repair requests got lost in the handoff. I rarely knew who to ask, whether anyone had seen my message, or when someone was coming. The repairs weren't hard. The communication was the problem.</p>
+    <p>I kept thinking: this is a text message problem. A tenant should be able to text one number, describe what's wrong, send a photo, and get a clear answer. The person in charge should be able to see everything and decide, without a stack of software built for a company with ten thousand doors.</p>
+
+    <h2>What I'm building</h2>
+    <p>Macalisto answers your tenants by text, asks the questions a vendor would ask, reads the photos they send, drafts the message to the right vendor, and waits for your approval. <strong>Nothing goes out without you.</strong> It is built for people who run a handful to a few dozen properties, which is a lot of landlords and not many software companies.</p>
+    <p>Software for big property managers is built around teams, minimums and long onboarding calls. I'd rather build something you can start using today, that costs a price you can see, and that sounds like you and not like a call center.</p>
+
+    <h2>Why I think I can do it</h2>
+    <p>Track taught me to show up early, do the boring work, and keep going when it isn't fun. I've started a business before, so I know that shipping something and answering the phone matters more than a perfect plan. And I'm a landlord's tenant and a landlord's family member, so I'm building for people whose problems I've watched up close.</p>
+
+    <div class="card">
+      <p><strong>You'll reach me, not a ticket queue.</strong> While Macalisto is this size, I set up new customers myself and read every message that comes in. If something doesn't work for you, tell me and I'll fix it.</p>
+      <div class="row">
+        <a class="btn" href="mailto:efmack@usc.edu">Email me</a>
+        <a class="btn ghost" href="/app/">Try the demo</a>
+      </div>
+    </div>
+
+    <p class="small">Macalisto is operated by Emmett Mack. I also run a small side business, Mack Sleds.</p>
+  </main>
+  <footer><a href="/">Home</a> · <a href="/pricing.html">Pricing</a> · <a href="/compare.html">Compare</a> · <a href="/faq.html">FAQ</a> · <a href="/security.html">Security</a> · <a href="/text">Text us</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></footer>
+</body>
+</html>
