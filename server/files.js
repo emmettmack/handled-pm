@@ -38,6 +38,12 @@ export function readFile(row) {
   try { return fs.readFileSync(path.join(accountDir(currentAccount()), row.file)); } catch { return null; }
 }
 
+/** Deletes a stored photo from disk (called when its work order is deleted). */
+export function removeFile(fileName) {
+  if (!fileName || /[\\/]/.test(fileName)) return;
+  try { fs.unlinkSync(path.join(accountDir(currentAccount()), fileName)); } catch { /* already gone */ }
+}
+
 /** A link to a photo that works for an hour, for this account's own pages. */
 export function mediaLink(row) {
   const account = currentAccount();

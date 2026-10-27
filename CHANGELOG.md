@@ -42,3 +42,7 @@ Not merged, not deployed. Tested: 48 automated tests pass, plus a browser click-
 - Work orders page: Export… downloads a spreadsheet of finished (or all) jobs for a date range, ready to open in Excel/Sheets or upload into another system. Private notes are never included, and text that could run as a spreadsheet formula is defused.
 - Each work order has a Copy summary button that puts a plain-text summary on the clipboard for pasting into any other system.
 - Fixed a flaky test (signature tamper check altered nothing about 1 time in 16).
+
+## Easier deleting
+- Inbox: Select mode with checkboxes, Select all, and a two-step Delete for any conversations (open or finished); each conversation also has Delete this conversation. A job a vendor is already working on is skipped and reported.
+- Deleting any work order now also removes its photo files from disk (closing out finished jobs used to leave them behind).

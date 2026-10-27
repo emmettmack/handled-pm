@@ -6,7 +6,26 @@ import { usePoll, timeAgo } from '../util.js';
 
 const WHO = { tenant: 'Tenant', ai: 'Assistant', pm: 'You' };
 
-function Thread({ id, onChange }) {
+function DeleteConversation({ id, onDeleted }) {
+  const { toast } = useApp();
+  const [sure, setSure] = useState(false);
+  const del = async () => {
+    try {
+      const r = await api.post('/tickets/delete', { ids: [id] });
+      if (r.skipped?.length) { toast(r.skipped[0].reason, 'err'); setSure(false); return; }
+      toast('Conversation deleted'); onDeleted();
+    } catch (e) { toast(e.message, 'err'); }
+  };
+  return sure ? (
+    <div className="remove-confirm" style={{ margin: '0 18px 14px' }}>
+      <b>Delete this conversation?</b>
+      <span>The messages, photos and work order are removed for good.</span>
+      <div className="btn-row"><button className="btn danger" onClick={del}>Yes, delete it</button><button className="btn" onClick={() => setSure(false)}>Keep it</button></div>
+    </div>
+  ) : <div style={{ padding: '0 18px 12px' }}><button className="btn link danger-link" onClick={() => setSure(true)}>Delete this conversation…</button></div>;
+}
+
+function Thread({ id, onChange, onDeleted }) {
   const { toast } = useApp();
   const [t, reload] = usePoll(() => api.get(`/tickets/${id}`), 3000, [id]);
   const [text, setText] = useState('');
@@ -49,6 +68,7 @@ function Thread({ id, onChange }) {
         ))}
         <div ref={end} />
       </div>
+      <DeleteConversation id={id} onDeleted={onDeleted} />
       <div className="composer">
         <textarea rows={2} placeholder="Reply to the tenant from your Macalisto number…" value={text} onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) send(); }} />
@@ -60,18 +80,47 @@ function Thread({ id, onChange }) {
 
 export default function Inbox({ id }) {
   const { refreshInbox } = useApp();
+  const { toast } = useApp();
   const [list, reload] = usePoll(() => api.get('/inbox'), 3000);
+  const [selecting, setSelecting] = useState(false);
+  const [picked, setPicked] = useState(new Set());
+  const [confirming, setConfirming] = useState(false);
   const onChange = () => { reload(); refreshInbox?.(); };
   if (!list) return null;
+  const toggle = (cid) => setPicked((p) => { const n = new Set(p); n.has(cid) ? n.delete(cid) : n.add(cid); return n; });
+  const stop = () => { setSelecting(false); setPicked(new Set()); setConfirming(false); };
+  const deleteSelected = async () => {
+    try {
+      const r = await api.post('/tickets/delete', { ids: [...picked] });
+      toast(r.skipped?.length ? `Deleted ${r.deleted}. ${r.skipped.length} skipped: a vendor is already on ${r.skipped.length === 1 ? 'it' : 'them'}.` : `Deleted ${r.deleted} conversation${r.deleted === 1 ? '' : 's'}`, r.skipped?.length ? 'err' : undefined);
+      if (id && picked.has(id)) go('/inbox');
+      stop(); onChange();
+    } catch (e) { toast(e.message, 'err'); }
+  };
   return (
     <>
-      <div className="page-head"><div><h1>Inbox</h1><p>Every conversation with your tenants. Reply from here and the assistant steps aside until you hand it back.</p></div></div>
+      <div className="page-head"><div><h1>Inbox</h1><p>Every conversation with your tenants. Reply from here and the assistant steps aside until you hand it back.</p></div>
+        {list.length > 0 && (selecting
+          ? <div className="btn-row">
+              <button className="btn" onClick={() => setPicked(picked.size === list.length ? new Set() : new Set(list.map((c) => c.id)))}>{picked.size === list.length ? 'Select none' : 'Select all'}</button>
+              <button className="btn danger" disabled={!picked.size} onClick={() => setConfirming(true)}>Delete {picked.size || ''}…</button>
+              <button className="btn" onClick={stop}>Done</button>
+            </div>
+          : <button className="btn" onClick={() => setSelecting(true)}>Select</button>)}
+      </div>
+      {confirming && (
+        <div className="remove-confirm" style={{ marginBottom: 12 }}>
+          <b>Delete {picked.size} conversation{picked.size === 1 ? '' : 's'}?</b>
+          <span>Their messages, photos and work orders are removed for good. A job a vendor is already working on is skipped.</span>
+          <div className="btn-row"><button className="btn danger" onClick={deleteSelected}>Yes, delete {picked.size === 1 ? 'it' : 'them'}</button><button className="btn" onClick={() => setConfirming(false)}>Keep them</button></div>
+        </div>
+      )}
       {list.length === 0 ? <div className="card empty"><b>No conversations yet</b>Texts to your maintenance number will show up here.</div> : (
         <div className="inbox">
           <div className="card inbox-list">
             {list.map((c) => (
-              <button key={c.id} className={`inbox-row ${c.id === id ? 'active' : ''} ${c.unread ? 'unread' : ''}`} onClick={() => go(`/inbox/${c.id}`)}>
-                <div className="inbox-row-top"><span className="inbox-name">{c.unread && <i className="unread-dot" />}{c.contact}</span><span className="hint-small">{timeAgo(c.last_at)}</span></div>
+              <button key={c.id} className={`inbox-row ${c.id === id ? 'active' : ''} ${c.unread ? 'unread' : ''}`} onClick={() => (selecting ? toggle(c.id) : go(`/inbox/${c.id}`))}>
+                <div className="inbox-row-top"><span className="inbox-name">{selecting && <input type="checkbox" readOnly checked={picked.has(c.id)} style={{ marginRight: 8 }} />}{c.unread && <i className="unread-dot" />}{c.contact}</span><span className="hint-small">{timeAgo(c.last_at)}</span></div>
                 <div className="inbox-preview">{c.last_sender === 'tenant' ? '' : `${WHO[c.last_sender] || ''}: `}{c.last_body}</div>
                 <div className="inbox-tags">
                   {c.ai_paused && <span className="tag">Assistant paused</span>}
@@ -80,7 +129,7 @@ export default function Inbox({ id }) {
               </button>
             ))}
           </div>
-          {id ? <Thread key={id} id={id} onChange={onChange} /> : <div className="card empty inbox-empty">Choose a conversation</div>}
+          {id ? <Thread key={id} id={id} onChange={onChange} onDeleted={() => { go('/inbox'); onChange(); }} /> : <div className="card empty inbox-empty">Choose a conversation</div>}
         </div>
       )}
     </>

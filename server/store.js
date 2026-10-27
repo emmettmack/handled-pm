@@ -277,6 +277,30 @@ export function ticketDetail(id) {
   };
 }
 
+// Removing a work order removes everything attached to it, including photo files (the server plugs in the file remover).
+let mediaRemover = null; // (fileName) => void
+export const setMediaRemover = (fn) => { mediaRemover = fn; };
+export const IN_MOTION = ['dispatched', 'scheduled', 'in_progress'];
+/** Permanently deletes work orders with their messages, history, drafts and photos. A job a vendor is already working on is skipped. */
+export function deleteTickets(ids) {
+  let deleted = 0;
+  const skipped = [];
+  for (const raw of ids) {
+    const id = Number(raw);
+    const t = db.prepare('SELECT id, status FROM tickets WHERE id = ?').get(id);
+    if (!t) continue;
+    if (IN_MOTION.includes(t.status)) { skipped.push({ id, reason: 'A vendor is already on this job. Mark it done or closed first.' }); continue; }
+    const files = db.prepare('SELECT file FROM media WHERE ticket_id = ? AND file IS NOT NULL').all(id).map((r) => r.file);
+    for (const table of ['messages', 'status_history', 'dispatches', 'media']) db.prepare(`DELETE FROM ${table} WHERE ticket_id = ?`).run(id);
+    db.prepare('UPDATE inbound_messages SET ticket_id = NULL WHERE ticket_id = ?').run(id); // keep the record that this text was seen, so a retry is still ignored
+    db.prepare('UPDATE tickets SET related_to = NULL WHERE related_to = ?').run(id);
+    db.prepare('DELETE FROM tickets WHERE id = ?').run(id);
+    for (const f of files) { try { mediaRemover?.(f); } catch { /* a missing file is fine */ } }
+    deleted++;
+  }
+  return { deleted, skipped };
+}
+
 export const setAiPaused = (id, paused) => db.prepare('UPDATE tickets SET ai_paused = ? WHERE id = ?').run(paused ? 1 : 0, id);
 export const markRead = (id) => db.prepare('UPDATE tickets SET pm_read_at = ? WHERE id = ?').run(nowIso(), id);
 
