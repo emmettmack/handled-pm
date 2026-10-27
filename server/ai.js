@@ -78,7 +78,7 @@ TASK: Read the whole conversation and return ONLY a JSON object (no prose, no co
  "other_language": true if the tenant writes in a language that is not in the supported list, else false,
  "reply_english": "an English translation of reply_to_tenant (the same text if it is already English). It is used to check the reply before it is sent",
  "compensation_requested": true | false,
- "identity_claim": { "name": "name the texter gave or null", "unit": "unit number the texter gave or null" }
+ "identity_claim": { "name": "name the texter gave or null", "unit": "unit number the texter gave or null", "address": "street address the texter gave or null" }
 }`;
       const user = JSON.stringify({
         unit: ctx.unit ? `${unitName(ctx.unit.number)}, ${ctx.unit.address}${ctx.unit.neighborhood ? ` (${ctx.unit.neighborhood})` : ''}` : 'unknown (number not on file)',
