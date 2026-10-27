@@ -91,11 +91,7 @@ function saveTenant(id, b) {
 /** Permanently deletes resolved or closed work orders (and their messages, history, drafts and photos). Open ones are never touched. */
 function deleteClosedTickets(onlyId = null) {
   const ids = db.prepare(`SELECT id FROM tickets WHERE status IN ('resolved','closed')${onlyId ? ' AND id = ?' : ''}`).all(...(onlyId ? [onlyId] : [])).map((r) => r.id);
-  for (const id of ids) {
-    for (const table of ['messages', 'status_history', 'dispatches', 'media']) db.prepare(`DELETE FROM ${table} WHERE ticket_id = ?`).run(id);
-    db.prepare('DELETE FROM tickets WHERE id = ?').run(id);
-  }
-  return ids.length;
+  return S.deleteTickets(ids).deleted;
 }
 
 const SAMPLE = {
@@ -123,6 +119,12 @@ export const routes = [
   }],
   // "closed" must come before ":id" so it isn't read as a ticket number
   ['DELETE', '/tickets/closed', () => ({ deleted: deleteClosedTickets() })],
+  // Delete any chosen conversations (test texts, spam, old threads), open or finished. A job a vendor is already on is skipped and reported.
+  ['POST', '/tickets/delete', ({ body }) => {
+    const ids = Array.isArray(body?.ids) ? [...new Set(body.ids.map(Number).filter((n) => Number.isInteger(n) && n > 0))].slice(0, 500) : [];
+    if (!ids.length) throw fail('Choose at least one conversation.');
+    return S.deleteTickets(ids);
+  }],
   ['DELETE', '/tickets/:id', ({ params }) => {
     if (!deleteClosedTickets(params.id)) throw fail('Only resolved or closed work orders can be deleted.');
   }],
