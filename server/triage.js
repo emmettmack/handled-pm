@@ -85,6 +85,14 @@ export async function processTicket(id) {
     t,
   );
   const lang = r.language;
+  // A photo would help and none has been asked for or sent yet: ask once, with specifics, before wrapping up.
+  const askedForPhoto = !!t.photo_asked || ctx.transcript.some((m) => m.sender !== 'tenant' && /\b(photos?|pictures?|pics?)\b/i.test(m.body));
+  if (!r.needs_info && r.photos_helpful && r.photo_request && !ctx.images.length && !askedForPhoto && r.urgency !== 'emergency' && t.followup_rounds < MAX_FOLLOWUP_ROUNDS) {
+    S.updateTicket(id, { photo_asked: 1 });
+    r.needs_info = true;
+    r.reply_to_tenant = String(r.photo_request);
+    r.reply_english = String(r.photo_request_english || '');
+  }
   const lastTenantMsg = [...ctx.transcript].reverse().find((m) => m.sender === 'tenant')?.body || '';
 
   // A real account without a live model must not show invented dollar figures: the sample AI's numbers are demo-only.
