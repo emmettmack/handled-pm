@@ -33,6 +33,11 @@ function writeFile(account, dataUrl) {
 /** Used when a new photo arrives: store it and give the row a file name instead of the data URL. */
 export const saveDataUrl = (dataUrl) => writeFile(currentAccount(), dataUrl);
 
+/** The bytes of a stored photo, for the assistant to look at. */
+export function readFile(row) {
+  try { return fs.readFileSync(path.join(accountDir(currentAccount()), row.file)); } catch { return null; }
+}
+
 /** A link to a photo that works for an hour, for this account's own pages. */
 export function mediaLink(row) {
   const account = currentAccount();

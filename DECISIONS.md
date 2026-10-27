@@ -9,6 +9,11 @@ The assistant answers the problem normally. Once it understands the issue it ask
 *Why:* the owner wants any household member to be able to text from any phone, and the number is only handed out to tenants. The dispatch approval tap, not the identity check, is the safety net. The lockout exception stays because a locksmith opening the wrong door is the one case that can't be undone.
 *Replaces:* the up-front "confirm who I'm texting" message (askIdentity), which is no longer sent. The new message (askNameAddress, 8 languages) needs native-speaker review like the others.
 
+**D-018. The assistant converses with the model on every tenant message, and sees photos.**
+Each text on an AI-mode thread goes to the model with the whole conversation, the photos (up to 4 newest, JPEG/PNG/GIF/WebP under 3.5 MB), and where the job stands. After the first pass, later messages are answered by the model too, not by a fixed acknowledgement. Follow-up questions are capped at 4 instead of 2. Photos are downloaded before the text is processed so they are never missed. Fixed text stays where it must be exact: emergencies (safety instructions), compensation questions, STOP/HELP, and the identity hold. The money-and-fault filter runs on every model reply. Without a live model the old fixed acknowledgement is used.
+*Why:* a coordinator that cannot read photos or respond in context saves the property manager nothing.
+*Open:* videos and HEIC photos are not viewable yet; the assistant is told so and asks the tenant to describe them.
+
 ## Phase 1 (bugs)
 
 **D-011. Phase 1 was first written without running the test suite (owner request), then tested and fixed.**

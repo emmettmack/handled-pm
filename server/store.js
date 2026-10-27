@@ -127,6 +127,28 @@ export const addMedia = (ticketId, { kind = 'photo', name = '', url, source = 'u
   return db.prepare('INSERT INTO media (ticket_id, kind, name, url, file, mime, source, created_at) VALUES (?,?,?,?,?,?,?,?)')
     .run(ticketId, kind === 'video' ? 'video' : 'photo', name, saved ? '' : url, saved?.file ?? null, saved?.mime ?? null, source, at || nowIso()).lastInsertRowid;
 };
+let mediaReader = null; // (mediaRow) => Buffer | null, plugged in by the server (files.js)
+export const setMediaReader = (fn) => { mediaReader = fn; };
+const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+const MAX_MODEL_IMAGES = 4;
+const MAX_IMAGE_BYTES = 3.5 * 1024 * 1024; // the model accepts up to 5 MB per image once encoded
+/** The newest photos on a work order as { media_type, data } for the model, plus a count of anything it can't view (videos, HEIC). */
+export function mediaForModel(ticketId) {
+  const rows = db.prepare('SELECT * FROM media WHERE ticket_id = ? ORDER BY id DESC').all(ticketId);
+  const images = [];
+  let unviewable = 0;
+  for (const m of rows) {
+    let type = m.mime, buf = null;
+    if (m.kind === 'photo' && m.file && mediaReader) buf = mediaReader(m);
+    else if (m.kind === 'photo' && String(m.url).startsWith('data:')) {
+      const d = /^data:([\w/+.-]+);base64,(.*)$/s.exec(m.url);
+      if (d) { type = d[1]; buf = Buffer.from(d[2], 'base64'); }
+    }
+    if (buf && IMAGE_TYPES.has(type) && buf.length <= MAX_IMAGE_BYTES && images.length < MAX_MODEL_IMAGES) images.unshift({ media_type: type, data: buf.toString('base64') });
+    else unviewable++;
+  }
+  return { images, unviewable };
+}
 export const mediaFor = (ticketId) => db.prepare('SELECT * FROM media WHERE ticket_id = ? ORDER BY id').all(ticketId)
   .map((m) => (m.file && mediaLinker ? { ...m, url: mediaLinker(m) } : m));
 export const mediaCount = (ticketId) => db.prepare('SELECT COUNT(*) c FROM media WHERE ticket_id = ?').get(ticketId).c;

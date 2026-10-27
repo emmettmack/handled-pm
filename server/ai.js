@@ -5,7 +5,7 @@ import * as mock from './mockAi.js';
 import { unitName } from './labels.js';
 import { bump } from './metrics.js';
 import { displayCompany } from './labels.js';
-import { LANGUAGES } from './languages.js';
+import { LANGUAGES, normalizeLanguage } from './languages.js';
 
 export const MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
 export const isMock = () => !process.env.ANTHROPIC_API_KEY?.trim();
@@ -16,12 +16,15 @@ const getClient = () => (client ??= new Anthropic({ apiKey: process.env.ANTHROPI
 
 export const aiStatus = () => ({ mock: isMock(), model: isMock() ? null : MODEL, last_error: lastError });
 
-async function callJSON(system, user, maxTokens = 1400) {
+async function callJSON(system, user, maxTokens = 1400, images = []) {
+  const content = images.length
+    ? [...images.map((i) => ({ type: 'image', source: { type: 'base64', media_type: i.media_type, data: i.data } })), { type: 'text', text: user }]
+    : user;
   const res = await getClient().messages.create({
     model: MODEL,
     max_tokens: maxTokens,
     system,
-    messages: [{ role: 'user', content: user }],
+    messages: [{ role: 'user', content }],
   });
   const text = res.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
   const m = text.match(/\{[\s\S]*\}/);
@@ -54,7 +57,9 @@ HARD RULES
 3. EMERGENCY = danger to a person or major active damage: gas smell, flooding or burst pipe, sparking/smoking outlet or burning smell, fire, no heat in freezing weather, sewage flooding. For emergencies the reply starts with brief safety instructions (gas: leave the unit, no switches or flames, call 911 or SoCalGas 1-800-427-2200 from outside; flooding: shut off the water valve if safe; electrical: stay away, breaker off only if safe, 911 if smoke or flames), says the office is being alerted, and does NOT ask follow-up questions.
 4. URGENT = real impact on daily living but no danger: no hot water, AC out in a heat wave, dead fridge, the only toilet unusable, contained active leak, lockout. ROUTINE = everything else.
 5. FOLLOW-UPS: ask only when a missing detail changes who we send or how urgent it is (which fixture/room, is it leaking, how bad, since when). One short question at a time (two sentences max). Lockouts and emergencies never need follow-ups. When no follow-up rounds remain, do NOT ask: make reasonable assumptions and note them in the summary.
-6. Never give access instructions or promise anyone will let the tenant in. Never invent appointment times.`;
+6. Never give access instructions or promise anyone will let the tenant in. Never invent appointment times.
+7. PHOTOS: when photos are attached, look at them and use what you see: name the fixture, the visible damage, the severity, a model or label you can read. Say what you noticed in your reply when it helps ("I can see water pooling under the sink trap"). Never claim to have seen something that is not in a photo. If you were told there are videos or images you could not view, say you could not open them and ask the tenant to describe what they show.
+8. CONVERSATION: answer what the tenant actually said, in context, the way a sharp office coordinator would. If they ask a question, answer it or say who will. If they correct you or are frustrated, acknowledge it plainly. Do not repeat a question they already answered. Do not send the same wording twice in a row.`;
 
 export async function triage(ctx) {
   return withFallback(
@@ -88,10 +93,49 @@ TASK: Read the whole conversation and return ONLY a JSON object (no prose, no co
         follow_up_rounds_allowed: ctx.maxRounds,
         conversation: ctx.transcript.map((m) => `${m.sender === 'tenant' ? 'TENANT' : m.sender === 'pm' ? 'PM' : 'COORDINATOR'}: ${m.body}`),
       });
-      return callJSON(system, user);
+      return callJSON(system, user, 1400, ctx.images || []);
     },
     () => mock.triage(ctx),
   );
+}
+
+/**
+ * A tenant wrote again after the first pass. Returns { reply, reply_english, language, needs_pm, note_for_pm, emergency }
+ * or null when there is no live model (the caller then falls back to a fixed acknowledgement).
+ */
+export async function reply(ctx) {
+  if (isMock()) return null;
+  try {
+    const t = ctx.ticket;
+    const system = `${RULES(ctx.company)}
+
+TASK: The tenant has just sent another message on an existing work order. Reply to it. Return ONLY a JSON object:
+{
+ "reply_to_tenant": "your text to the tenant, in THEIR language, 1-3 sentences, specific to what they just said",
+ "reply_english": "English translation of reply_to_tenant (same text if already English)",
+ "language": one of the supported codes,
+ "emergency": true only if the new message describes danger to a person or major active damage (see rule 3),
+ "needs_pm": true if the property manager should look at this (new information that changes the job, a complaint, a request you cannot answer),
+ "note_for_pm": "one sentence for the PM if needs_pm, else empty"
+}
+Where the job stands is in work_order. Only state a visit time if work_order.scheduled_for has one. If a vendor has not been confirmed, say the office is still lining it up. You cannot reschedule, cancel or promise anything yourself: say you will pass it to the property manager.`;
+    const user = JSON.stringify({
+      work_order: { status: t.status, category: t.category, urgency: t.urgency, title: t.title, vendor_dispatched: ctx.vendorDispatched, scheduled_for: t.scheduled_for || null },
+      unit: ctx.unit ? `${unitName(ctx.unit.number)}, ${ctx.unit.address}` : 'unknown (number not on file)',
+      tenant_on_file: ctx.tenant ? ctx.tenant.name : null,
+      photos_attached_now: (ctx.images || []).length,
+      photos_or_videos_you_cannot_view: ctx.unviewable || 0,
+      conversation: ctx.transcript.map((m) => `${m.sender === 'tenant' ? 'TENANT' : m.sender === 'pm' ? 'PM' : 'COORDINATOR'}: ${m.body}`),
+    });
+    const r = await callJSON(system, user, 800, ctx.images || []);
+    lastError = null;
+    bump('ai_calls');
+    return { reply: String(r.reply_to_tenant || '').trim(), reply_english: String(r.reply_english || ''), language: normalizeLanguage(r.language), needs_pm: !!r.needs_pm, note_for_pm: String(r.note_for_pm || ''), emergency: !!r.emergency };
+  } catch (e) {
+    lastError = e.message;
+    console.warn('[ai] reply failed, using the fixed acknowledgement:', e.message);
+    return null;
+  }
 }
 
 const FIELD_NAMES = {

@@ -9,7 +9,7 @@ import { sendToTenant } from './outbound.js';
 import { T, sanitizeTenantReply, violatesLiability, COMPENSATION_ASK } from './templates.js';
 import { scoreVendor } from './mockAi.js';
 
-export const MAX_FOLLOWUP_ROUNDS = 2;
+export const MAX_FOLLOWUP_ROUNDS = 4;
 const URG = { routine: 0, urgent: 1, emergency: 2 };
 const CATS = ['plumbing', 'electrical', 'HVAC', 'appliance', 'lockout', 'other'];
 
@@ -33,7 +33,16 @@ function context(id) {
   const tenant = t.tenant_id ? S.db_tenant(t.tenant_id) : null;
   const unit = S.getUnit(t.unit_id);
   const transcript = S.ticketDetail(id).messages.filter((m) => m.kind === 'sms');
-  return { company: S.getCompany(), homeMode: S.isHomeMode(), prefs: S.getPrefs(), mediaCount: S.mediaCount(id), ticket: t, tenant, unit, transcript, verified: !!(t.verified || t.identity_cleared) };
+  const { images, unviewable } = S.mediaForModel(id);
+  return { company: S.getCompany(), homeMode: S.isHomeMode(), prefs: S.getPrefs(), mediaCount: S.mediaCount(id), images, unviewable, ticket: t, tenant, unit, transcript, verified: !!(t.verified || t.identity_cleared) };
+}
+
+/** A tenant's later message, answered by the model with the whole conversation and photos in view (null without a live model). */
+export async function replyToUpdate(id) {
+  const ctx = context(id);
+  const vendorDispatched = S.ticketDetail(id).dispatches.some((d) => d.kind === 'vendor' && ['approved', 'accepted'].includes(d.state));
+  const r = await ai.reply({ ...ctx, vendorDispatched });
+  return r && r.reply ? r : null;
 }
 
 function normalizeTriage(r, t) {
