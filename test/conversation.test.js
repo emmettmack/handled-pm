@@ -58,3 +58,20 @@ test('a PM who has taken over still silences the model', async () => {
   await say('hello? anyone there');
   assert.equal(t.ai.requests.length, n, 'no model call while paused');
 });
+
+test('a model that answers in plain words, or needs a second try, still produces a reply', async () => {
+  const d = await thread();
+  await t.api('POST', `/tickets/${d.id}/assistant`, { on: true });
+  // plain prose instead of JSON, every time: the prose itself is used as the reply
+  t.ai.state.respond = (kind) => (kind === 'reply' ? 'RAW:Sorry about that. I am here. What would you like to know about the plumber visit?' : triageAnswer());
+  await say('why are you not replying to me');
+  assert.ok(said(await thread()).at(-1).startsWith('Sorry about that. I am here.'));
+  // JSON on the second attempt only
+  let calls = 0;
+  t.ai.state.respond = (kind) => {
+    if (kind !== 'reply') return triageAnswer();
+    return ++calls === 1 ? 'RAW:not json' : { reply_to_tenant: 'Second try worked, thanks for waiting.', reply_english: 'x', language: 'en', needs_pm: false, note_for_pm: '', emergency: false };
+  };
+  await say('let us try again');
+  assert.ok(said(await thread()).at(-1).includes('Second try worked'));
+});

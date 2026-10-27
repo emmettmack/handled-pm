@@ -20,17 +20,25 @@ async function callJSON(system, user, maxTokens = 1400, images = []) {
   const content = images.length
     ? [...images.map((i) => ({ type: 'image', source: { type: 'base64', media_type: i.media_type, data: i.data } })), { type: 'text', text: user }]
     : user;
-  const res = await getClient().messages.create({
-    model: MODEL,
-    max_tokens: maxTokens,
-    system,
-    messages: [{ role: 'user', content }],
-  });
-  const text = res.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
-  const m = text.match(/\{[\s\S]*\}/);
-  if (!m) throw new Error('Model did not return JSON');
-  return JSON.parse(m[0]);
+  let last;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const res = await getClient().messages.create({
+      model: MODEL,
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: 'user', content: attempt ? appendText(content, '\n\nReturn ONLY the JSON object described above, nothing before or after it.') : content }],
+    });
+    const text = res.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
+    const m = text.match(/\{[\s\S]*\}/);
+    if (m) {
+      try { return JSON.parse(m[0]); } catch { /* fall through to the retry */ }
+    }
+    last = Object.assign(new Error(`Model did not return JSON (stop_reason ${res.stop_reason}; started with: ${JSON.stringify(text.slice(0, 80))})`), { rawText: text });
+    console.warn('[ai]', last.message);
+  }
+  throw last;
 }
+const appendText = (content, extra) => (typeof content === 'string' ? content + extra : [...content, { type: 'text', text: extra }]);
 
 /** Try the real model; on any failure fall back to the mock so a live demo never dies on a network blip. */
 async function withFallback(real, fallback) {
@@ -132,6 +140,13 @@ Where the job stands is in work_order. Only state a visit time if work_order.sch
     bump('ai_calls');
     return { reply: String(r.reply_to_tenant || '').trim(), reply_english: String(r.reply_english || ''), language: normalizeLanguage(r.language), needs_pm: !!r.needs_pm, note_for_pm: String(r.note_for_pm || ''), emergency: !!r.emergency };
   } catch (e) {
+    // The model answered in plain words instead of JSON: for a simple reply that is still a usable answer.
+    const prose = String(e.rawText || '').trim();
+    if (prose && prose.length <= 600 && !/[{}]/.test(prose) && /^[\x20-\x7E\u00A0-\u024F\u2018-\u201D\u2026\n]+$/.test(prose)) {
+      lastError = null;
+      bump('ai_calls');
+      return { reply: prose, reply_english: prose, language: normalizeLanguage(ctx.ticket.language), needs_pm: false, note_for_pm: '', emergency: false };
+    }
     lastError = e.message;
     console.warn('[ai] reply failed, using the fixed acknowledgement:', e.message);
     return null;

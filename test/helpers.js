@@ -43,7 +43,7 @@ export function startFakeAnthropic() {
       requests.push(body);
       const kind = /another message on an existing work order/.test(body.system) ? 'reply' : /Choose the best vendor/.test(body.system) ? 'dispatch' : 'triage';
       res.setHeader('content-type', 'application/json');
-      res.end(JSON.stringify({ id: 'msg_test', type: 'message', role: 'assistant', model: body.model, stop_reason: 'end_turn', stop_sequence: null, usage: { input_tokens: 1, output_tokens: 1 }, content: [{ type: 'text', text: JSON.stringify(state.respond(kind, body)) }] }));
+      res.end(JSON.stringify({ id: 'msg_test', type: 'message', role: 'assistant', model: body.model, stop_reason: 'end_turn', stop_sequence: null, usage: { input_tokens: 1, output_tokens: 1 }, content: [{ type: 'text', text: (() => { const r = state.respond(kind, body); return typeof r === 'string' && r.startsWith('RAW:') ? r.slice(4) : JSON.stringify(r); })() }] }));
     });
   });
   return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve({
