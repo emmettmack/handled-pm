@@ -9,7 +9,7 @@ import { sendToTenant } from './outbound.js';
 import { T, sanitizeTenantReply, violatesLiability, COMPENSATION_ASK } from './templates.js';
 import { scoreVendor } from './mockAi.js';
 
-export const MAX_FOLLOWUP_ROUNDS = 4;
+export const MAX_FOLLOWUP_ROUNDS = 6;
 const URG = { routine: 0, urgent: 1, emergency: 2 };
 const CATS = ['plumbing', 'electrical', 'HVAC', 'appliance', 'lockout', 'other'];
 

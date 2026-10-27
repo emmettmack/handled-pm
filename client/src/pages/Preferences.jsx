@@ -147,6 +147,16 @@ export default function Preferences() {
       <div className="group-title">What goes in your vendor drafts</div>
       <DraftCard prefs={prefs} setPrefs={setPrefs} save={save} dirty={dirty} />
 
+      <div className="group-title">What tenants are told about timing</div>
+      <div className="card card-pad">
+        <p className="hint-small" style={{ marginTop: 0 }}>After a tenant has described the problem, the assistant says you are reviewing it and a vendor will confirm a day and time. These are the words it uses for how soon they will hear back. It never invents its own.</p>
+        <div className="field-row">
+          <div className="field"><label>Routine requests: you’ll hear back</label><input value={prefs.timing_routine ?? ''} onChange={(e) => setPrefs({ ...prefs, timing_routine: e.target.value })} /></div>
+          <div className="field"><label>Urgent requests: you’ll hear back</label><input value={prefs.timing_urgent ?? ''} onChange={(e) => setPrefs({ ...prefs, timing_urgent: e.target.value })} /></div>
+        </div>
+        <button className="btn primary" disabled={!dirty} onClick={save}><Check size={15} /> Save</button>
+      </div>
+
       <div className="group-title">When a vendor goes quiet</div>
       <div className="card card-pad">
         <div className="btn-row" style={{ alignItems: 'center' }}>
