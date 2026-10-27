@@ -75,3 +75,21 @@ test('a model that answers in plain words, or needs a second try, still produces
   await say('let us try again');
   assert.ok(said(await thread()).at(-1).includes('Second try worked'));
 });
+
+test('the model is told what to gather, to explain next steps, and the PM-set timing words; dispatch and triage get enough room', async () => {
+  const d = await thread();
+  await t.api('PUT', '/prefs', { ...(await t.api('GET', '/prefs')).data, timing_routine: 'by end of day tomorrow', timing_urgent: 'within a few hours' });
+  t.ai.state.respond = (kind) => (kind === 'triage' ? triageAnswer() : { reply_to_tenant: 'ok', reply_english: 'ok', language: 'en', needs_pm: false, note_for_pm: '', emergency: false });
+  t.ai.requests.length = 0;
+  await t.api('POST', `/tickets/${d.id}/assistant`, { on: true });
+  await t.api('POST', `/tickets/${d.id}/tenant-reply`, { body: 'x' }).catch(() => {});
+  await say('the stair is broken, third step from the top');
+  const call = t.ai.requests.find((r) => /GATHER WHAT A VENDOR NEEDS/.test(r.system));
+  assert.ok(call, 'the gathering rule is in the prompt');
+  assert.match(call.system, /NEXT STEPS/);
+  const body = JSON.stringify(call.messages);
+  assert.match(body, /by end of day tomorrow/);
+  assert.match(body, /within a few hours/);
+  assert.ok(t.ai.requests.every((r) => r.max_tokens >= 800));
+  assert.ok(t.ai.requests.filter((r) => /Choose the best vendor/.test(r.system)).every((r) => r.max_tokens >= 3000));
+});

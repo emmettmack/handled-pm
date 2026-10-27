@@ -64,10 +64,11 @@ HARD RULES
 2. LANGUAGE: reply to the tenant in the language they wrote in. Every other field is in English. Supported languages (use exactly these codes): ${LANGUAGES.map((l) => `${l.code} = ${l.name}`).join(', ')}. If they write in a language outside this list, set other_language=true, set language to "en", and reply in English.
 3. EMERGENCY = danger to a person or major active damage: gas smell, flooding or burst pipe, sparking/smoking outlet or burning smell, fire, no heat in freezing weather, sewage flooding. For emergencies the reply starts with brief safety instructions (gas: leave the unit, no switches or flames, call 911 or SoCalGas 1-800-427-2200 from outside; flooding: shut off the water valve if safe; electrical: stay away, breaker off only if safe, 911 if smoke or flames), says the office is being alerted, and does NOT ask follow-up questions.
 4. URGENT = real impact on daily living but no danger: no hot water, AC out in a heat wave, dead fridge, the only toilet unusable, contained active leak, lockout. ROUTINE = everything else.
-5. FOLLOW-UPS: ask only when a missing detail changes who we send or how urgent it is (which fixture/room, is it leaking, how bad, since when). One short question at a time (two sentences max). Lockouts and emergencies never need follow-ups. When no follow-up rounds remain, do NOT ask: make reasonable assumptions and note them in the summary.
+5. GATHER WHAT A VENDOR NEEDS before you finish. You need: (a) what exactly is wrong, (b) exactly where (which room, fixture, stairs, inside or outside), (c) how bad it is and whether it is unsafe to use or getting worse, (d) how long it has been happening, (e) for anything visible, one request for a photo if none is attached, (f) when the tenant is usually home or how entry works, unless it is an emergency. Ask ONE short question at a time (two sentences max), most important first, and never ask something the tenant already told you. Only ask about smoke, sparking, gas or flooding if the problem they described could involve it. If their message is not about a repair at all ("hi", "now?", "is this working"), answer it directly and ask what is wrong. Lockouts and emergencies need no follow-ups. When no follow-up rounds remain, do not ask: make reasonable assumptions and note them in the summary.
 6. Never give access instructions or promise anyone will let the tenant in. Never invent appointment times.
 7. PHOTOS: when photos are attached, look at them and use what you see: name the fixture, the visible damage, the severity, a model or label you can read. Say what you noticed in your reply when it helps ("I can see water pooling under the sink trap"). Never claim to have seen something that is not in a photo. If you were told there are videos or images you could not view, say you could not open them and ask the tenant to describe what they show.
-8. CONVERSATION: answer what the tenant actually said, in context, the way a sharp office coordinator would. If they ask a question, answer it or say who will. If they correct you or are frustrated, acknowledge it plainly. Do not repeat a question they already answered. Do not send the same wording twice in a row.`;
+8. NEXT STEPS: when you have what you need, do not just say you will "get back" to them. Tell them plainly what happens next: the property manager reviews it, a vendor confirms a day and time, and you will text that day and time. Then give the timing in the timing_to_tell_tenant field for the urgency you chose, in those words exactly. Never state a time of arrival yourself and never promise a faster time than that.
+9. CONVERSATION: answer what the tenant actually said, in context, the way a sharp office coordinator would. If they ask a question, answer it or say who will. If they correct you or are frustrated, acknowledge it plainly. Do not repeat a question they already answered. Do not send the same wording twice in a row.`;
 
 export async function triage(ctx) {
   return withFallback(
@@ -99,9 +100,11 @@ TASK: Read the whole conversation and return ONLY a JSON object (no prose, no co
         phone_matches_tenant_on_file: ctx.verified,
         follow_up_rounds_used: ctx.rounds,
         follow_up_rounds_allowed: ctx.maxRounds,
+        timing_to_tell_tenant: { routine: ctx.prefs?.timing_routine, urgent: ctx.prefs?.timing_urgent },
+        pm_name: ctx.company?.pm_name || null,
         conversation: ctx.transcript.map((m) => `${m.sender === 'tenant' ? 'TENANT' : m.sender === 'pm' ? 'PM' : 'COORDINATOR'}: ${m.body}`),
       });
-      return callJSON(system, user, 1400, ctx.images || []);
+      return callJSON(system, user, 2200, ctx.images || []);
     },
     () => mock.triage(ctx),
   );
@@ -131,6 +134,7 @@ Where the job stands is in work_order. Only state a visit time if work_order.sch
       work_order: { status: t.status, category: t.category, urgency: t.urgency, title: t.title, vendor_dispatched: ctx.vendorDispatched, scheduled_for: t.scheduled_for || null },
       unit: ctx.unit ? `${unitName(ctx.unit.number)}, ${ctx.unit.address}` : 'unknown (number not on file)',
       tenant_on_file: ctx.tenant ? ctx.tenant.name : null,
+      timing_to_tell_tenant: { routine: ctx.prefs?.timing_routine, urgent: ctx.prefs?.timing_urgent },
       photos_attached_now: (ctx.images || []).length,
       photos_or_videos_you_cannot_view: ctx.unviewable || 0,
       conversation: ctx.transcript.map((m) => `${m.sender === 'tenant' ? 'TENANT' : m.sender === 'pm' ? 'PM' : 'COORDINATOR'}: ${m.body}`),
@@ -194,7 +198,7 @@ Signed by ${[ctx.company.pm_name, displayCompany(ctx.company) !== ctx.company.pm
         photos_or_videos_attached: ctx.mediaCount || 0,
         candidates: ctx.vendors.map((v) => ({ id: v.id, name: v.name, trade: v.trade, preferred: !!v.preferred, rate: v.rate, notes: v.notes, language: v.language || 'en' })),
       });
-      return callJSON(system, user, 1200);
+      return callJSON(system, user, 3000);
     },
     () => mock.draftDispatch(ctx),
   );

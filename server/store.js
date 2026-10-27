@@ -72,6 +72,9 @@ export const DEFAULT_PREFS = {
     intro: '', footer: '',
   },
   vendor_followup_hours: 24,
+  // What the assistant may tell tenants about when they'll hear back. The PM owns these words; the assistant never makes up its own.
+  timing_routine: 'within one business day',
+  timing_urgent: 'as soon as possible, usually the same day',
 };
 export function getPrefs() {
   let saved = {};
@@ -82,7 +85,11 @@ export function setPrefs(p) {
   const hours = Math.min(168, Math.max(1, Math.round(Number(p.vendor_followup_hours) || DEFAULT_PREFS.vendor_followup_hours)));
   const draft = { ...DEFAULT_PREFS.draft };
   for (const k of Object.keys(draft)) if (p.draft && k in p.draft) draft[k] = typeof draft[k] === 'boolean' ? !!p.draft[k] : String(p.draft[k] ?? '');
-  db.prepare("INSERT INTO settings (key, value) VALUES ('prefs', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(JSON.stringify({ draft, vendor_followup_hours: hours }));
+  db.prepare("INSERT INTO settings (key, value) VALUES ('prefs', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(JSON.stringify({
+    draft, vendor_followup_hours: hours,
+    timing_routine: String(p.timing_routine ?? DEFAULT_PREFS.timing_routine).trim().slice(0, 80) || DEFAULT_PREFS.timing_routine,
+    timing_urgent: String(p.timing_urgent ?? DEFAULT_PREFS.timing_urgent).trim().slice(0, 80) || DEFAULT_PREFS.timing_urgent,
+  }));
   return getPrefs();
 }
 
