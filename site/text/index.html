@@ -1,42 +1,97 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Text your maintenance request · Macalisto</title>
-<meta name="description" content="How to text a maintenance request to Macalisto.">
+<title>Maintenance request line · Macalisto</title>
+<meta name="description" content="How to text a maintenance request to Macalisto, what messages to expect, and how to opt out.">
 <style>
-body{margin:0;font:16px/1.65 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1d1d1f;background:#fff}
-main{max-width:720px;margin:0 auto;padding:48px 20px 80px}
-a{color:#2457d6} h1{font-size:34px;line-height:1.2;margin:24px 0 8px} h2{font-size:19px;margin:32px 0 6px}
-.top{font-weight:600;text-decoration:none;color:#1d1d1f}
-.number{display:block;font-size:44px;font-weight:700;text-decoration:none;color:#2457d6;margin:12px 0}
-.consent{border:1px solid #d5dbe8;background:#f6f8fc;border-radius:12px;padding:18px 20px;margin:16px 0}
-ol{padding-left:22px} li{margin:6px 0}
-.links,.foot{color:#666;font-size:14px;margin-top:24px}
-button{font:inherit;font-weight:600;padding:10px 18px;border-radius:99px;border:1px solid #2457d6;background:#fff;color:#2457d6;cursor:pointer;margin-top:20px}
+:root{--ink:#161a2b;--muted:#566075;--line:#dfe3ee;--brand:#4433d6;--soft:#f4f6fb}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.65 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:#fff}
+header{border-bottom:1px solid var(--line)}
+.bar{max-width:820px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+.brand{font-weight:700;letter-spacing:-.01em;color:var(--ink);text-decoration:none;font-size:18px}
+.bar span{color:var(--muted);font-size:14px}
+main{max-width:820px;margin:0 auto;padding:40px 24px 72px}
+.eyebrow{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:clamp(30px,5vw,42px);line-height:1.12;letter-spacing:-.025em;margin:10px 0 14px}
+h2{font-size:20px;margin:44px 0 12px;letter-spacing:-.01em}
+p{margin:0 0 12px}
+.lead{font-size:18px;color:#2a3147;max-width:62ch}
+.cta{margin:26px 0 8px;padding:24px;border:1px solid var(--line);border-radius:14px;background:var(--soft)}
+.cta .label{font-size:14px;color:var(--muted);font-weight:600}
+.number{display:block;font-size:clamp(34px,7vw,52px);font-weight:700;letter-spacing:-.02em;color:var(--brand);text-decoration:none;margin:4px 0 10px}
+.consent{margin:0;padding:14px 16px;border-left:4px solid var(--brand);background:#fff;border-radius:0 8px 8px 0;font-size:15.5px;color:#2a3147}
+.legal{margin-top:12px;font-size:14px;color:var(--muted)}
+a{color:var(--brand)}
+ol.steps{margin:0;padding-left:22px} ol.steps li{margin:8px 0}
+dl{margin:0;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+dl div{display:grid;grid-template-columns:200px 1fr;gap:16px;padding:12px 16px;border-top:1px solid var(--line)}
+dl div:first-child{border-top:0}
+dt{font-weight:600} dd{margin:0;color:#2a3147}
+.samples{display:grid;gap:10px}
+.msg{padding:12px 16px;border:1px solid var(--line);border-radius:14px 14px 14px 4px;background:var(--soft);max-width:560px;font-size:15.5px}
+.note{font-size:14px;color:var(--muted)}
+.warn{padding:14px 16px;border:1px solid #f0c9c9;background:#fff6f6;border-radius:10px}
+button{font:inherit;font-weight:600;padding:10px 18px;border-radius:10px;border:1px solid var(--brand);background:#fff;color:var(--brand);cursor:pointer;margin-top:28px}
+footer{border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+footer div{max-width:820px;margin:0 auto;padding:20px 24px}
+@media (max-width:620px){dl div{grid-template-columns:1fr;gap:2px}}
 @media print{
   @page{margin:.6in}
-  body{font-size:15pt}
+  body{font-size:12.5pt}
+  header,button,.screen,footer .links{display:none}
   main{padding:0;max-width:none}
-  button,.top,.links{display:none}
-  .number{color:#000;font-size:54pt}
-  .consent{background:#fff;border:2px solid #000;font-size:12pt}
+  .cta{background:#fff;border:2px solid #000}
+  .number{color:#000;font-size:48pt}
   a{color:#000;text-decoration:none}
-  h2{break-after:avoid} .consent,ol{break-inside:avoid}
+  .consent{border-left-color:#000}
+  h2,.cta,dl,.samples{break-inside:avoid}
 }
-</style></head><body><main>
-<a class="top" href="https://macalisto.com/">Macalisto</a>
+</style></head><body>
+<header><div class="bar"><a class="brand" href="https://macalisto.com/">Macalisto</a><span>Maintenance request line</span></div></header>
+<main>
+<div class="eyebrow">Maintenance request line</div>
 <h1>Text your maintenance request</h1>
-<p>Something broken at your home? Text it to the number below.</p>
+<p class="lead">This is a maintenance request line operated by Macalisto on behalf of landlords and property managers. If your landlord or property manager gave you this number, text it to report a repair or ask about one that is already open.</p>
+
+<div class="cta">
+<div class="label">Text this number</div>
 <a class="number" href="sms:+18059093422">(805) 909-3422</a>
-<div class="consent"><p style="margin:0">Text your maintenance request to (805) 909-3422. By texting, you agree to receive text messages from Macalisto about your repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of any lease or purchase.</p></div>
-<p class="links"><a href="https://macalisto.com/terms.html">Terms of Service</a> · <a href="https://macalisto.com/privacy.html">Privacy Policy</a></p>
+<p class="consent">Text your maintenance request to (805) 909-3422. By texting, you agree to receive text messages from Macalisto about your repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of any lease or purchase.</p>
+<p class="legal">By texting this number you also agree to the <a href="https://macalisto.com/terms.html">Terms of Service</a> and acknowledge the <a href="https://macalisto.com/privacy.html">Privacy Policy</a>.</p>
+</div>
+
 <h2>How it works</h2>
-<ol>
-<li>Text the problem to the number above.</li>
-<li>Macalisto confirms your request and may ask a few questions.</li>
-<li>Your property manager approves the repair.</li>
-<li>You get updates by text until it’s done.</li>
+<ol class="steps">
+<li><strong>You text the problem.</strong> Describe what is wrong. Photos help and can be sent in the same conversation.</li>
+<li><strong>We ask for what a repair person needs.</strong> This may include where the problem is, how serious it is, and when someone can get into your home.</li>
+<li><strong>Your property manager reviews and approves the repair.</strong> Nothing is sent to a repair person until they do.</li>
+<li><strong>You are kept informed.</strong> You will get a text with the day and time once a repair person confirms, and a follow-up when the work is done.</li>
 </ol>
-<p>In an emergency, such as fire, gas or a medical emergency, call 911 first.</p>
-<button onclick="window.print()" type="button">Print this notice</button>
-<p class="foot">Macalisto is operated by Emmett Mack.</p>
-</main></body></html>
+
+<h2>Program details</h2>
+<dl>
+<div><dt>Program</dt><dd>Maintenance request messaging for residents of rental homes</dd></div>
+<div><dt>Sender</dt><dd>Macalisto, operated by Emmett Mack</dd></div>
+<div><dt>Messages you may receive</dt><dd>Confirmation that we received your request, questions about the problem, scheduling and status updates, and notice when the work is complete</dd></div>
+<div><dt>Message frequency</dt><dd>Varies with your request. Typically a few messages per repair.</dd></div>
+<div><dt>Cost</dt><dd>We do not charge you to text. Your carrier’s message and data rates may apply.</dd></div>
+<div><dt>Opt out</dt><dd>Reply <strong>STOP</strong> at any time. You will receive one confirmation and no further messages. Reply <strong>START</strong> to resume.</dd></div>
+<div><dt>Help</dt><dd>Reply <strong>HELP</strong>, or email <a href="mailto:efmack@usc.edu">efmack@usc.edu</a></dd></div>
+<div><dt>Your information</dt><dd>We do not sell or share your SMS opt-in data or personal information with third parties for marketing purposes. See the <a href="https://macalisto.com/privacy.html">Privacy Policy</a>.</dd></div>
+<div><dt>Marketing</dt><dd>This line is used only for maintenance. We do not send promotional messages.</dd></div>
+</dl>
+
+<h2>Examples of messages you may receive</h2>
+<div class="samples">
+<div class="msg">Hi, happy to help. What is going on that you need help with?</div>
+<div class="msg">Thanks for the photo. Is the water still leaking, or is it only damp?</div>
+<div class="msg">Your request has been sent to your property manager for approval. You will get a text with the day and time once a repair person confirms.</div>
+</div>
+<p class="note" style="margin-top:12px">These are examples. The wording of real messages depends on your request.</p>
+
+<h2>In an emergency</h2>
+<div class="warn"><strong>If there is a fire, a gas smell, a medical emergency or immediate danger, call 911 first.</strong> This number is for maintenance requests and is not an emergency service.</div>
+
+<button onclick="window.print()" type="button" class="screen">Print this notice</button>
+</main>
+<footer><div><div class="links"><a href="https://macalisto.com/terms.html">Terms of Service</a> · <a href="https://macalisto.com/privacy.html">Privacy Policy</a> · <a href="mailto:efmack@usc.edu">Contact</a></div><div style="padding:8px 0 0">Macalisto is operated by Emmett Mack.</div></div></footer></body></html>

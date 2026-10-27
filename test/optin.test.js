@@ -47,3 +47,9 @@ test('link names are validated and unique, and company names are escaped', async
   assert.equal((await fetch(`${t.base}/t/hyperion-property-management`)).status, 404);
   assert.ok(renderOptinPage({ company: '<b>x</b>' }).includes('&lt;b&gt;x&lt;/b&gt;'));
 });
+
+test('the page states what carriers and residents need to see: sender, message types, frequency, cost, opt-out, help, privacy, 911', () => {
+  const html = renderOptinPage();
+  for (const must of ['Program details', 'Message frequency', 'Reply <strong>STOP</strong>', 'Reply <strong>HELP</strong>', 'efmack@usc.edu', 'We do not sell or share your SMS opt-in data', 'call 911 first', 'Examples of messages you may receive', 'terms.html', 'privacy.html', 'Macalisto, operated by Emmett Mack']) assert.ok(html.includes(must), must);
+  assert.ok(renderOptinPage({ company: 'Hyperion Property Management' }).includes('messaging provided by Macalisto (operated by Emmett Mack)'));
+});
