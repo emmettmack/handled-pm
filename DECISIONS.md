@@ -2,6 +2,13 @@
 
 Product and technical decisions made while planning, each with the reason. Newer entries go on top. If you disagree with one, say so and I'll change it.
 
+## Identity flow (after first real texts)
+
+**D-017. An unknown number is helped first, then asked for name and address; it is no longer stopped at the start.**
+The assistant answers the problem normally. Once it understands the issue it asks once for the texter's full name and address (with unit). If the name and unit match a tenant on file, the work order is linked to that tenant even though the phone is different. If they don't match, the PM is told in a note and still approves every dispatch. A lockout from someone who doesn't match anyone on file still waits for the PM. If they never give a name and address, the work order is held for the PM as before.
+*Why:* the owner wants any household member to be able to text from any phone, and the number is only handed out to tenants. The dispatch approval tap, not the identity check, is the safety net. The lockout exception stays because a locksmith opening the wrong door is the one case that can't be undone.
+*Replaces:* the up-front "confirm who I'm texting" message (askIdentity), which is no longer sent. The new message (askNameAddress, 8 languages) needs native-speaker review like the others.
+
 ## Phase 1 (bugs)
 
 **D-011. Phase 1 was first written without running the test suite (owner request), then tested and fixed.**

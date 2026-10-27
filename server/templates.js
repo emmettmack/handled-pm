@@ -14,6 +14,16 @@ export const TEXT = {
     tl: 'Kumusta, masaya akong tumulong. Bago kami magpadala ng tao, kailangan kong makumpirma kung sino ang katext ko. Maaari bang ibigay ang buo ninyong pangalan at numero ng unit?',
     vi: 'Xin chào, tôi rất sẵn lòng giúp. Trước khi cử người đến, tôi cần xác nhận người đang nhắn tin. Bạn vui lòng trả lời họ tên đầy đủ và số căn hộ nhé?',
   },
+  askNameAddress: {
+    en: "To get someone out there, can you also reply with your full name and the address, including your unit number?",
+    es: 'Para enviar a alguien, ¿me puede responder también con su nombre completo y la dirección, incluido el número de su apartamento?',
+    ko: '사람을 보내드리려면 성함 전체와 호수를 포함한 주소도 답장으로 알려주시겠어요?',
+    'zh-Hans': '为了安排人员上门，请再回复您的全名和地址（包括单元号）。',
+    'zh-Hant': '為了安排人員上門，請再回覆您的全名和地址（包括單位號碼）。',
+    hy: 'Որևէ մեկին ուղարկելու համար կարո՞ղ եք նաև պատասխանել Ձեր ամբողջական անունով և հասցեով՝ բնակարանի համարով։',
+    tl: 'Para makapagpadala ng tao, maaari bang ibigay rin ninyo ang buo ninyong pangalan at ang address, kasama ang numero ng unit?',
+    vi: 'Để cử người đến, bạn vui lòng trả lời thêm họ tên đầy đủ và địa chỉ, gồm cả số căn hộ nhé?',
+  },
   identityHold: {
     en: "Thank you. We're confirming your details with the office and someone will follow up with you shortly. For everyone's security we can't send anyone out until that's done.",
     es: 'Gracias. Estamos confirmando sus datos con la oficina y alguien le contactará en breve. Por seguridad no enviaremos a nadie hasta entonces.',
@@ -125,6 +135,7 @@ const nativeName = (l) => (l === 'es' ? 'español' : LANGUAGES.find((x) => x.cod
 
 export const T = {
   askIdentity: (l) => pick('askIdentity', l),
+  askNameAddress: (l) => pick('askNameAddress', l),
   identityHold: (l) => pick('identityHold', l),
   compensation: (l) => pick('compensation', l),
   proceedAck: (l) => pick('proceedAck', l),

@@ -31,3 +31,6 @@ Not merged, not deployed. Tested: 48 automated tests pass, plus a browser click-
 - A refused text (for example carrier error 30034 while registration is in review) is saved in the thread, marked not delivered, and explained to the PM; nothing crashes.
 - Photos and videos are stored as files under DATA_DIR/files, served by short-lived signed links, and included in backups. Existing photos in the database are moved once at startup (file written before the row changes).
 - Migration 7 adds tickets.ai_paused, tickets.pm_read_at, messages.direction, media.file, media.mime.
+
+## Identity flow
+- Unknown numbers are no longer stopped with "confirm who I'm texting". The assistant helps first, then asks once for name and address; a match on file links the work order to that tenant; otherwise the PM is told and approves as usual. Lockouts from people not on file still wait for the PM.

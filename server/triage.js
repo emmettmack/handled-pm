@@ -122,30 +122,48 @@ export async function processTicket(id) {
     sendToTenant(t, safe ? body : T.liabilitySafe(lang));
   };
 
-  // ---- Tenant verification (security): unknown number -> ask for name + unit -> else a human decides ----
-  const verified = !!(t.verified || t.identity_cleared);
-  if (!verified && r.urgency !== 'emergency') {
-    if (!t.verification_asked) {
-      S.updateTicket(id, { verification_asked: 1 });
-      sendToTenant(t, withNote(compensationReply ? `${T.compensation(lang)} ${T.askIdentity(lang)}` : T.askIdentity(lang)));
-      S.setStatus(id, 'needs_info', 'Number not on file: asked the texter for their name and unit');
-      S.addNote(id, `This text came from ${S.prettyPhone(t.from_phone)}, which is not a tenant number on file. The assistant asked for name and unit and will not dispatch anyone until identity is confirmed.${r.category === 'lockout' ? ' Lockouts are treated as a security event.' : ''}`);
-      return;
-    }
-    const claim = matchClaim(r.identity_claim);
-    S.addFlag(id, 'identity', `${claim.note} Nobody will be dispatched until you confirm who this is (for example by calling the number on file).`);
-    sendToTenant(t, T.identityHold(lang));
-    S.setStatus(id, 'triaged', 'Identity could not be verified: held for the property manager');
-    S.addNote(id, `Could not verify the texter. ${claim.note}`);
-    return;
-  }
-
   // ---- Follow-up question (max 2 rounds) ----
   if (r.needs_info && r.urgency !== 'emergency' && t.followup_rounds < MAX_FOLLOWUP_ROUNDS) {
     S.updateTicket(id, { followup_rounds: t.followup_rounds + 1 });
     replyWithComp(r.reply_to_tenant);
     S.setStatus(id, 'needs_info', `Asked the tenant a follow-up question (round ${t.followup_rounds + 1} of ${MAX_FOLLOWUP_ROUNDS})`);
     return;
+  }
+
+  // ---- Who is texting: an unknown number is not turned away. The assistant helps with the problem first, then asks once for
+  // name and address. Whatever they give is checked against the tenants on file and noted for the PM, who still approves
+  // every dispatch. The exception is a lockout from someone who doesn't match anyone on file: that waits for the PM.
+  const verified = !!(t.verified || t.identity_cleared);
+  if (!verified && r.urgency !== 'emergency' && !(r.needs_info && t.followup_rounds < MAX_FOLLOWUP_ROUNDS)) {
+    const given = r.identity_claim?.name && (r.identity_claim?.unit || r.identity_claim?.address);
+    if (given) {
+      const claim = matchClaim(r.identity_claim);
+      if (claim.found) {
+        S.updateTicket(id, { identity_cleared: 1, tenant_id: claim.found.id, unit_id: claim.found.unit_id });
+        S.addNote(id, `${claim.note} Treated as that tenant, texting from a different number.`);
+      } else if (r.category === 'lockout') {
+        S.addFlag(id, 'identity', `${claim.note} This is a lockout, so nobody will be dispatched until you confirm who this is (for example by calling the number on file).`);
+        sendToTenant(t, T.identityHold(lang));
+        S.setStatus(id, 'triaged', 'Lockout from someone not on file: held for the property manager');
+        return;
+      } else {
+        S.updateTicket(id, { identity_cleared: 1 });
+        S.addNote(id, `${claim.note} Not on file, so check who this is when you approve the dispatch.`);
+      }
+    } else if (!t.verification_asked) {
+      S.updateTicket(id, { verification_asked: 1 });
+      replyWithComp(`${r.needs_info ? T.proceedAck(lang) : r.reply_to_tenant} ${T.askNameAddress(lang)}`.trim());
+      S.setStatus(id, 'needs_info', 'Number not on file: asked for name and address');
+      S.addNote(id, `This text came from ${S.prettyPhone(t.from_phone)}, which is not a tenant number on file. The assistant is helping with the problem and asked for their name and address.`);
+      return;
+    } else {
+      const claim = matchClaim(r.identity_claim);
+      S.addFlag(id, 'identity', `${claim.note} They were asked for name and address. Nobody will be dispatched until you confirm who this is.`);
+      sendToTenant(t, T.identityHold(lang));
+      S.setStatus(id, 'triaged', 'Name and address not given: held for the property manager');
+      S.addNote(id, `Could not identify the texter. ${claim.note}`);
+      return;
+    }
   }
 
   // ---- Enough info: acknowledge, draft the dispatch ----
