@@ -8,7 +8,7 @@ const t = await boot();
 after(() => t.close());
 const registry = await import('../server/registry.js');
 
-const CONSENT = (num, brand) => `Text your maintenance request to ${num}. By texting, you agree to receive text messages from ${brand} about your repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of any lease or purchase.`;
+const CONSENT = (num, brand, via = '') => `Text your maintenance request to ${num}. By texting, you agree to receive text messages from ${brand}${via} about your repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of any lease or purchase.`;
 
 test('the committed static page matches the template and has the exact consent wording, no script', () => {
   const html = fs.readFileSync(new URL('../site/text/index.html', import.meta.url), 'utf8');
@@ -31,7 +31,7 @@ test('an account page needs a confirmed company name, shows its own number and n
   const res = await fetch(`${t.base}/t/${info.slug}`);
   assert.equal(res.status, 200);
   const html = await res.text();
-  assert.ok(html.includes(CONSENT('(310) 555-0142', 'Hyperion Property Management')));
+  assert.ok(html.includes(CONSENT('(310) 555-0142', 'Hyperion Property Management', ' through Macalisto')));
   assert.ok(html.includes('sms:+13105550142'));
   assert.ok(!/<script/i.test(html));
   for (const secret of ['secret@example.com', '555-000-9999', 'Dana Private']) assert.ok(!html.includes(secret));
@@ -52,4 +52,14 @@ test('the page states what carriers and residents need to see: sender, message t
   const html = renderOptinPage();
   for (const must of ['Program details', 'Message frequency', 'Reply <strong>STOP</strong>', 'Reply <strong>HELP</strong>', 'efmack@usc.edu', 'We do not sell or share your SMS opt-in data', 'call 911 first', 'Examples of messages you may receive', 'terms.html', 'privacy.html', 'Macalisto, operated by Emmett Mack']) assert.ok(html.includes(must), must);
   assert.ok(renderOptinPage({ company: 'Hyperion Property Management' }).includes('messaging provided by Macalisto (operated by Emmett Mack)'));
+});
+
+test('the page has a scannable code that opens a text, a desktop note, a favicon, preview tags and a date, and still no scripts', () => {
+  const html = renderOptinPage();
+  assert.match(html, /<svg[^>]*viewBox/);
+  assert.ok(html.includes('Scan to text'));
+  assert.ok(html.includes('On a computer, scan the code'));
+  assert.ok(html.includes('rel="icon"') && html.includes('og:title'));
+  assert.match(html, /Page last updated October 27, 2026/);
+  assert.ok(!/<script/i.test(html));
 });

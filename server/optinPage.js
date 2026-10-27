@@ -1,6 +1,8 @@
 // The public "text us" page carriers review for SMS opt-in. One template serves two places: the static default page
 // (site/text/index.html, built by scripts/build-optin.mjs) and each account's own page (/t/<slug>, rendered by the server).
 // Plain HTML and CSS only: it must read fully with JavaScript off.
+import qrcode from 'qrcode-generator';
+
 export const DEFAULT_NUMBER = '+18059093422';
 export const DEFAULT_BRAND = 'Macalisto';
 
@@ -13,14 +15,24 @@ export function prettyNumber(n) {
 }
 
 export const SUPPORT_EMAIL = 'efmack@usc.edu';
+export const PAGE_UPDATED = 'October 27, 2026';
+
+/** A QR code that opens a text to the number (for the printed flyer and for people reading this on a computer). Plain SVG, no scripts. */
+function qrSvg(tel) {
+  const q = qrcode(0, 'M');
+  q.addData(`sms:${tel}`);
+  q.make();
+  return q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+}
 
 export function renderOptinPage({ number = DEFAULT_NUMBER, company = null, base = '', autoPrint = false } = {}) {
   const brand = company || DEFAULT_BRAND;
   const b = esc(brand);
   const shown = prettyNumber(number);
   const tel = `+1${String(number).replace(/\D/g, '').slice(-10)}`;
+  const fromWho = company ? `${b} through Macalisto` : b;
   // The consent sentence is the exact wording registered with the carriers. Only the number and the sender's name change.
-  const consent = `Text your maintenance request to ${shown}. By texting, you agree to receive text messages from ${b} about your repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of any lease or purchase.`;
+  const consent = `Text your maintenance request to ${shown}. By texting, you agree to receive text messages from ${fromWho} about your repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of any lease or purchase.`;
   const lead = company
     ? `This is the maintenance line for ${b}. If you rent a home managed by ${b}, text this number to report a repair or ask about one that is already open.`
     : `This is a maintenance request line operated by Macalisto on behalf of landlords and property managers. If your landlord or property manager gave you this number, text it to report a repair or ask about one that is already open.`;
@@ -29,6 +41,11 @@ export function renderOptinPage({ number = DEFAULT_NUMBER, company = null, base 
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Maintenance request line · ${b}</title>
 <meta name="description" content="How to text a maintenance request to ${b}, what messages to expect, and how to opt out.">
+<meta property="og:title" content="Text your maintenance request · ${b}">
+<meta property="og:description" content="Text ${shown} to report a repair. See what messages to expect and how to opt out.">
+<meta property="og:type" content="website">
+<meta name="robots" content="index,follow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234433d6'/%3E%3Cpath d='M9 16.5l5 5 9-10' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
 :root{--ink:#161a2b;--muted:#566075;--line:#dfe3ee;--brand:#4433d6;--soft:#f4f6fb}
 *{box-sizing:border-box}
@@ -46,6 +63,8 @@ p{margin:0 0 12px}
 .cta{margin:26px 0 8px;padding:24px;border:1px solid var(--line);border-radius:14px;background:var(--soft)}
 .cta .label{font-size:14px;color:var(--muted);font-weight:600}
 .number{display:block;font-size:clamp(34px,7vw,52px);font-weight:700;letter-spacing:-.02em;color:var(--brand);text-decoration:none;margin:4px 0 10px}
+.ctaRow{display:flex;gap:24px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.qr{text-align:center;font-size:12px;color:var(--muted)} .qr svg{display:block;width:104px;height:104px;margin:0 auto 4px}
 .consent{margin:0;padding:14px 16px;border-left:4px solid var(--brand);background:#fff;border-radius:0 8px 8px 0;font-size:15.5px;color:#2a3147}
 .legal{margin-top:12px;font-size:14px;color:var(--muted)}
 a{color:var(--brand)}
@@ -61,7 +80,7 @@ dt{font-weight:600} dd{margin:0;color:#2a3147}
 button{font:inherit;font-weight:600;padding:10px 18px;border-radius:10px;border:1px solid var(--brand);background:#fff;color:var(--brand);cursor:pointer;margin-top:28px}
 footer{border-top:1px solid var(--line);color:var(--muted);font-size:14px}
 footer div{max-width:820px;margin:0 auto;padding:20px 24px}
-@media (max-width:620px){dl div{grid-template-columns:1fr;gap:2px}}
+@media (max-width:620px){dl div{grid-template-columns:1fr;gap:2px} .qr,.note.screen{display:none}}
 @media print{
   @page{margin:.6in}
   body{font-size:12.5pt}
@@ -72,6 +91,7 @@ footer div{max-width:820px;margin:0 auto;padding:20px 24px}
   a{color:#000;text-decoration:none}
   .consent{border-left-color:#000}
   h2,.cta,dl,.samples{break-inside:avoid}
+  .qr{display:block!important}
 }
 </style></head><body>
 <header><div class="bar"><a class="brand" href="https://macalisto.com/">${b}</a><span>Maintenance request line</span></div></header>
@@ -82,7 +102,13 @@ footer div{max-width:820px;margin:0 auto;padding:20px 24px}
 
 <div class="cta">
 <div class="label">Text this number</div>
+<div class="ctaRow">
+<div>
 <a class="number" href="sms:${tel}">${shown}</a>
+<p class="note screen" style="margin:0 0 14px">On a phone, tap the number to open a text. On a computer, scan the code with your phone.</p>
+</div>
+<div class="qr" aria-label="QR code that opens a text message to ${shown}">${qrSvg(tel)}<span>Scan to text</span></div>
+</div>
 <p class="consent">${consent}</p>
 <p class="legal">By texting this number you also agree to the <a href="https://macalisto.com/terms.html">Terms of Service</a> and acknowledge the <a href="https://macalisto.com/privacy.html">Privacy Policy</a>.</p>
 </div>
@@ -121,6 +147,6 @@ footer div{max-width:820px;margin:0 auto;padding:20px 24px}
 
 <button onclick="window.print()" type="button" class="screen">Print this notice</button>
 </main>
-<footer><div><div class="links"><a href="https://macalisto.com/terms.html">Terms of Service</a> · <a href="https://macalisto.com/privacy.html">Privacy Policy</a> · <a href="mailto:${SUPPORT_EMAIL}">Contact</a></div><div style="padding:8px 0 0">Macalisto is operated by Emmett Mack.</div></div></footer>${autoPrint ? '<script>window.print()</script>' : ''}</body></html>
+<footer><div><div class="links"><a href="https://macalisto.com/terms.html">Terms of Service</a> · <a href="https://macalisto.com/privacy.html">Privacy Policy</a> · <a href="mailto:${SUPPORT_EMAIL}">Contact</a></div><div style="padding:8px 0 0">Macalisto is operated by Emmett Mack. Page last updated ${PAGE_UPDATED}.</div></div></footer>${autoPrint ? '<script>window.print()</script>' : ''}</body></html>
 `;
 }

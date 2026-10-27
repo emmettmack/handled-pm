@@ -46,3 +46,9 @@ Not merged, not deployed. Tested: 48 automated tests pass, plus a browser click-
 ## Easier deleting
 - Inbox: Select mode with checkboxes, Select all, and a two-step Delete for any conversations (open or finished); each conversation also has Delete this conversation. A job a vendor is already working on is skipped and reported.
 - Deleting any work order now also removes its photo files from disk (closing out finished jobs used to leave them behind).
+
+## Text page and consent
+- /text redesigned: plain professional layout, program details, sample messages, 911 notice, QR code (desktop and flyer), favicon, preview tags, last-updated date.
+- Landlord pages name the sender as "<company> through Macalisto" to match the registered brand.
+- First text from a new number now gets the one-time program disclosure, identical to the opt-in message registered with the carriers (migration 9 remembers who has had it).
+- Privacy policy: names Anthropic, describes how photos and videos are handled, adds a California request line.
