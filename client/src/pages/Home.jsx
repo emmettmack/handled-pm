@@ -10,6 +10,7 @@ import { toCsv, downloadCsv } from '../csv.js';
 
 const FILTERS = [
   ['open', 'All open', (t) => !['resolved', 'closed'].includes(t.status)],
+  ['emergency', 'Emergencies', (t) => t.urgency === 'emergency' && !['resolved', 'closed'].includes(t.status)],
   ['needs_info', 'Needs info', (t) => t.status === 'needs_info'],
   ['approval', 'Awaiting approval', (t) => t.status === 'awaiting_approval'],
   ['motion', 'In motion', (t) => ['dispatched', 'scheduled', 'in_progress'].includes(t.status)],
@@ -38,9 +39,11 @@ function SortBar({ sort, setSort }) {
   );
 }
 
-function Stat({ n, label, tone }) {
-  return <div className={`card stat ${tone || ''}`}><span className="num">{n}</span><span className="lbl">{label}</span></div>;
+function Stat({ n, label, tone, onClick }) {
+  return <button type="button" className={`card stat ${tone || ''}`} onClick={onClick}><span className="num">{n}</span><span className="lbl">{label}</span></button>;
 }
+
+const scrollTo = (id) => setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 30);
 
 export default function Home() {
   const { dash, refresh, toast, status, bannerHidden, demo, setup } = useApp();
@@ -108,13 +111,13 @@ export default function Home() {
       ))}
 
       <div className="stats">
-        <Stat n={stats.open} label="Open work orders" />
-        <Stat n={stats.awaiting} label="Awaiting your approval" tone="wait" />
-        <Stat n={stats.emergencies} label="Active emergencies" tone={stats.emergencies ? 'hot' : ''} />
-        <Stat n={stats.resolved_this_week} label="Resolved this week" tone="good" />
+        <Stat n={stats.open} label="Open work orders" onClick={() => { setFilter('open'); scrollTo('all-orders'); }} />
+        <Stat n={stats.awaiting} label="Awaiting your approval" tone="wait" onClick={() => scrollTo('ready-for-ok')} />
+        <Stat n={stats.emergencies} label="Active emergencies" tone={stats.emergencies ? 'hot' : ''} onClick={() => { setFilter('emergency'); scrollTo('all-orders'); }} />
+        <Stat n={stats.resolved_this_week} label="Resolved this week" tone="good" onClick={() => { setFilter('done'); scrollTo('all-orders'); }} />
       </div>
 
-      <section className="section">
+      <section className="section" id="ready-for-ok">
         <div className="section-head">
           <h2>Ready for your OK</h2>
           {waiting > 0 && <span className="n">{waiting}</span>}
@@ -150,7 +153,7 @@ export default function Home() {
         </section>
       )}
 
-      <section className="section">
+      <section className="section" id="all-orders">
         <div className="section-head"><h2>All work orders</h2><button className="btn sm" style={{ marginLeft: 'auto' }} onClick={() => setExporting((v) => !v)}>Export…</button></div>
         {exporting && <ExportPanel onDone={() => setExporting(false)} />}
         <SortBar sort={sort} setSort={setSort} />
