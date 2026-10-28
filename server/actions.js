@@ -4,7 +4,8 @@ import { runAs } from './accounts.js';
 import * as S from './store.js';
 import { enqueue, draftAndQueue } from './triage.js';
 import { sendToTenant } from './outbound.js';
-import { T } from './templates.js';
+import { T, brandVendorText } from './templates.js';
+import { displayCompany } from './labels.js';
 import { sendSms, twilioConfigured } from './sms.js';
 import { isDemo } from './mode.js';
 
@@ -39,7 +40,7 @@ export function approveDispatch(id, editedText) {
 /** Texts the vendor's primary phone numbers and records what happened on the job. Email isn't connected yet. */
 async function textVendor(ticketId, vendorName, channels, text) {
   const phones = channels.filter((c) => c.label !== 'Email');
-  const results = await Promise.all(phones.map(async (c) => ({ c, r: await sendSms(S.normPhone(c.value), text) })));
+  const results = await Promise.all(phones.map(async (c) => ({ c, r: await sendSms(S.normPhone(c.value), brandVendorText(text, displayCompany(S.getCompany()))) })));
   const sent = results.filter((x) => x.r.ok).map((x) => x.c.label.toLowerCase());
   const failed = results.filter((x) => !x.r.ok);
   if (sent.length) S.addNote(ticketId, `Texted ${vendorName} (${sent.join(' and ')}).`);

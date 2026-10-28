@@ -52,3 +52,7 @@ Not merged, not deployed. Tested: 48 automated tests pass, plus a browser click-
 - Landlord pages name the sender as "<company> through Macalisto" to match the registered brand.
 - First text from a new number now gets the one-time program disclosure, identical to the opt-in message registered with the carriers (migration 9 remembers who has had it).
 - Privacy policy: names Anthropic, describes how photos and videos are handled, adds a California request line.
+
+## Matching the registered samples
+- Texts to tenants now begin "Macalisto: " and texts to vendors begin "Macalisto for <company>: ", as in the samples registered with the carriers. Stored messages are unchanged.
+- The examples on /text are the registered tenant samples; the USC contact email is shown under the number.

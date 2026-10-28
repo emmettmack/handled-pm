@@ -3,6 +3,7 @@
 import { addMessage, addNote, isOptedOut, setMessageSid, getTicket } from './store.js';
 import { db } from './db.js';
 import { sendSms, twilioConfigured } from './sms.js';
+import { brandTenantText } from './templates.js';
 
 export function sendToTenant(ticket, body, sender = 'ai') {
   // When the PM has taken over a thread the assistant stays quiet, even for a reply that was already being written.
@@ -13,7 +14,7 @@ export function sendToTenant(ticket, body, sender = 'ai') {
       addNote(ticket.id, 'Not sent: this person replied STOP and has opted out of texts. Reach them another way, or they can text START.');
       return id;
     }
-    sendSms(ticket.from_phone, body).then((r) => {
+    sendSms(ticket.from_phone, brandTenantText(body)).then((r) => {
       if (r.ok) setMessageSid(id, r.sid);
       else {
         db.prepare("UPDATE messages SET delivery_status = 'failed', delivery_error = ? WHERE id = ?").run(r.code || r.error, id);

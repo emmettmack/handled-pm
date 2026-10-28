@@ -45,7 +45,7 @@ test('a PM reply goes from the thread, pauses the assistant, and the assistant s
   t.fake.sent.length = 0;
   assert.equal((await t.api('POST', `/tickets/${id}/pm-message`, { body: 'I will call you in ten minutes.' })).status, 200);
   assert.equal((await thread(id)).ai_paused, 1);
-  assert.equal(t.fake.sent.at(-1).Body, 'I will call you in ten minutes.');
+  assert.equal(t.fake.sent.at(-1).Body, 'Macalisto: I will call you in ten minutes.', 'texts name the sender, like the registered samples');
   assert.equal(t.fake.sent.at(-1).From, '+15550001111');
 
   await tenantText('+13105550103', 'ok, but it is getting worse');

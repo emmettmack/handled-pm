@@ -6,6 +6,10 @@ import { LANGUAGES, normalizeLanguage } from './languages.js';
 /** Sent once to each new number on its first text. It matches the opt-in message registered with the carriers, so keep them identical. */
 export const FIRST_CONTACT = "Macalisto: You're opted in to repair request texts from your property manager. Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to opt out.";
 
+/** Every text identifies the sender, as in the samples registered with the carriers. The stored message is unchanged; only the text that is sent gets the name. */
+export const brandTenantText = (text) => (/^macalisto\b/i.test(text) ? text : `Macalisto: ${text}`);
+export const brandVendorText = (text, company) => (/^macalisto\b/i.test(text) ? text : `Macalisto for ${company}: ${text}`);
+
 export const TEXT = {
   askIdentity: {
     en: "Hi, happy to help. Before we send anyone out I need to confirm who I'm texting. Can you reply with your full name and your unit number?",
