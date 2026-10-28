@@ -28,3 +28,17 @@ test('STOP, HELP and opted-out numbers do not trigger the disclosure', async () 
   await text(helper, 'HELP');
   assert.equal(toThem(helper).filter((m) => m.Body === FIRST_CONTACT).length, 0, 'HELP gets the help message instead');
 });
+
+test('every text to a tenant names the sender, but the stored message is unchanged and a message already naming Macalisto is not doubled', async () => {
+  const { brandTenantText, brandVendorText } = await import('../server/templates.js');
+  assert.equal(brandTenantText('Hello there'), 'Macalisto: Hello there');
+  assert.equal(brandTenantText('Macalisto: Hello there'), 'Macalisto: Hello there');
+  assert.equal(brandVendorText('New work order #4', 'Hyperion PM'), 'Macalisto for Hyperion PM: New work order #4');
+  const n = '+13105550604';
+  await text(n, 'the bathroom fan is making a grinding noise and rattles');
+  const sentToThem = toThem(n).map((m) => m.Body);
+  assert.ok(sentToThem.slice(1).every((b) => b.startsWith('Macalisto: ')), JSON.stringify(sentToThem));
+  const inbox = (await t.api('GET', '/inbox')).data.find((c) => c.from_phone === n);
+  const stored = (await t.api('GET', `/tickets/${inbox.id}`)).data.messages.filter((m) => m.sender === 'ai').map((m) => m.body);
+  assert.ok(stored.every((b) => !b.startsWith('Macalisto: ')), 'stored text has no prefix');
+});

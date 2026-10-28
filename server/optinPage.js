@@ -109,7 +109,8 @@ footer div{max-width:760px;margin:0 auto;padding:18px 24px}
 <div class="qr" aria-label="QR code that opens a text message to ${shown}">${qrSvg(tel)}<span>Scan to text</span></div>
 </div>
 <p class="consent">${consent}</p>
-<p class="legal">By texting this number you also agree to the <a href="https://macalisto.com/terms.html">Terms of Service</a> and acknowledge the <a href="https://macalisto.com/privacy.html">Privacy Policy</a>.</p>
+<p class="legal">Questions or trouble texting? Email <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>.</p>
+<p class="legal" style="margin-top:4px">By texting this number you also agree to the <a href="https://macalisto.com/terms.html">Terms of Service</a> and acknowledge the <a href="https://macalisto.com/privacy.html">Privacy Policy</a>.</p>
 </div>
 
 <h2>How it works</h2>
@@ -135,9 +136,10 @@ footer div{max-width:760px;margin:0 auto;padding:18px 24px}
 
 <h2>Examples of messages you may receive</h2>
 <div class="samples">
-<div class="msg">Hi, happy to help. What is going on that you need help with?</div>
-<div class="msg">Thanks for the photo. Is the water still leaking, or is it only damp?</div>
-<div class="msg">Your request has been sent to your property manager for approval. You will get a text with the day and time once a repair person confirms.</div>
+<div class="msg">Macalisto: Got your repair request for Unit 4B at 123 Main St: "Kitchen sink leaking under cabinet". Your property manager has been notified. We may text you questions and updates. Msg frequency varies. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help.</div>
+<div class="msg">Macalisto: Thanks, Maria. Is the leak under the sink still dripping right now? If you can, reply with a photo. A plumber will be scheduled once your property manager approves.</div>
+<div class="msg">Macalisto: Update on your repair request for Unit 4B: Rivera Plumbing is scheduled for 11/04 between 1 and 3 PM. Reply here if that time doesn't work.</div>
+<div class="msg">Macalisto: Your report of a gas smell at Unit 4B has been marked urgent and sent to your property manager. Leave the unit now and call 911 or the gas company from outside. Do not use light switches or flames.</div>
 </div>
 <p class="note" style="margin-top:12px">These are examples. The wording of real messages depends on your request.</p>
 
