@@ -125,13 +125,13 @@ export const TEXT = {
   // Reply to HELP. Carriers expect a help message that names the service and explains how to stop.
   help: {
     en: 'Macalisto: Help with repair request texts for {company}. Email efmack@usc.edu. Msg frequency varies. Msg & data rates may apply. Reply STOP to opt out. For emergencies, call 911.',
-    es: 'Línea de mantenimiento de {company}. Responda con su problema y nos encargamos. Responda STOP para dejar de recibir mensajes. En caso de emergencia, llame al 911.',
-    ko: '{company} 정비 문의 번호입니다. 문제를 답장으로 보내주시면 처리해 드립니다. 문자 수신을 중단하려면 STOP을 보내세요. 응급 상황에는 911에 전화하세요.',
-    'zh-Hans': '{company}维修热线。请回复您遇到的问题，我们会处理。回复STOP可停止接收短信。紧急情况请拨打911。',
-    'zh-Hant': '{company}維修專線。請回覆您遇到的問題，我們會處理。回覆STOP可停止接收簡訊。緊急情況請撥打911。',
-    hy: '{company}-ի սպասարկման գիծ։ Պատասխանեք Ձեր խնդրով, և մենք կզբաղվենք։ Հաղորդագրություններ դադարեցնելու համար գրեք STOP։ Արտակարգ իրավիճակներում զանգահարեք 911։',
-    tl: 'Maintenance line ng {company}. I-reply ang inyong problema at aasikasuhin namin. I-reply ang STOP para huminto ang mga text. Sa emergency, tumawag sa 911.',
-    vi: 'Đường dây bảo trì của {company}. Hãy trả lời bằng vấn đề của bạn, chúng tôi sẽ xử lý. Trả lời STOP để ngừng nhận tin nhắn. Trường hợp khẩn cấp, hãy gọi 911.',
+    es: 'Macalisto: Ayuda con los mensajes de reparaciones de {company}. Escriba a efmack@usc.edu. La frecuencia varía. Pueden aplicarse tarifas de mensajes y datos. Responda STOP para cancelar. En caso de emergencia, llame al 911.',
+    ko: 'Macalisto: {company} 수리 요청 문자 도움말입니다. efmack@usc.edu로 문의하세요. 메시지 빈도는 요청에 따라 다릅니다. 메시지 및 데이터 요금이 부과될 수 있습니다. 수신을 중단하려면 STOP을 보내세요. 응급 상황에는 911에 전화하세요.',
+    'zh-Hans': 'Macalisto：{company}维修请求短信帮助。请发邮件至 efmack@usc.edu。短信频率视情况而定，可能产生短信和流量费用。回复STOP可退订。紧急情况请拨打911。',
+    'zh-Hant': 'Macalisto：{company}維修請求簡訊說明。請寄信至 efmack@usc.edu。簡訊頻率視情況而定，可能產生簡訊與數據費用。回覆STOP可取消。緊急情況請撥打911。',
+    hy: 'Macalisto․ {company}-ի վերանորոգման հաղորդագրությունների օգնություն։ Գրեք efmack@usc.edu։ Հաղորդագրությունների հաճախականությունը տարբեր է։ Կարող են կիրառվել հաղորդագրությունների և տվյալների սակագներ։ Դադարեցնելու համար գրեք STOP։ Արտակարգ իրավիճակներում զանգահարեք 911։',
+    tl: 'Macalisto: Tulong sa mga text tungkol sa pagkukumpuni para sa {company}. Mag-email sa efmack@usc.edu. Nag-iiba ang dalas ng mga mensahe. Maaaring may singil sa mensahe at data. I-reply ang STOP para huminto. Sa emergency, tumawag sa 911.',
+    vi: 'Macalisto: Trợ giúp về tin nhắn yêu cầu sửa chữa của {company}. Gửi email đến efmack@usc.edu. Tần suất tin nhắn thay đổi. Có thể áp dụng cước tin nhắn và dữ liệu. Trả lời STOP để ngừng nhận. Trường hợp khẩn cấp, hãy gọi 911.',
   },
 };
 

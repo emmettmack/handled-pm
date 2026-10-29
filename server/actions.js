@@ -28,14 +28,20 @@ export function approveDispatch(id, editedText) {
   const via = channels.map((c) => c.label.toLowerCase()).join(' and ');
   const live = twilioConfigured();
   const demo = isDemo();
+  const texting = live && vendorTextingOn();
   db.prepare("UPDATE dispatches SET state='approved', text=?, edited=?, decided_at=?, response_due_at=? WHERE id=?").run(text, edited, now, S.minsFromNow(hours * 60), id);
   S.updateTicket(d.ticket_id, { vendor_id: d.vendor_id });
   S.resolveFlag(d.ticket_id, 'no_response', 'redispatched');
   S.resolveFlag(d.ticket_id, 'over_limit', 'approved');
-  S.setStatus(d.ticket_id, 'dispatched', `Sent to ${d.vendor_name}${edited ? ' (edited by you)' : ''}`);
-  if (live) textVendor(d.ticket_id, d.vendor_name, channels, text);
-  S.addNote(d.ticket_id, `Dispatch ${edited ? '(your edited version) ' : ''}approved${live ? '' : demo ? ' (Demo: nothing was actually sent.)' : ' (Texting is not connected yet, so nothing was sent. Please contact the vendor yourself.)'}${live ? ` and being texted to ${d.vendor_name}${via ? ` (${via})` : ''}` : ` for ${d.vendor_name}`}. If they haven't replied in ${hours} hours, this work order comes back to the top of your list.`);
+  S.setStatus(d.ticket_id, 'dispatched', `${live && !texting ? 'Approved for' : 'Sent to'} ${d.vendor_name}${edited ? ' (edited by you)' : ''}`);
+  if (texting) textVendor(d.ticket_id, d.vendor_name, channels, text);
+  const sentVia = texting ? ` and being texted to ${d.vendor_name}${via ? ` (${via})` : ''}` : ` for ${d.vendor_name}`;
+  const caveat = !live ? (demo ? ' (Demo: nothing was actually sent.)' : ' (Texting is not connected yet, so nothing was sent. Please contact the vendor yourself.)') : texting ? '' : ' (Vendor texting is off, so nothing was sent: copy the message and contact them yourself.)';
+  S.addNote(d.ticket_id, `Dispatch ${edited ? '(your edited version) ' : ''}approved${live && texting ? sentVia : ` for ${d.vendor_name}`}.${caveat} If they haven't replied in ${hours} hours, this work order comes back to the top of your list.`);
 }
+
+/** Vendors have not opted in to texts from the registered number, so dispatches are not texted unless VENDOR_TEXTING=on. */
+const vendorTextingOn = () => process.env.VENDOR_TEXTING === 'on';
 
 /** Texts the vendor's primary phone numbers and records what happened on the job. Email isn't connected yet. */
 async function textVendor(ticketId, vendorName, channels, text) {
