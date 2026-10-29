@@ -124,7 +124,7 @@ export const TEXT = {
   },
   // Reply to HELP. Carriers expect a help message that names the service and explains how to stop.
   help: {
-    en: '{company} maintenance line. Reply with your problem and we will take care of it. Reply STOP to stop texts. For emergencies, call 911.',
+    en: 'Macalisto: Help with repair request texts for {company}. Email efmack@usc.edu. Msg frequency varies. Msg & data rates may apply. Reply STOP to opt out. For emergencies, call 911.',
     es: 'Línea de mantenimiento de {company}. Responda con su problema y nos encargamos. Responda STOP para dejar de recibir mensajes. En caso de emergencia, llame al 911.',
     ko: '{company} 정비 문의 번호입니다. 문제를 답장으로 보내주시면 처리해 드립니다. 문자 수신을 중단하려면 STOP을 보내세요. 응급 상황에는 911에 전화하세요.',
     'zh-Hans': '{company}维修热线。请回复您遇到的问题，我们会处理。回复STOP可停止接收短信。紧急情况请拨打911。',

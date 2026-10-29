@@ -2,6 +2,7 @@
 // (site/text/index.html, built by scripts/build-optin.mjs) and each account's own page (/t/<slug>, rendered by the server).
 // Plain HTML and CSS only: it must read fully with JavaScript off.
 import qrcode from 'qrcode-generator';
+import { FIRST_CONTACT } from './templates.js';
 
 export const DEFAULT_NUMBER = '+18059093422';
 export const DEFAULT_BRAND = 'Macalisto';
@@ -15,7 +16,7 @@ export function prettyNumber(n) {
 }
 
 export const SUPPORT_EMAIL = 'efmack@usc.edu';
-export const PAGE_UPDATED = 'October 27, 2026';
+export const PAGE_UPDATED = 'October 29, 2026';
 
 /** A QR code that opens a text to the number (for the printed flyer and for people reading this on a computer). Plain SVG, no scripts. */
 function qrSvg(tel) {
@@ -123,7 +124,8 @@ footer div{max-width:760px;margin:0 auto;padding:18px 24px}
 
 <h2>Program details</h2>
 <dl>
-<div><dt>Program</dt><dd>Maintenance request messaging for residents of rental homes</dd></div>
+<div><dt>Program</dt><dd>Macalisto Repair Request Texts: maintenance request messaging for residents of rental homes</dd></div>
+<div><dt>Messages come from</dt><dd>${shown}</dd></div>
 <div><dt>Sender</dt><dd>${sender}</dd></div>
 <div><dt>Messages you may receive</dt><dd>Confirmation that we received your request, questions about the problem, scheduling and status updates, and notice when the work is complete</dd></div>
 <div><dt>Message frequency</dt><dd>Varies with your request. Typically a few messages per repair.</dd></div>
@@ -136,6 +138,7 @@ footer div{max-width:760px;margin:0 auto;padding:18px 24px}
 
 <h2>Examples of messages you may receive</h2>
 <div class="samples">
+<div class="msg">${FIRST_CONTACT}</div>
 <div class="msg">Macalisto: Got your repair request for Unit 4B at 123 Main St: "Kitchen sink leaking under cabinet". Your property manager has been notified. We may text you questions and updates. Msg frequency varies. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help.</div>
 <div class="msg">Macalisto: Thanks, Maria. Is the leak under the sink still dripping right now? If you can, reply with a photo. A plumber will be scheduled once your property manager approves.</div>
 <div class="msg">Macalisto: Update on your repair request for Unit 4B: Rivera Plumbing is scheduled for 11/04 between 1 and 3 PM. Reply here if that time doesn't work.</div>

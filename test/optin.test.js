@@ -60,6 +60,6 @@ test('the page has a scannable code that opens a text, a desktop note, a favicon
   assert.ok(html.includes('Scan to text'));
   assert.ok(html.includes('On a computer, scan the code'));
   assert.ok(html.includes('rel="icon"') && html.includes('og:title'));
-  assert.match(html, /Page last updated October 27, 2026/);
+  assert.match(html, /Page last updated October 29, 2026/);
   assert.ok(!/<script/i.test(html));
 });
