@@ -1,5 +1,11 @@
 # Changelog
 
+## Tenants-only texting campaign
+
+- Approved dispatches are no longer texted to vendors unless `VENDOR_TEXTING=on`: vendors have no opt-in on the registered number. The PM sees "Vendor texting is off" on the work order and contacts the vendor with the drafted message. A vendor who texts the number first is still handled.
+- HELP replies in all eight languages now name Macalisto, give the support email, and mention frequency, rates and STOP.
+- Terms and privacy describe tenants who text a Macalisto number only.
+
 ## Unreleased: Phase 1 (branch `phase-1-bugs`)
 
 Not merged, not deployed. Tested: 48 automated tests pass, plus a browser click-through of the demo and a new real account.
