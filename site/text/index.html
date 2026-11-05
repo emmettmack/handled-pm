@@ -44,6 +44,7 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:14px}
 footer div{max-width:760px;margin:0 auto;padding:18px 24px}
 @media (max-width:620px){dl div{grid-template-columns:1fr;gap:2px} .qr,.note.screen{display:none}}
 @media print{
+  .signup{display:none}
   @page{margin:.6in}
   body{font-size:12pt}
   header,button,.screen,footer .links{display:none}
@@ -53,6 +54,13 @@ footer div{max-width:760px;margin:0 auto;padding:18px 24px}
   h2,.cta,dl,.samples{break-inside:avoid}
   .qr{display:block!important}
 }
+input[type=tel]{display:block;width:100%;max-width:320px;font:inherit;padding:8px 10px;border:1px solid var(--ink);border-radius:4px;margin:4px 0 14px}
+label{font-weight:600}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:400;margin:4px 0 8px}
+.check input{margin-top:6px;flex:none}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.signup{padding:20px;border:1px solid var(--line);border-radius:4px}
+.signup button{margin-top:8px}
 </style></head><body>
 <header><div class="bar"><a class="brand" href="https://macalisto.com/">Macalisto</a><span>Maintenance request line</span></div></header>
 <main>
@@ -73,6 +81,18 @@ footer div{max-width:760px;margin:0 auto;padding:18px 24px}
 <p class="legal">Questions or trouble texting? Email <a href="mailto:efmack@usc.edu">efmack@usc.edu</a>.</p>
 <p class="legal" style="margin-top:4px">By texting this number you also agree to the <a href="https://macalisto.com/terms.html">Terms of Service</a> and acknowledge the <a href="https://macalisto.com/privacy.html">Privacy Policy</a>.</p>
 </div>
+
+<h2 id="signup">Or sign up here</h2>
+<form class="signup" method="post" action="https://app.macalisto.com/api/optin">
+<p class="note" style="margin-top:0">Prefer to start with a form? Enter your mobile number and agree below. We will text you a confirmation, and then you can text your repair requests to (805) 909-3422.</p>
+<label for="phone">Mobile phone number</label>
+<input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(555) 555-5555" required>
+<div class="hp" aria-hidden="true"><label>Leave this empty<input name="website" tabindex="-1" autocomplete="off"></label></div>
+<label class="check"><input type="checkbox" name="consent" value="yes" required><span>I agree to receive text messages from Macalisto about my repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of any lease or purchase.</span></label>
+<p class="legal">By signing up you also agree to the <a href="https://macalisto.com/terms.html">Terms of Service</a> and acknowledge the <a href="https://macalisto.com/privacy.html">Privacy Policy</a>.</p>
+<input type="hidden" name="slug" value="">
+<button type="submit">Sign me up for repair request texts</button>
+</form>
 
 <h2>How it works</h2>
 <ol class="steps">
@@ -112,4 +132,4 @@ footer div{max-width:760px;margin:0 auto;padding:18px 24px}
 
 <button onclick="window.print()" type="button" class="screen">Print this notice</button>
 </main>
-<footer><div><div class="links"><a href="https://macalisto.com/terms.html">Terms of Service</a> · <a href="https://macalisto.com/privacy.html">Privacy Policy</a> · <a href="mailto:efmack@usc.edu">Contact</a></div><div style="padding:8px 0 0">Macalisto is operated by Emmett Mack. Page last updated October 29, 2026.</div></div></footer></body></html>
+<footer><div><div class="links"><a href="https://macalisto.com/terms.html">Terms of Service</a> · <a href="https://macalisto.com/privacy.html">Privacy Policy</a> · <a href="mailto:efmack@usc.edu">Contact</a></div><div style="padding:8px 0 0">Macalisto is operated by Emmett Mack. Page last updated November 4, 2026.</div></div></footer></body></html>

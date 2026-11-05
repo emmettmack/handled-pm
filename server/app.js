@@ -16,6 +16,7 @@ import { setMediaStorage, setMediaReader, setMediaRemover } from './store.js';
 import { setNumberResolver } from './sms.js';
 import { saveDataUrl, mediaLink, serveFile, readFile, removeFile } from './files.js';
 import { publicPageInfo, updateSlug, servePublicPage } from './publicPage.js';
+import { optinSubmit, servePublicThanks } from './optin.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -37,6 +38,9 @@ app.get('/healthz', (_req, res) => res.send('ok'));
 
 // Each account's public SMS opt-in page (no sign-in; shows only the company name and texting number).
 app.get('/t/:slug', servePublicPage);
+app.get('/t/:slug/thanks', servePublicThanks);
+// The web sign-up form on the opt-in pages. Public, so it is rate limited inside (see optin.js).
+app.post('/api/optin', optinSubmit);
 
 // Photos and videos live in files, served by signed link (see files.js). Demo mode keeps its sample photos inline.
 if (!isDemo()) { setMediaStorage(saveDataUrl, mediaLink); setMediaReader(readFile); setMediaRemover(removeFile); }

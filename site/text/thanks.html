@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>You are signed up · Macalisto</title>
+<meta name="robots" content="noindex">
+<style>
+:root{--ink:#111;--muted:#555;--line:#cfcfcf}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:#fff}
+header{border-bottom:1px solid var(--line)}
+.bar{max-width:760px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+.brand{font-weight:700;color:var(--ink);text-decoration:none}
+.bar span{color:var(--muted);font-size:14px}
+main{max-width:760px;margin:0 auto;padding:32px 24px 64px}
+.eyebrow{font-size:14px;color:var(--muted);font-weight:600}
+h1{font-size:24px;line-height:1.25;margin:6px 0 12px}
+h2{font-size:18px;margin:32px 0 10px}
+p{margin:0 0 12px}
+.lead{color:var(--ink)}
+.cta{margin:20px 0 8px;padding:20px;border:1px solid var(--ink);border-radius:4px}
+.cta .label{font-size:14px;color:var(--muted);font-weight:600}
+.number{display:block;font-size:24px;font-weight:700;color:var(--ink);text-decoration:underline;margin:2px 0 8px}
+.ctaRow{display:flex;gap:24px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.ctaRow>div:first-child{flex:1 1 300px}
+.qr{text-align:center;font-size:12px;color:var(--muted)} .qr svg{display:block;width:96px;height:96px;margin:0 auto 4px}
+.consent{margin:0;padding:10px 14px;border-left:3px solid var(--ink)}
+.legal{margin-top:12px;font-size:14px;color:var(--muted)}
+a{color:var(--ink);text-decoration:underline}
+ol.steps{margin:0;padding-left:22px} ol.steps li{margin:6px 0}
+dl{margin:0;border:1px solid var(--line);border-radius:4px}
+dl div{display:grid;grid-template-columns:190px 1fr;gap:16px;padding:10px 14px;border-top:1px solid var(--line)}
+dl div:first-child{border-top:0}
+dt{font-weight:600} dd{margin:0}
+.samples{display:grid;gap:8px}
+.msg{padding:10px 14px;border:1px solid var(--line);border-radius:4px;max-width:560px}
+.note{font-size:14px;color:var(--muted)}
+.warn{padding:12px 14px;border:1px solid var(--ink);border-radius:4px}
+button{font:inherit;font-weight:600;padding:8px 16px;border-radius:4px;border:1px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer;margin-top:24px}
+footer{border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+footer div{max-width:760px;margin:0 auto;padding:18px 24px}
+@media (max-width:620px){dl div{grid-template-columns:1fr;gap:2px} .qr,.note.screen{display:none}}
+@media print{
+  .signup{display:none}
+  @page{margin:.6in}
+  body{font-size:12pt}
+  header,button,.screen,footer .links{display:none}
+  main{padding:0;max-width:none}
+  .number{font-size:30pt}
+  a{text-decoration:none}
+  h2,.cta,dl,.samples{break-inside:avoid}
+  .qr{display:block!important}
+}
+input[type=tel]{display:block;width:100%;max-width:320px;font:inherit;padding:8px 10px;border:1px solid var(--ink);border-radius:4px;margin:4px 0 14px}
+label{font-weight:600}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:400;margin:4px 0 8px}
+.check input{margin-top:6px;flex:none}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.signup{padding:20px;border:1px solid var(--line);border-radius:4px}
+.signup button{margin-top:8px}
+</style></head><body>
+<header><div class="bar"><a class="brand" href="https://macalisto.com/">Macalisto</a><span>Maintenance request line</span></div></header>
+<main>
+<h1>You are signed up</h1>
+<p class="lead">We sent a confirmation text to the number you entered. It should arrive within a minute.</p>
+<div class="cta"><div class="label">To report a repair, text</div><a class="number" href="sms:+18059093422">(805) 909-3422</a>
+<p class="legal" style="margin:0">The confirmation reads:</p><div class="msg" style="margin-top:8px">Macalisto: You&#39;re opted in to repair request texts from Macalisto. Msg frequency varies. Msg &amp; data rates may apply. Reply HELP for help, STOP to opt out.</div></div>
+<p>Message frequency varies. Message and data rates may apply. Reply <strong>STOP</strong> at any time to opt out, or <strong>HELP</strong> for help. Questions? Email <a href="mailto:efmack@usc.edu">efmack@usc.edu</a>.</p>
+<p><a href="https://macalisto.com/text/">Back to the sign-up page</a></p>
+</main>
+<footer><div><div class="links"><a href="https://macalisto.com/terms.html">Terms of Service</a> · <a href="https://macalisto.com/privacy.html">Privacy Policy</a> · <a href="mailto:efmack@usc.edu">Contact</a></div><div style="padding:8px 0 0">Macalisto is operated by Emmett Mack. Page last updated November 4, 2026.</div></div></footer></body></html>

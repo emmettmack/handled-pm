@@ -66,3 +66,14 @@ export const setPageSlug = (accountId, slug) => {
     throw e;
   }
 };
+
+// Proof of consent for web-form opt-ins (see optin.js).
+export const recordConsent = (c) => r().prepare(
+  'INSERT INTO sms_consents (phone, role, account_id, slug, consent_text, page_url, ip, user_agent, created_at) VALUES (?,?,?,?,?,?,?,?,?)',
+).run(c.phone, c.role || 'tenant', c.accountId || null, c.slug || null, c.consentText, c.pageUrl || null, c.ip || null, c.userAgent || null, new Date().toISOString()).lastInsertRowid;
+export const setConsentResult = (id, sid, error) => r().prepare('UPDATE sms_consents SET confirmation_sid = ?, confirmation_error = ? WHERE id = ?').run(sid || null, error || null, id);
+export const lastConsent = (phone, role = 'tenant') => r().prepare('SELECT * FROM sms_consents WHERE phone = ? AND role = ? ORDER BY id DESC LIMIT 1').get(phone, role) || null;
+export const hasConsent = (phone, role) => !!r().prepare('SELECT 1 FROM sms_consents WHERE phone = ? AND role = ? LIMIT 1').get(phone, role);
+export const consentsSince = (iso) => r().prepare('SELECT COUNT(*) c FROM sms_consents WHERE created_at >= ?').get(iso).c;
+export const consentsFromIpSince = (ip, iso) => r().prepare('SELECT COUNT(*) c FROM sms_consents WHERE ip = ? AND created_at >= ?').get(ip, iso).c;
+export const listConsents = (limit = 200) => r().prepare('SELECT * FROM sms_consents ORDER BY id DESC LIMIT ?').all(limit);
