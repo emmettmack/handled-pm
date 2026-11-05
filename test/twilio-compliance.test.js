@@ -20,6 +20,7 @@ test('terms and privacy contain what Twilio and the carriers require', () => {
   assert.match(terms, /href="\/privacy\.html"/);
   assert.match(terms, /only sends them to people who have texted a Macalisto number or signed up on the opt-in form first/);
   assert.match(privacy, /We do not sell or share your SMS opt-in data or personal information with third parties for marketing purposes/);
+  assert.match(privacy, /Mobile information will not be shared with third parties or affiliates for marketing or promotional purposes/);
   assert.match(privacy, /Macalisto/);
   assert.match(terms, /ticking the consent box on the opt-in form/);
   assert.match(privacy, /we keep a record of your consent/);
