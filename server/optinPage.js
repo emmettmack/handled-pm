@@ -16,7 +16,7 @@ export function prettyNumber(n) {
 }
 
 export const SUPPORT_EMAIL = 'efmack@usc.edu';
-export const PAGE_UPDATED = 'November 4, 2026';
+export const PAGE_UPDATED = 'November 5, 2026';
 
 /** A QR code that opens a text to the number (for the printed flyer and for people reading this on a computer). Plain SVG, no scripts. */
 function qrSvg(tel) {
@@ -77,11 +77,12 @@ label{font-weight:600}
 .check{display:flex;gap:10px;align-items:flex-start;font-weight:400;margin:4px 0 8px}
 .check input{margin-top:6px;flex:none}
 .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.optional{margin:16px 0 0;padding:12px 14px;border:1px solid var(--line);border-radius:4px}
 .signup{padding:20px;border:1px solid var(--line);border-radius:4px}
 .signup button{margin-top:8px}`;
 
 /** The words next to the opt-in checkbox. The server stores this exact text with every sign-up, so build it in one place. */
-export const consentCheckboxText = (company = null) => `I agree to receive text messages from ${company ? `${company} through Macalisto` : (company || DEFAULT_BRAND)} about my repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of any lease or purchase.`;
+export const consentCheckboxText = (company = null) => `I agree to receive text messages from ${company ? `${company} through Macalisto` : (company || DEFAULT_BRAND)} about my repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of submitting a repair request, or of any lease or purchase. You can use your rental portal instead.`;
 
 export const SITE = 'https://macalisto.com';
 export const FORM_ACTION = 'https://app.macalisto.com/api/optin';
@@ -93,7 +94,7 @@ export function renderOptinPage({ number = DEFAULT_NUMBER, company = null, base 
   const tel = `+1${String(number).replace(/\D/g, '').slice(-10)}`;
   const fromWho = company ? `${b} through Macalisto` : b;
   // The consent sentence is the exact wording registered with the carriers. Only the number and the sender's name change.
-  const consent = `Text your maintenance request to ${shown}. By texting, you agree to receive text messages from ${fromWho} about your repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of any lease or purchase.`;
+  const consent = `Text your maintenance request to ${shown}. By texting, you agree to receive text messages from ${fromWho} about your repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of submitting a repair request, or of any lease or purchase. You can use your rental portal instead.`;
   const lead = company
     ? `This is the maintenance line for ${b}. If you rent a home managed by ${b}, text this number to report a repair or ask about one that is already open.`
     : `This is the repair request line for Macalisto. If your landlord or property manager gave you this number, text it to report a repair or ask about one that is already open. Every message comes from Macalisto.`;
@@ -116,6 +117,8 @@ ${CSS}
 <h1>Text your maintenance request</h1>
 <p class="lead">${lead}</p>
 
+<div class="optional"><strong>Texting is optional.</strong> You can always submit a repair request, or make changes to one, through your landlord's or property manager's rental portal. Use this number only if you prefer text messages.</div>
+
 <div class="cta">
 <div class="label">Text this number</div>
 <div class="ctaRow">
@@ -132,7 +135,7 @@ ${CSS}
 
 <h2 id="signup">Or sign up here</h2>
 <form class="signup" method="post" action="${esc(formAction)}">
-<p class="note" style="margin-top:0">Prefer to start with a form? Enter your mobile number and agree below. We will text you a confirmation, and then you can text your repair requests to ${shown}.</p>
+<p class="note" style="margin-top:0">Signing up is optional. If you would rather get text messages, enter your mobile number and agree below. We will text you a confirmation, and then you can text your repair requests to ${shown}. You can always use your rental portal instead.</p>
 <label for="phone">Mobile phone number</label>
 <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(555) 555-5555" required>
 <div class="hp" aria-hidden="true"><label>Leave this empty<input name="website" tabindex="-1" autocomplete="off"></label></div>
@@ -149,6 +152,7 @@ ${CSS}
 <li><strong>Your property manager reviews and approves the repair.</strong> Nothing is sent to a repair person until they do.</li>
 <li><strong>You are kept informed.</strong> You will get a text with the day and time once a repair person confirms, and a follow-up when the work is done.</li>
 </ol>
+<p class="note">If you would rather not text, you can follow the same steps through your landlord's or property manager's rental portal.</p>
 
 <h2>Program details</h2>
 <dl>
