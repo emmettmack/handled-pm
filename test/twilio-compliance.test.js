@@ -20,6 +20,7 @@ test('terms and privacy contain what Twilio and the carriers require', () => {
   assert.match(terms, /href="\/privacy\.html"/);
   assert.match(terms, /only sends them to people who have texted a Macalisto number or signed up on the opt-in form first/);
   assert.match(privacy, /We do not sell or share your SMS opt-in data or personal information with third parties for marketing purposes/);
+  assert.match(privacy, /Mobile information will not be shared with third parties or affiliates for marketing or promotional purposes/);
   assert.match(privacy, /Macalisto/);
   assert.match(terms, /ticking the consent box on the opt-in form/);
   assert.match(privacy, /we keep a record of your consent/);
@@ -27,7 +28,7 @@ test('terms and privacy contain what Twilio and the carriers require', () => {
 });
 
 test('the public opt-in page shows the registered consent language and the six registered examples, in order', () => {
-  assert.ok(text.includes('Text your maintenance request to (805) 909-3422. By texting, you agree to receive text messages from Macalisto about your repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of any lease or purchase.'));
+  assert.ok(text.includes('Text your maintenance request to (805) 909-3422. By texting, you agree to receive text messages from Macalisto about your repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of submitting a repair request, or of any lease or purchase. You can use your rental portal instead.'));
   const examples = [
     "Macalisto: You're opted in to repair request texts from Macalisto. Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to opt out.",
     'Macalisto: Got your repair request for Unit 4B at 123 Main St: "Kitchen sink leaking under cabinet". Your property manager has been notified. We may text you questions and updates. Msg frequency varies. Msg & data rates may apply. Reply STOP to opt out, HELP for help.',
@@ -38,6 +39,18 @@ test('the public opt-in page shows the registered consent language and the six r
   ];
   let at = 0;
   for (const e of examples) { const i = text.indexOf(e, at); assert.ok(i >= at, `missing or out of order: ${e.slice(0, 50)}`); at = i; }
+});
+
+test('texting is optional everywhere: the page, the form, the terms and the privacy policy point to the rental portal', () => {
+  const t = page('text/index.html'), terms = page('terms.html'), privacy = page('privacy.html');
+  assert.ok(t.includes("Texting is optional.") && t.includes("through your landlord's or property manager's rental portal"));
+  assert.ok(t.indexOf('Texting is optional.') < t.indexOf('Text this number'), 'the notice comes before the number');
+  assert.ok(t.includes('Signing up is optional.'));
+  assert.ok(t.includes("If you would rather not text, you can follow the same steps through your landlord's or property manager's rental portal."));
+  assert.doesNotMatch(t, /<input[^>]*name="consent"[^>]*checked/);
+  assert.match(terms, /Texting is optional: consent is not a condition of submitting a repair request/);
+  assert.match(privacy, /Texting is optional: consent to receive texts is not a condition of submitting a repair request/);
+  assert.doesNotMatch(t + terms + privacy, /Consent is not a condition of any (lease|purchase)\./);
 });
 
 test('the app sends the registered wording for the opt-in, HELP, approval and scheduling texts', () => {
