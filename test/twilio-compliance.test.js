@@ -16,9 +16,11 @@ test('terms and privacy contain what Twilio and the carriers require', () => {
   assert.match(terms, /Carriers are not liable for any delayed or undelivered messages/);
   assert.match(terms, /mailto:efmack@usc\.edu/);
   assert.match(terms, /href="\/privacy\.html"/);
-  assert.match(terms, /only sends them to people who have texted a Macalisto number first/);
+  assert.match(terms, /only sends them to people who have texted a Macalisto number or signed up on the opt-in form first/);
   assert.match(privacy, /We do not sell or share your SMS opt-in data or personal information with third parties for marketing purposes/);
   assert.match(privacy, /Macalisto/);
+  assert.match(terms, /ticking the consent box on the opt-in form/);
+  assert.match(privacy, /we keep a record of your consent/);
   assert.doesNotMatch(terms + privacy, /being added as a tenant or vendor/);
 });
 

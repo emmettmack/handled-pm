@@ -16,7 +16,7 @@ export function prettyNumber(n) {
 }
 
 export const SUPPORT_EMAIL = 'efmack@usc.edu';
-export const PAGE_UPDATED = 'October 29, 2026';
+export const PAGE_UPDATED = 'November 4, 2026';
 
 /** A QR code that opens a text to the number (for the printed flyer and for people reading this on a computer). Plain SVG, no scripts. */
 function qrSvg(tel) {
@@ -26,29 +26,7 @@ function qrSvg(tel) {
   return q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
 }
 
-export function renderOptinPage({ number = DEFAULT_NUMBER, company = null, base = '', autoPrint = false } = {}) {
-  const brand = company || DEFAULT_BRAND;
-  const b = esc(brand);
-  const shown = prettyNumber(number);
-  const tel = `+1${String(number).replace(/\D/g, '').slice(-10)}`;
-  const fromWho = company ? `${b} through Macalisto` : b;
-  // The consent sentence is the exact wording registered with the carriers. Only the number and the sender's name change.
-  const consent = `Text your maintenance request to ${shown}. By texting, you agree to receive text messages from ${fromWho} about your repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of any lease or purchase.`;
-  const lead = company
-    ? `This is the maintenance line for ${b}. If you rent a home managed by ${b}, text this number to report a repair or ask about one that is already open.`
-    : `This is a maintenance request line operated by Macalisto on behalf of landlords and property managers. If your landlord or property manager gave you this number, text it to report a repair or ask about one that is already open.`;
-  const sender = company ? `${b}, with messaging provided by Macalisto (operated by Emmett Mack)` : 'Macalisto, operated by Emmett Mack';
-  return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Maintenance request line · ${b}</title>
-<meta name="description" content="How to text a maintenance request to ${b}, what messages to expect, and how to opt out.">
-<meta property="og:title" content="Text your maintenance request · ${b}">
-<meta property="og:description" content="Text ${shown} to report a repair. See what messages to expect and how to opt out.">
-<meta property="og:type" content="website">
-<meta name="robots" content="index,follow">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23111111'/%3E%3Cpath d='M9 16.5l5 5 9-10' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-<style>
-:root{--ink:#111;--muted:#555;--line:#cfcfcf}
+const CSS = `:root{--ink:#111;--muted:#555;--line:#cfcfcf}
 *{box-sizing:border-box}
 body{margin:0;font:16px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:#fff}
 header{border-bottom:1px solid var(--line)}
@@ -84,6 +62,7 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:14px}
 footer div{max-width:760px;margin:0 auto;padding:18px 24px}
 @media (max-width:620px){dl div{grid-template-columns:1fr;gap:2px} .qr,.note.screen{display:none}}
 @media print{
+  .signup{display:none}
   @page{margin:.6in}
   body{font-size:12pt}
   header,button,.screen,footer .links{display:none}
@@ -93,6 +72,43 @@ footer div{max-width:760px;margin:0 auto;padding:18px 24px}
   h2,.cta,dl,.samples{break-inside:avoid}
   .qr{display:block!important}
 }
+input[type=tel]{display:block;width:100%;max-width:320px;font:inherit;padding:8px 10px;border:1px solid var(--ink);border-radius:4px;margin:4px 0 14px}
+label{font-weight:600}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:400;margin:4px 0 8px}
+.check input{margin-top:6px;flex:none}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.signup{padding:20px;border:1px solid var(--line);border-radius:4px}
+.signup button{margin-top:8px}`;
+
+/** The words next to the opt-in checkbox. The server stores this exact text with every sign-up, so build it in one place. */
+export const consentCheckboxText = (company = null) => `I agree to receive text messages from ${company ? `${company} through Macalisto` : (company || DEFAULT_BRAND)} about my repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of any lease or purchase.`;
+
+export const SITE = 'https://macalisto.com';
+export const FORM_ACTION = 'https://app.macalisto.com/api/optin';
+
+export function renderOptinPage({ number = DEFAULT_NUMBER, company = null, base = '', autoPrint = false, formAction = FORM_ACTION, slug = '' } = {}) {
+  const brand = company || DEFAULT_BRAND;
+  const b = esc(brand);
+  const shown = prettyNumber(number);
+  const tel = `+1${String(number).replace(/\D/g, '').slice(-10)}`;
+  const fromWho = company ? `${b} through Macalisto` : b;
+  // The consent sentence is the exact wording registered with the carriers. Only the number and the sender's name change.
+  const consent = `Text your maintenance request to ${shown}. By texting, you agree to receive text messages from ${fromWho} about your repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of any lease or purchase.`;
+  const lead = company
+    ? `This is the maintenance line for ${b}. If you rent a home managed by ${b}, text this number to report a repair or ask about one that is already open.`
+    : `This is a maintenance request line operated by Macalisto on behalf of landlords and property managers. If your landlord or property manager gave you this number, text it to report a repair or ask about one that is already open.`;
+  const sender = company ? `${b}, with messaging provided by Macalisto (operated by Emmett Mack)` : 'Macalisto, operated by Emmett Mack';
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maintenance request line · ${b}</title>
+<meta name="description" content="How to text a maintenance request to ${b}, what messages to expect, and how to opt out.">
+<meta property="og:title" content="Text your maintenance request · ${b}">
+<meta property="og:description" content="Text ${shown} to report a repair. See what messages to expect and how to opt out.">
+<meta property="og:type" content="website">
+<meta name="robots" content="index,follow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23111111'/%3E%3Cpath d='M9 16.5l5 5 9-10' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+${CSS}
 </style></head><body>
 <header><div class="bar"><a class="brand" href="https://macalisto.com/">${b}</a><span>Maintenance request line</span></div></header>
 <main>
@@ -113,6 +129,18 @@ footer div{max-width:760px;margin:0 auto;padding:18px 24px}
 <p class="legal">Questions or trouble texting? Email <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>.</p>
 <p class="legal" style="margin-top:4px">By texting this number you also agree to the <a href="https://macalisto.com/terms.html">Terms of Service</a> and acknowledge the <a href="https://macalisto.com/privacy.html">Privacy Policy</a>.</p>
 </div>
+
+<h2 id="signup">Or sign up here</h2>
+<form class="signup" method="post" action="${esc(formAction)}">
+<p class="note" style="margin-top:0">Prefer to start with a form? Enter your mobile number and agree below. We will text you a confirmation, and then you can text your repair requests to ${shown}.</p>
+<label for="phone">Mobile phone number</label>
+<input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(555) 555-5555" required>
+<div class="hp" aria-hidden="true"><label>Leave this empty<input name="website" tabindex="-1" autocomplete="off"></label></div>
+<label class="check"><input type="checkbox" name="consent" value="yes" required><span>${esc(consentCheckboxText(company))}</span></label>
+<p class="legal">By signing up you also agree to the <a href="https://macalisto.com/terms.html">Terms of Service</a> and acknowledge the <a href="https://macalisto.com/privacy.html">Privacy Policy</a>.</p>
+<input type="hidden" name="slug" value="${esc(slug)}">
+<button type="submit">Sign me up for repair request texts</button>
+</form>
 
 <h2>How it works</h2>
 <ol class="steps">
@@ -154,4 +182,37 @@ footer div{max-width:760px;margin:0 auto;padding:18px 24px}
 </main>
 <footer><div><div class="links"><a href="https://macalisto.com/terms.html">Terms of Service</a> · <a href="https://macalisto.com/privacy.html">Privacy Policy</a> · <a href="mailto:${SUPPORT_EMAIL}">Contact</a></div><div style="padding:8px 0 0">Macalisto is operated by Emmett Mack. Page last updated ${PAGE_UPDATED}.</div></div></footer>${autoPrint ? '<script>window.print()</script>' : ''}</body></html>
 `;
+}
+
+const shell = (title, body, b = DEFAULT_BRAND) => `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(title)} · ${esc(b)}</title>
+<meta name="robots" content="noindex">
+<style>
+${CSS}
+</style></head><body>
+<header><div class="bar"><a class="brand" href="${SITE}/">${esc(b)}</a><span>Maintenance request line</span></div></header>
+<main>
+${body}
+</main>
+<footer><div><div class="links"><a href="${SITE}/terms.html">Terms of Service</a> · <a href="${SITE}/privacy.html">Privacy Policy</a> · <a href="mailto:${SUPPORT_EMAIL}">Contact</a></div><div style="padding:8px 0 0">Macalisto is operated by Emmett Mack. Page last updated ${PAGE_UPDATED}.</div></div></footer></body></html>
+`;
+
+/** Shown after a sign-up. The default one is also published as a static page so reviewers can see what happens after submitting. */
+export function renderThanksPage({ number = DEFAULT_NUMBER, company = null, back = `${SITE}/text/` } = {}) {
+  const shown = prettyNumber(number);
+  return shell('You are signed up', `<h1>You are signed up</h1>
+<p class="lead">We sent a confirmation text to the number you entered. It should arrive within a minute.</p>
+<div class="cta"><div class="label">To report a repair, text</div><a class="number" href="sms:+1${String(number).replace(/\D/g, '').slice(-10)}">${shown}</a>
+<p class="legal" style="margin:0">The confirmation reads:</p><div class="msg" style="margin-top:8px">${esc(FIRST_CONTACT)}</div></div>
+<p>Message frequency varies. Message and data rates may apply. Reply <strong>STOP</strong> at any time to opt out, or <strong>HELP</strong> for help. Questions? Email <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>.</p>
+<p><a href="${esc(back)}">Back to the sign-up page</a></p>`, company || DEFAULT_BRAND);
+}
+
+/** Shown when a sign-up cannot be completed (missing box, bad number, too many tries). */
+export function renderOptinError({ message, back = `${SITE}/text/#signup`, company = null }) {
+  return shell('Sign-up not completed', `<h1>We could not sign you up</h1>
+<p class="lead">${esc(message)}</p>
+<p><a href="${esc(back)}">Back to the sign-up form</a></p>
+<p class="note">You can also text ${prettyNumber(DEFAULT_NUMBER)} directly to report a repair.</p>`, company || DEFAULT_BRAND);
 }

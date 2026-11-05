@@ -54,5 +54,5 @@ export function servePublicPage(req, res) {
   const info = account && runAs(account, () => { const c = getCompany(); return c?.name_confirmed ? { company: displayCompany(c) } : null; });
   if (!info) return res.status(404).type('text/plain').send('Page not found');
   res.set('Cache-Control', 'public, max-age=300').type('html')
-    .send(renderOptinPage({ number: accountNumber(account) || DEFAULT_NUMBER, company: info.company, autoPrint: req.query.flyer === '1' }));
+    .send(renderOptinPage({ number: accountNumber(account) || DEFAULT_NUMBER, company: info.company, autoPrint: req.query.flyer === '1', formAction: '/api/optin', slug: req.params.slug }));
 }
