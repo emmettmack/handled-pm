@@ -96,7 +96,7 @@ export function renderOptinPage({ number = DEFAULT_NUMBER, company = null, base 
   const consent = `Text your maintenance request to ${shown}. By texting, you agree to receive text messages from ${fromWho} about your repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of any lease or purchase.`;
   const lead = company
     ? `This is the maintenance line for ${b}. If you rent a home managed by ${b}, text this number to report a repair or ask about one that is already open.`
-    : `This is a maintenance request line operated by Macalisto on behalf of landlords and property managers. If your landlord or property manager gave you this number, text it to report a repair or ask about one that is already open.`;
+    : `This is the repair request line for Macalisto. If your landlord or property manager gave you this number, text it to report a repair or ask about one that is already open. Every message comes from Macalisto.`;
   const sender = company ? `${b}, with messaging provided by Macalisto (operated by Emmett Mack)` : 'Macalisto, operated by Emmett Mack';
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -154,6 +154,7 @@ ${CSS}
 <dl>
 <div><dt>Program</dt><dd>Macalisto Repair Request Texts: maintenance request messaging for residents of rental homes</dd></div>
 <div><dt>Messages come from</dt><dd>${shown}</dd></div>
+<div><dt>Who sends them</dt><dd>${company ? `${b}, through Macalisto. We do not send marketing.` : 'Macalisto only. We do not send texts for affiliates or other companies, and we do not send marketing.'}</dd></div>
 <div><dt>Sender</dt><dd>${sender}</dd></div>
 <div><dt>Messages you may receive</dt><dd>Confirmation that we received your request, questions about the problem, scheduling and status updates, and notice when the work is complete</dd></div>
 <div><dt>Message frequency</dt><dd>Varies with your request. Typically a few messages per repair.</dd></div>

@@ -11,6 +11,8 @@ test('terms and privacy contain what Twilio and the carriers require', () => {
   assert.match(terms, /<strong>STOP<\/strong>/);
   assert.match(terms, /<strong>HELP<\/strong>/);
   assert.match(terms, /Macalisto Repair Request Texts/);
+  assert.match(terms, /come only from Macalisto/);
+  assert.doesNotMatch(terms + page('text/index.html'), /on behalf of/);
   assert.match(terms, /Message and data rates may apply/);
   assert.match(terms, /Message frequency varies/);
   assert.match(terms, /Carriers are not liable for any delayed or undelivered messages/);
