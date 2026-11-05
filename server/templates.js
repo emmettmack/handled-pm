@@ -4,7 +4,7 @@
 import { LANGUAGES, normalizeLanguage } from './languages.js';
 
 /** Sent once to each new number on its first text. It matches the opt-in message registered with the carriers, so keep them identical. */
-export const FIRST_CONTACT = "Macalisto: You're opted in to repair request texts from your property manager. Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to opt out.";
+export const FIRST_CONTACT = "Macalisto: You're opted in to repair request texts from Macalisto. Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to opt out.";
 
 /** Every text identifies the sender, as in the samples registered with the carriers. The stored message is unchanged; only the text that is sent gets the name. */
 export const brandTenantText = (text) => (/^macalisto\b/i.test(text) ? text : `Macalisto: ${text}`);
@@ -124,7 +124,7 @@ export const TEXT = {
   },
   // Reply to HELP. Carriers expect a help message that names the service and explains how to stop.
   help: {
-    en: 'Macalisto: Help with repair request texts for {company}. Email efmack@usc.edu. Msg frequency varies. Msg & data rates may apply. Reply STOP to opt out. For emergencies, call 911.',
+    en: 'Macalisto: Repair request texts. Help: efmack@usc.edu. Msg & data rates may apply. Reply STOP to opt out.',
     es: 'Macalisto: Ayuda con los mensajes de reparaciones de {company}. Escriba a efmack@usc.edu. La frecuencia varía. Pueden aplicarse tarifas de mensajes y datos. Responda STOP para cancelar. En caso de emergencia, llame al 911.',
     ko: 'Macalisto: {company} 수리 요청 문자 도움말입니다. efmack@usc.edu로 문의하세요. 메시지 빈도는 요청에 따라 다릅니다. 메시지 및 데이터 요금이 부과될 수 있습니다. 수신을 중단하려면 STOP을 보내세요. 응급 상황에는 911에 전화하세요.',
     'zh-Hans': 'Macalisto：{company}维修请求短信帮助。请发邮件至 efmack@usc.edu。短信频率视情况而定，可能产生短信和流量费用。回复STOP可退订。紧急情况请拨打911。',

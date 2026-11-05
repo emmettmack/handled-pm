@@ -57,7 +57,9 @@ test('a work order only shows vendor, estimate and access once verified and disp
 test('every fixed message exists in every supported language', () => {
   assert.equal(LANGUAGE_CODES.length, 8);
   for (const key of TEMPLATE_KEYS) for (const code of LANGUAGE_CODES) assert.ok(TEXT[key][code], `${key} / ${code}`);
-  for (const code of LANGUAGE_CODES) assert.match(TEXT.help[code], /911/, `help text mentions 911 in ${code}`);
+  // The English HELP reply is the exact text registered with the carrier and has no 911 line; the other languages keep it.
+  for (const code of LANGUAGE_CODES.filter((c) => c !== 'en')) assert.match(TEXT.help[code], /911/, `help text mentions 911 in ${code}`);
+  assert.equal(TEXT.help.en.replace('{company}', ''), 'Macalisto: Repair request texts. Help: efmack@usc.edu. Msg & data rates may apply. Reply STOP to opt out.');
 });
 
 test('the sample AI tells the supported languages apart', () => {
@@ -129,7 +131,7 @@ test('HELP gets a reply that names the service and says how to stop', async () =
   const from = '+14155550126';
   await t.sms({ From: from, Body: 'HELP' }); await t.whenIdle();
   const reply = t.fake.sent.filter((s) => s.To === from).at(-1);
-  assert.match(reply.Body, /STOP/); assert.match(reply.Body, /911/);
+  assert.match(reply.Body, /STOP/); assert.match(reply.Body, /efmack@usc\.edu/);
 });
 
 test('a carrier delivery failure becomes a note on the work order, and a forged report is refused', async () => {
