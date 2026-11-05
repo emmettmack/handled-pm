@@ -1,5 +1,11 @@
 # Changelog
 
+## Campaign wording and vendor hand-off
+
+- Tenants now get the texts the campaign samples describe: "approved the repair" when the PM approves a dispatch (once per work order), and the scheduling update worded as registered.
+- With vendor texting off, the work order shows "Send this to the vendor yourself" with Copy, a text link and an email link.
+- `test/twilio-compliance.test.js` fails if the terms, privacy, /text page or registered SMS wording drift.
+
 ## Tenants-only texting campaign
 
 - Approved dispatches are no longer texted to vendors unless `VENDOR_TEXTING=on`: vendors have no opt-in on the registered number. The PM sees "Vendor texting is off" on the work order and contacts the vendor with the drafted message. A vendor who texts the number first is still handled.

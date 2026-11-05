@@ -270,6 +270,7 @@ export function ticketDetail(id) {
     view: ticketView({ ...t, dispatches }),
     vendor: getVendor(t.vendor_id),
     vendor_channels: vendorChannels(getVendor(t.vendor_id)),
+    vendor_texting: process.env.VENDOR_TEXTING === 'on',
     media: mediaFor(id),
     messages: db.prepare('SELECT * FROM messages WHERE ticket_id = ? ORDER BY created_at, id').all(id),
     history: db.prepare('SELECT * FROM status_history WHERE ticket_id = ? ORDER BY id').all(id),

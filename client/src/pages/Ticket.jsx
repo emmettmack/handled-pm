@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Bot, Send, Siren, Phone, Wrench, Hourglass, ShieldAlert, DollarSign, MessageSquare, TriangleAlert, Check, Info, Sparkles, Play, CircleCheck, Archive, FastForward, Languages, Camera, Plus, Play as PlayIcon, X } from 'lucide-react';
+import { ArrowLeft, Bot, Send, Siren, Phone, Wrench, Hourglass, ShieldAlert, DollarSign, MessageSquare, TriangleAlert, Check, Info, Sparkles, Play, CircleCheck, Archive, FastForward, Languages, Camera, Plus, Play as PlayIcon, X, Copy, Mail } from 'lucide-react';
 import { api } from '../api.js';
 import { useApp, go } from '../ctx.jsx';
 import ApprovalCard from '../components/ApprovalCard.jsx';
@@ -162,6 +162,30 @@ function VendorTimer({ t, reload }) {
         <button className="btn sm primary" onClick={() => act('vendor-accepted', 'Vendor confirmed')}><Check size={14} /> Simulate: vendor says YES</button>
         <button className="btn sm" onClick={() => act('skip-timer', 'Skipped ahead')}><FastForward size={14} /> Simulate: no reply in time</button>
       </div>}
+    </div>
+  );
+}
+
+/** Vendors haven't opted in to texts from the Macalisto number, so the PM sends the approved message themselves, from their own phone or email. */
+function SendYourself({ t }) {
+  const { toast, demo } = useApp();
+  const d = t.active_dispatch;
+  if (demo || !d || t.vendor_texting) return null;
+  const channels = t.vendor_channels || [];
+  const phones = channels.filter((c) => c.label !== 'Email' && c.value);
+  const emails = channels.filter((c) => c.label === 'Email' && c.value);
+  const body = d.text || '';
+  const copy = async () => { try { await navigator.clipboard.writeText(body); toast('Copied. Paste it into a text or email to the vendor.'); } catch { toast('Could not copy. Select the message and copy it by hand.', 'err'); } };
+  return (
+    <div className="card card-pad" style={{ marginTop: 12 }}>
+      <div className="panel-title">Send this to {d.vendor_name} yourself</div>
+      <p style={{ fontSize: 13, color: 'var(--ink-2)', marginBottom: 8 }}>For now vendors are not texted from your Macalisto number. Send them this message from your own phone or email, then confirm the time below when they answer.</p>
+      <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: 14, background: 'var(--bg-soft, #f6f6f8)', borderRadius: 8, padding: 10, margin: '0 0 10px' }}>{body}</pre>
+      <div className="btn-row">
+        <button className="btn sm primary" onClick={copy}><Copy size={14} /> Copy message</button>
+        {phones.map((c) => <a key={c.value} className="btn sm" href={`sms:${c.value}?&body=${encodeURIComponent(body)}`}><MessageSquare size={14} /> Text {c.label.toLowerCase()} from my phone</a>)}
+        {emails.map((c) => <a key={c.value} className="btn sm" href={`mailto:${c.value}?subject=${encodeURIComponent(`Work order #${t.id}: ${t.title || 'repair request'}`)}&body=${encodeURIComponent(body)}`}><Mail size={14} /> Email {d.vendor_name}</a>)}
+      </div>
     </div>
   );
 }
@@ -333,6 +357,7 @@ export default function Ticket({ id }) {
             <div className="panel-title">Next step</div>
             {t.status === 'dispatched' && <ConfirmTime t={t} reload={reload} />}
             {t.status === 'dispatched' && t.active_dispatch && <VendorTimer t={t} reload={reload} />}
+            {t.status === 'dispatched' && <SendYourself t={t} />}
             {t.status === 'scheduled' && (
               <div><p style={{ marginBottom: 10 }}>{vendorAttempts.at(-1)?.vendor_name} is scheduled for <b>{t.scheduled_for}</b>.</p><button className="btn primary" onClick={() => act('status', { status: 'in_progress' })}><Play size={15} /> Work has started</button></div>
             )}
