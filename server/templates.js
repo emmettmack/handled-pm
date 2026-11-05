@@ -4,7 +4,7 @@
 import { LANGUAGES, normalizeLanguage } from './languages.js';
 
 /** Sent once to each new number on its first text. It matches the opt-in message registered with the carriers, so keep them identical. */
-export const FIRST_CONTACT = "Macalisto: You're opted in to repair request texts from your property manager. Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to opt out.";
+export const FIRST_CONTACT = "Macalisto: You're opted in to repair request texts from Macalisto. Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to opt out.";
 
 /** Every text identifies the sender, as in the samples registered with the carriers. The stored message is unchanged; only the text that is sent gets the name. */
 export const brandTenantText = (text) => (/^macalisto\b/i.test(text) ? text : `Macalisto: ${text}`);
@@ -81,8 +81,18 @@ export const TEXT = {
     tl: 'Salamat sa pagbibigay-alam. Inaayos na namin ito at ipaaalam namin sa inyo ang susunod na hakbang.',
     vi: 'Cảm ơn bạn đã báo cho chúng tôi. Chúng tôi đang phối hợp xử lý và sẽ cập nhật cho bạn.',
   },
+  approved: {
+    en: "Your property manager approved the repair for {unit}. We're finding a time with a repair person and will text you once it's scheduled. Reply STOP to opt out.",
+    es: 'Su administrador aprobó la reparación de {unit}. Estamos buscando un horario con un técnico y le avisaremos por mensaje cuando esté programado. Responda STOP para dejar de recibir mensajes.',
+    ko: '관리자가 {unit} 수리를 승인했습니다. 기사님과 일정을 조율 중이며 확정되면 문자로 알려드리겠습니다. 수신을 중단하려면 STOP을 보내세요.',
+    'zh-Hans': '您的物业经理已批准{unit}的维修。我们正在与维修人员协调时间，安排好后会短信通知您。回复STOP可退订。',
+    'zh-Hant': '您的物業經理已核准{unit}的維修。我們正在與維修人員協調時間，安排好後會簡訊通知您。回覆STOP可取消。',
+    hy: 'Ձեր գույքի կառավարիչը հաստատել է {unit}-ի վերանորոգումը։ Մենք ժամանակ ենք համաձայնեցնում վարպետի հետ և կուղարկենք հաղորդագրություն, երբ այն նշանակվի։ Դադարեցնելու համար գրեք STOP։',
+    tl: 'Inaprubahan ng property manager ninyo ang pagkukumpuni para sa {unit}. Naghahanap kami ng oras kasama ang repair person at magte-text kami kapag naiskedyul na. I-reply ang STOP para huminto.',
+    vi: 'Quản lý bất động sản của bạn đã duyệt việc sửa chữa cho {unit}. Chúng tôi đang sắp xếp thời gian với thợ và sẽ nhắn cho bạn khi đã hẹn xong. Trả lời STOP để ngừng nhận.',
+  },
   scheduled: {
-    en: "Good news: {vendor} is scheduled for {when}. We'll let you know if anything changes.",
+    en: "Update on your repair request for {unit}: {vendor} is scheduled for {when}. Reply here if that time doesn't work.",
     es: 'Buenas noticias: {vendor} ya está programado para {when}. Si algo cambia le avisamos.',
     ko: '좋은 소식입니다: {vendor}이(가) {when}에 방문하기로 했습니다. 변동이 있으면 알려드리겠습니다.',
     'zh-Hans': '好消息：{vendor}已安排在{when}上门。如有变动我们会通知您。',
@@ -124,7 +134,7 @@ export const TEXT = {
   },
   // Reply to HELP. Carriers expect a help message that names the service and explains how to stop.
   help: {
-    en: 'Macalisto: Help with repair request texts for {company}. Email efmack@usc.edu. Msg frequency varies. Msg & data rates may apply. Reply STOP to opt out. For emergencies, call 911.',
+    en: 'Macalisto: Repair request texts. Help: efmack@usc.edu. Msg & data rates may apply. Reply STOP to opt out.',
     es: 'Macalisto: Ayuda con los mensajes de reparaciones de {company}. Escriba a efmack@usc.edu. La frecuencia varía. Pueden aplicarse tarifas de mensajes y datos. Responda STOP para cancelar. En caso de emergencia, llame al 911.',
     ko: 'Macalisto: {company} 수리 요청 문자 도움말입니다. efmack@usc.edu로 문의하세요. 메시지 빈도는 요청에 따라 다릅니다. 메시지 및 데이터 요금이 부과될 수 있습니다. 수신을 중단하려면 STOP을 보내세요. 응급 상황에는 911에 전화하세요.',
     'zh-Hans': 'Macalisto：{company}维修请求短信帮助。请发邮件至 efmack@usc.edu。短信频率视情况而定，可能产生短信和流量费用。回复STOP可退订。紧急情况请拨打911。',
@@ -149,7 +159,8 @@ export const T = {
   proceedAck: (l) => pick('proceedAck', l),
   updateAck: (l) => pick('updateAck', l),
   liabilitySafe: (l) => pick('liabilitySafe', l),
-  scheduled: (l, vendor, when) => fill(pick('scheduled', l), { vendor, when }),
+  scheduled: (l, vendor, when, unit) => fill(pick('scheduled', l), { vendor, when, unit }),
+  approved: (l, unit) => fill(pick('approved', l), { unit }),
   resolved: (l) => pick('resolved', l),
   closedNoVerify: (l) => pick('closedNoVerify', l),
   translateNote: (l) => fill(pick('translateNote', l), { language: nativeName(l) }),

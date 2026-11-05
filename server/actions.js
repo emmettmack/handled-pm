@@ -5,6 +5,7 @@ import * as S from './store.js';
 import { enqueue, draftAndQueue } from './triage.js';
 import { sendToTenant } from './outbound.js';
 import { T, brandVendorText } from './templates.js';
+import { unitName } from './labels.js';
 import { displayCompany } from './labels.js';
 import { sendSms, twilioConfigured } from './sms.js';
 import { isDemo } from './mode.js';
@@ -17,12 +18,19 @@ function getDispatch(id) {
   return d;
 }
 
+/** "Unit 4B" / "Main house" for a work order, or a neutral phrase when the number isn't on file. */
+const unitFor = (t) => {
+  const u = t.unit_id ? db.prepare('SELECT number FROM units WHERE id = ?').get(t.unit_id) : null;
+  return u ? unitName(u.number) : 'your home';
+};
+
 export function approveDispatch(id, editedText) {
   const d = getDispatch(id);
   if (d.state !== 'pending') throw fail('This draft was already handled.');
   const text = (editedText ?? '').trim() || d.text;
   const edited = text !== d.text ? 1 : 0;
   const now = S.nowIso();
+  const alreadyApproved = !!db.prepare("SELECT 1 FROM dispatches WHERE ticket_id = ? AND kind = 'vendor' AND state IN ('approved','accepted','no_response') AND id != ?").get(d.ticket_id, id);
   const hours = S.getPrefs().vendor_followup_hours;
   const channels = S.vendorChannels(S.getVendor(d.vendor_id));
   const via = channels.map((c) => c.label.toLowerCase()).join(' and ');
@@ -35,6 +43,8 @@ export function approveDispatch(id, editedText) {
   S.resolveFlag(d.ticket_id, 'over_limit', 'approved');
   S.setStatus(d.ticket_id, 'dispatched', `${live && !texting ? 'Approved for' : 'Sent to'} ${d.vendor_name}${edited ? ' (edited by you)' : ''}`);
   if (texting) textVendor(d.ticket_id, d.vendor_name, channels, text);
+  const tenantTicket = S.getTicket(d.ticket_id);
+  if (tenantTicket && !alreadyApproved) sendToTenant(tenantTicket, T.approved(tenantTicket.language, unitFor(tenantTicket)));
   const sentVia = texting ? ` and being texted to ${d.vendor_name}${via ? ` (${via})` : ''}` : ` for ${d.vendor_name}`;
   const caveat = !live ? (demo ? ' (Demo: nothing was actually sent.)' : ' (Texting is not connected yet, so nothing was sent. Please contact the vendor yourself.)') : texting ? '' : ' (Vendor texting is off, so nothing was sent: copy the message and contact them yourself.)';
   S.addNote(d.ticket_id, `Dispatch ${edited ? '(your edited version) ' : ''}approved${live && texting ? sentVia : ` for ${d.vendor_name}`}.${caveat} If they haven't replied in ${hours} hours, this work order comes back to the top of your list.`);
@@ -103,7 +113,7 @@ export function vendorAccepted(ticketId, confirmedTime) {
   S.updateTicket(ticketId, { scheduled_for: when });
   S.setStatus(ticketId, 'scheduled', `${d.vendor_name} confirmed for ${when}`);
   S.addNote(ticketId, given ? `${d.vendor_name} confirmed: ${when}.` : `${d.vendor_name} replied YES (simulated): ${when}.`);
-  sendToTenant(t, T.scheduled(t.language, d.vendor_name, when));
+  sendToTenant(t, T.scheduled(t.language, d.vendor_name, when, unitFor(t)));
 }
 
 export function advanceStatus(ticketId, status) {

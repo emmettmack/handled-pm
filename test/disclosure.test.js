@@ -12,6 +12,7 @@ test('the first text from a new number gets the program disclosure, exactly as r
   const n = '+13105550601';
   await text(n, 'my kitchen sink is leaking under the cabinet');
   assert.equal(toThem(n)[0].Body, FIRST_CONTACT);
+  assert.equal(FIRST_CONTACT, "Macalisto: You're opted in to repair request texts from Macalisto. Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to opt out.");
   assert.match(FIRST_CONTACT, /Msg frequency varies.*Msg & data rates may apply.*HELP.*STOP/);
   const before = toThem(n).length;
   await text(n, 'it is getting worse');

@@ -25,6 +25,9 @@ test('approving a dispatch does not text the vendor unless VENDOR_TEXTING=on, an
   assert.equal(t.fake.sent.length, before);
   const after_ = (await t.api('GET', `/tickets/${inbox.id}`)).data;
   assert.ok(after_.messages.some((m) => /Vendor texting is off/.test(m.body || '')), JSON.stringify(after_.messages.map((m) => [m.sender, m.body])));
+  const told = t.fake.sent.filter((m) => m.To === FROM && /approved the repair/.test(m.Body));
+  assert.equal(told.length, 1, 'the tenant is told once that the repair was approved');
+  assert.match(told[0].Body, /^Macalisto: Your property manager approved the repair for .+\. We're finding a time with a repair person and will text you once it's scheduled\. Reply STOP to opt out\.$/);
 });
 
 test('the HELP reply in every language names Macalisto, gives the support email and says how to stop', () => {

@@ -138,9 +138,10 @@ footer div{max-width:760px;margin:0 auto;padding:18px 24px}
 
 <h2>Examples of messages you may receive</h2>
 <div class="samples">
-<div class="msg">${FIRST_CONTACT}</div>
+<div class="msg">${esc(FIRST_CONTACT)}</div>
 <div class="msg">Macalisto: Got your repair request for Unit 4B at 123 Main St: "Kitchen sink leaking under cabinet". Your property manager has been notified. We may text you questions and updates. Msg frequency varies. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help.</div>
 <div class="msg">Macalisto: Thanks, Maria. Is the leak under the sink still dripping right now? If you can, reply with a photo. A plumber will be scheduled once your property manager approves.</div>
+<div class="msg">Macalisto: Your property manager approved the repair for Unit 4B. We're finding a time with a repair person and will text you once it's scheduled. Reply STOP to opt out.</div>
 <div class="msg">Macalisto: Update on your repair request for Unit 4B: Rivera Plumbing is scheduled for 11/04 between 1 and 3 PM. Reply here if that time doesn't work.</div>
 <div class="msg">Macalisto: Your report of a gas smell at Unit 4B has been marked urgent and sent to your property manager. Leave the unit now and call 911 or the gas company from outside. Do not use light switches or flames.</div>
 </div>
