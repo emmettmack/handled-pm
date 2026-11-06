@@ -42,4 +42,4 @@ triages it and drafts a vendor dispatch, which he approves with one tap.
 ## Note for Emmett
 Keep it under 30 seconds. Film clip 1 and 4 vertical, natural light or one lamp.
 Screen-record the demo at macalisto.com (Live demo tab) - use "Simulate
-incoming text" for the leak. Claims trace to site/index.html and README.md.
+incoming text" for the leak. Claims trace to site/index.html and README.md. Tenant texting describes the designed flow from the public demo; carrier approval for the live SMS line was pending as of 2026-11-06 - do not add "live" or "carrier-approved" wording until Emmett confirms.

@@ -31,6 +31,22 @@ They care about time, liability, and tenant satisfaction - in that order.
   no minimums, no setup fee, no contract. (site/pricing.html - check it first)
 - Live in 5 to 10 minutes. (site/index.html)
 
+
+## Verified vs intended (check before every claim)
+As of 2026-11-06:
+- VERIFIED: the public browser demo at macalisto.com (Live demo tab) works end
+  to end with simulated tenant texts; the site pages describe the product as
+  designed; early access is free per site/pricing.html.
+- INTENDED, NOT PROVEN IN PRODUCTION: real tenant SMS over a live number.
+  Twilio is not connected in the public demo and the carrier (10DLC) campaign
+  approval is pending. Vendor texting is off by default (VENDOR_TEXTING).
+- Content may describe the product experience the way the public site does -
+  that is the designed flow and Emmett's own positioning. But never state or
+  imply that real texting is live, carrier-approved, or handling real tenants
+  today, and never cite usage numbers, customer results, or uptime. Until
+  Emmett confirms the campaign is approved, treat "texting is live" as a claim
+  he must personally sign off on, per post.
+
 ## Never
 - No income claims, savings guarantees, or "never miss an emergency" promises.
 - No comparisons you can't source on the spot (AppFolio pricing comparison lives

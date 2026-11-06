@@ -13,4 +13,8 @@ post with everything it needs.
 
 Before any of these post: create the Instagram account (held - Emmett's call),
 check the "free while in early access" claim against site/pricing.html on the
-day, and add the real handle to marketing/brand-kit.md.
+day, and add the real handle to marketing/brand-kit.md. Also: tenant-texting
+claims in this pack describe the designed flow shown in the public demo; the
+live SMS line's carrier approval was still pending when this pack was written
+(2026-11-06), so keep the wording as-is - nothing here says texting is live or
+carrier-approved, and don't add wording that does until Emmett confirms it.

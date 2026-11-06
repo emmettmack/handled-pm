@@ -37,4 +37,4 @@ Free while in early access. Link in bio to try the live demo.
 ## Note for Emmett
 For small landlords; good first post after the account opens because it explains
 the product in one swipe. Check: the early-access free claim still matches
-site/pricing.html on posting day. Every claim here traces to site/index.html.
+site/pricing.html on posting day. Every claim here traces to site/index.html. Tenant texting describes the designed flow from the public demo; carrier approval for the live SMS line was pending as of 2026-11-06 - do not add "live" or "carrier-approved" wording until Emmett confirms.

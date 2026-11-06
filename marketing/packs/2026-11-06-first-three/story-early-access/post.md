@@ -21,4 +21,4 @@ early access - link in bio. #landlord #propertymanagement #proptech
 ## Note for Emmett
 Post Frame 1, then Frame 2 with the poll an hour later; poll answers are free
 market research and a reason to DM warm landlords. Check the free early-access
-claim against site/pricing.html on posting day.
+claim against site/pricing.html on posting day. Tenant texting describes the designed flow from the public demo; carrier approval for the live SMS line was pending as of 2026-11-06 - do not add "live" or "carrier-approved" wording until Emmett confirms.
