@@ -87,7 +87,12 @@ async function processInbound(req, account) {
     }
     if (text && vendorReply(from, text)) return;
     // First text from this number: send the program disclosure once, before the conversation starts.
-    if (!S.isOptedOut(from) && S.markDisclosed(from)) await sendSms(S.normPhone(from), T.firstContact());
+    if (!S.isOptedOut(from) && !S.isDisclosed(from)) {
+      // Only record the disclosure once it was actually sent: if this send fails the number stays undisclosed and we retry on their next text.
+      const disclosure = await sendSms(S.normPhone(from), T.firstContact());
+      if (disclosure.ok) S.markDisclosed(from);
+      else console.warn(`[sms] program disclosure to ${from} not delivered (${disclosure.error}); will retry on their next text`);
+    }
     // Photos are fetched before the text is handled, so the assistant sees them when it reads the message.
     const media = [];
     for (let i = 0; i < Math.min(n, 6); i++) {

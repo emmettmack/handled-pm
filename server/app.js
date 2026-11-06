@@ -17,6 +17,7 @@ import { setNumberResolver } from './sms.js';
 import { saveDataUrl, mediaLink, serveFile, readFile, removeFile } from './files.js';
 import { publicPageInfo, updateSlug, servePublicPage } from './publicPage.js';
 import { optinSubmit, servePublicThanks } from './optin.js';
+import { repairRequestSubmit } from './webRequest.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -41,6 +42,7 @@ app.get('/t/:slug', servePublicPage);
 app.get('/t/:slug/thanks', servePublicThanks);
 // The web sign-up form on the opt-in pages. Public, so it is rate limited inside (see optin.js).
 app.post('/api/optin', optinSubmit);
+app.post('/api/repair-request', repairRequestSubmit);
 
 // Photos and videos live in files, served by signed link (see files.js). Demo mode keeps its sample photos inline.
 if (!isDemo()) { setMediaStorage(saveDataUrl, mediaLink); setMediaReader(readFile); setMediaRemover(removeFile); }

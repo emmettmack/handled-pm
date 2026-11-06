@@ -8,7 +8,7 @@ const t = await boot();
 after(() => t.close());
 const registry = await import('../server/registry.js');
 
-const CONSENT = (num, brand, via = '') => `Text your maintenance request to ${num}. By texting, you agree to receive text messages from ${brand}${via} about your repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of submitting a repair request, or of any lease or purchase. You can use your rental portal instead.`;
+const CONSENT = (num, brand, via = '') => `Text your maintenance request to ${num}. By texting, you agree to receive text messages from ${brand}${via} about your repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of submitting a repair request, or of any lease or purchase. You can use the online form instead.`;
 
 test('the committed static page matches the template and has the exact consent wording, no script', () => {
   const html = fs.readFileSync(new URL('../site/text/index.html', import.meta.url), 'utf8');

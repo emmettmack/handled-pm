@@ -46,7 +46,7 @@ function Thread({ t }) {
 
 function Composer({ t, reload }) {
   const { toast, demo } = useApp();
-  const [mode, setMode] = useState(demo ? 'tenant' : 'pm'); // real accounts only message the tenant as themselves
+  const [mode, setMode] = useState(demo && t.channel !== 'web' ? 'tenant' : 'pm'); // real accounts only message the tenant as themselves; web requesters have no text channel
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const closed = ['resolved', 'closed'].includes(t.status);
@@ -71,8 +71,8 @@ function Composer({ t, reload }) {
   return (
     <div className={`composer ${waiting && mode === 'tenant' ? 'waiting' : ''}`}>
       <div className="tabs">
-        {demo && <button className={`tab ${mode === 'tenant' ? 'on' : ''}`} onClick={() => setMode('tenant')}>Reply as {t.tenant?.name?.split(' ')[0] || 'the texter'} <span className="demo-tag">demo</span></button>}
-        <button className={`tab ${mode === 'pm' ? 'on' : ''}`} onClick={() => setMode('pm')}>Message tenant as you</button>
+        {demo && t.channel !== 'web' && <button className={`tab ${mode === 'tenant' ? 'on' : ''}`} onClick={() => setMode('tenant')}>Reply as {t.tenant?.name?.split(' ')[0] || 'the texter'} <span className="demo-tag">demo</span></button>}
+        <button className={`tab ${mode === 'pm' ? 'on' : ''}`} onClick={() => setMode('pm')}>{t.channel === 'web' ? 'Write here as you' : 'Message tenant as you'}</button>
       </div>
       {demo && waiting && mode === 'tenant' && (
         <div className="hint"><MessageSquare size={14} /> {idCheck ? 'Waiting for the texter to give their name and unit.' : `Waiting on ${t.tenant?.name?.split(' ')[0] || 'the tenant'}.`} Type their reply to keep the demo going.</div>
@@ -80,9 +80,12 @@ function Composer({ t, reload }) {
       {mode === 'tenant' && quick.length > 0 && (
         <div className="quick">{quick.map((q) => <button key={q} disabled={busy} onClick={() => send(q)}>{q}</button>)}</div>
       )}
+      {mode === 'pm' && t.channel === 'web' && (
+        <div className="hint"><MessageSquare size={14} /> No text channel for this request: what you write here is saved on the work order, not delivered. Reach the requester directly (their email, if given, is in the note above).</div>
+      )}
       <div className="composer-row">
         <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()}
-          placeholder={mode === 'tenant' ? 'Type what the tenant would text back…' : 'Write a message to the tenant…'} />
+          placeholder={mode === 'tenant' ? 'Type what the tenant would text back…' : t.channel === 'web' ? 'Saved on the work order, not delivered…' : 'Write a message to the tenant…'} />
         <button className="btn primary" disabled={busy || !text.trim()} onClick={() => send()}><Send size={15} /> Send</button>
       </div>
     </div>
@@ -335,7 +338,7 @@ export default function Ticket({ id }) {
           {pending && <ApprovalCard compact item={{ ...pending, ticket: t }} />}
 
           <div className="card" style={{ overflow: 'hidden' }}>
-            <div className="card-pad" style={{ paddingBottom: 0 }}><div className="panel-title"><MessageSquare size={14} /> Conversation with {t.tenant?.name || 'unrecognized number'}{t.from_phone ? ` · ${t.from_phone.replace(/^\+1(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3')}` : ''}</div></div>
+            <div className="card-pad" style={{ paddingBottom: 0 }}><div className="panel-title"><MessageSquare size={14} /> Conversation with {t.tenant?.name || (t.channel === 'web' ? 'an online form submission' : 'unrecognized number')}{t.from_phone ? ` · ${t.from_phone.replace(/^\+1(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3')}` : ''}</div></div>
             <Thread t={t} />
             <Composer t={t} reload={reload} />
           </div>
@@ -346,7 +349,7 @@ export default function Ticket({ id }) {
 
           <div className="card card-pad">
             <div className="panel-title"><Sparkles size={14} /> AI summary</div>
-            {!t.view.verifiedTexter && <p className="unconfirmed">Unconfirmed: this texter hasn't been verified, so treat the details below as a first read.</p>}
+            {!t.view.verifiedTexter && <p className="unconfirmed">Unconfirmed: this {t.channel === 'web' ? 'requester' : 'texter'} hasn't been verified, so treat the details below as a first read.</p>}
             <p>{t.summary || 'The assistant is reading this text…'}</p>
             {t.diagnosis && <><div className="label" style={{ marginTop: 12 }}>Likely cause</div><p style={{ color: 'var(--ink-2)' }}>{t.diagnosis}</p></>}
             {t.next_steps.length > 0 && <><div className="label" style={{ marginTop: 12 }}>Proposed next steps</div><ol className="steps">{t.next_steps.map((s) => <li key={s}>{s}</li>)}</ol></>}
@@ -399,7 +402,7 @@ export default function Ticket({ id }) {
               {t.view.showEstimate && (
                 <><dt>Estimate</dt><dd>{money(t.cost_estimate)}{t.unit && t.cost_estimate > t.unit.approval_limit ? <span className="chip-flag" style={{ marginLeft: 8 }}>over {money(t.unit.approval_limit)} limit</span> : null}<small className="est-src">{t.view.estimateLabel}</small></dd></>
               )}
-              <dt>{t.tenant ? 'Tenant' : 'Texter'}</dt><dd>{t.tenant ? `${t.tenant.name} · ${t.tenant.phone.replace(/^\+1(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3')}` : `Unverified · ${String(t.from_phone || '').replace(/^\+1(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3')}`}</dd>
+              <dt>{t.tenant ? 'Tenant' : t.channel === 'web' ? 'Requester' : 'Texter'}</dt><dd>{t.tenant ? `${t.tenant.name} · ${t.tenant.phone.replace(/^\+1(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3')}${t.channel === 'web' && !t.identity_cleared && !t.verified ? ' · matched from the online form, not verified' : ''}` : t.channel === 'web' ? 'Online form · not verified' : `Unverified · ${String(t.from_phone || '').replace(/^\+1(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3')}`}</dd>
               {t.view.showAccess && <><dt>Access</dt><dd>{t.access_notes || 'Not discussed yet'}</dd></>}
             </div>
           </div>

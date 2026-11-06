@@ -43,3 +43,20 @@ test('every text to a tenant names the sender, but the stored message is unchang
   const stored = (await t.api('GET', `/tickets/${inbox.id}`)).data.messages.filter((m) => m.sender === 'ai').map((m) => m.body);
   assert.ok(stored.every((b) => !b.startsWith('Macalisto: ')), 'stored text has no prefix');
 });
+
+test('a disclosure that fails to send is not recorded, and is retried on the next text', async () => {
+  const { asLocal } = await import('./helpers.js');
+  const store = (await import('../server/store.js'));
+  const n = '+13105550605';
+  const attempts = () => toThem(n).filter((m) => m.Body === FIRST_CONTACT).length; // the fake records every attempt, delivered or not
+  t.fake.state.failWith = { code: 30034, message: 'registration pending' };
+  await text(n, 'my dishwasher is flooding the kitchen');
+  assert.equal(attempts(), 1, 'disclosure attempted');
+  assert.equal(await asLocal(t, () => store.isDisclosed(n)), false, 'not marked disclosed when the send failed');
+  t.fake.state.failWith = null;
+  await text(n, 'water everywhere, please hurry');
+  assert.equal(attempts(), 2, 'disclosure retried on the next text');
+  assert.equal(await asLocal(t, () => store.isDisclosed(n)), true, 'recorded only after a successful send');
+  await text(n, 'still leaking');
+  assert.equal(attempts(), 2, 'no third attempt once recorded');
+});

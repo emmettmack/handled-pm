@@ -87,7 +87,7 @@ export async function processTicket(id) {
   const lang = r.language;
   // A photo would help and none has been asked for or sent yet: ask once, with specifics, before wrapping up.
   const askedForPhoto = !!t.photo_asked || ctx.transcript.some((m) => m.sender !== 'tenant' && /\b(photos?|pictures?|pics?)\b/i.test(m.body));
-  if (!r.needs_info && r.photos_helpful && r.photo_request && !ctx.images.length && !askedForPhoto && r.urgency !== 'emergency' && t.followup_rounds < MAX_FOLLOWUP_ROUNDS) {
+  if (!r.needs_info && r.photos_helpful && r.photo_request && !ctx.images.length && !askedForPhoto && r.urgency !== 'emergency' && t.channel !== 'web' && t.followup_rounds < MAX_FOLLOWUP_ROUNDS) {
     S.updateTicket(id, { photo_asked: 1 });
     r.needs_info = true;
     r.reply_to_tenant = String(r.photo_request);
@@ -140,7 +140,8 @@ export async function processTicket(id) {
   };
 
   // ---- Follow-up question (max 2 rounds) ----
-  if (r.needs_info && r.urgency !== 'emergency' && t.followup_rounds < MAX_FOLLOWUP_ROUNDS) {
+  // A web request has no reply channel: never park it waiting for an answer that cannot come - proceed with what was submitted.
+  if (r.needs_info && r.urgency !== 'emergency' && t.channel !== 'web' && t.followup_rounds < MAX_FOLLOWUP_ROUNDS) {
     S.updateTicket(id, { followup_rounds: t.followup_rounds + 1 });
     replyWithComp(r.reply_to_tenant);
     S.setStatus(id, 'needs_info', `Asked the tenant a follow-up question (round ${t.followup_rounds + 1} of ${MAX_FOLLOWUP_ROUNDS})`);
@@ -151,13 +152,26 @@ export async function processTicket(id) {
   // name and address. Whatever they give is checked against the tenants on file and noted for the PM, who still approves
   // every dispatch. The exception is a lockout from someone who doesn't match anyone on file: that waits for the PM.
   const verified = !!(t.verified || t.identity_cleared);
-  if (!verified && r.urgency !== 'emergency' && !(r.needs_info && t.followup_rounds < MAX_FOLLOWUP_ROUNDS)) {
+  if (!verified && r.urgency !== 'emergency' && !(r.needs_info && t.channel !== 'web' && t.followup_rounds < MAX_FOLLOWUP_ROUNDS)) {
     const given = r.identity_claim?.name && (r.identity_claim?.unit || r.identity_claim?.address);
     if (given) {
       const claim = matchClaim(r.identity_claim);
-      if (claim.found) {
+      if (claim.found && t.channel === 'web') {
+        // A public form proves nothing about who typed into it: a name+unit match identifies, it never verifies.
+        S.updateTicket(id, { tenant_id: claim.found.id, unit_id: claim.found.unit_id });
+        const asTyped = `${r.identity_claim.name}, Unit ${r.identity_claim.unit || r.identity_claim.address || '?'}`;
+        if (r.category === 'lockout') {
+          S.addFlag(id, 'identity', `Submitted online as ${asTyped}, which matches ${claim.found.name} in Unit ${claim.found.unit_number}, but anyone can type that into a form. This is a lockout, so nobody is dispatched until you confirm who this is (for example by calling the number on file).`);
+          S.addNote(id, 'Lockout submitted through the online form. The name and unit match a tenant on file, but that is identification, not verification. Held for you; no dispatch was drafted.');
+          S.setStatus(id, 'triaged', 'Lockout from the online form: held for you to confirm identity');
+          return;
+        }
+        S.addNote(id, `Submitted online as ${asTyped}, matching ${claim.found.name} in Unit ${claim.found.unit_number} at ${claim.found.property_name}. That is identification, not verification: a web form proves nothing about who typed it. Entry stays "office confirms" unless you verify them yourself.`);
+      } else if (claim.found) {
         S.updateTicket(id, { identity_cleared: 1, tenant_id: claim.found.id, unit_id: claim.found.unit_id });
         S.addNote(id, `${claim.note} Treated as that tenant, texting from a different number.`);
+      } else if (t.channel === 'web' && r.category !== 'lockout') {
+        S.addNote(id, `${claim.note} Check who this is when you review the request; entry stays "office confirms" unless you verify them yourself.`);
       } else if (r.category === 'lockout') {
         S.addFlag(id, 'identity', `${claim.note} This is a lockout, so nobody will be dispatched until you confirm who this is (for example by calling the number on file).`);
         sendToTenant(t, T.identityHold(lang));
@@ -167,9 +181,10 @@ export async function processTicket(id) {
         S.updateTicket(id, { identity_cleared: 1 });
         S.addNote(id, `${claim.note} Not on file, so check who this is when you approve the dispatch.`);
       }
+      // (web unmatched handled above without identity_cleared: identification never relaxes the access wording)
     } else if (!t.verification_asked) {
       S.updateTicket(id, { verification_asked: 1 });
-      replyWithComp(`${r.needs_info ? T.proceedAck(lang) : r.reply_to_tenant} ${T.askNameAddress(lang)}`.trim());
+      replyWithComp(`${r.needs_info ? (t.channel === 'web' ? T.proceedAckWeb(lang) : T.proceedAck(lang)) : r.reply_to_tenant} ${T.askNameAddress(lang)}`.trim());
       S.setStatus(id, 'needs_info', 'Number not on file: asked for name and address');
       S.addNote(id, `This text came from ${S.prettyPhone(t.from_phone)}, which is not a tenant number on file. The assistant is helping with the problem and asked for their name and address.`);
       return;
@@ -184,7 +199,7 @@ export async function processTicket(id) {
   }
 
   // ---- Enough info: acknowledge, draft the dispatch ----
-  replyWithComp(r.needs_info ? T.proceedAck(lang) : r.reply_to_tenant);
+  replyWithComp(r.needs_info ? (t.channel === 'web' ? T.proceedAckWeb(lang) : T.proceedAck(lang)) : r.reply_to_tenant);
   S.setStatus(id, 'triaged', 'Enough detail to dispatch');
   await draftAndQueue(id);
 }

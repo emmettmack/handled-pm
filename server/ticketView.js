@@ -10,6 +10,7 @@ export const ESTIMATE_SOURCES = {
 
 export function ticketView(t) {
   const verifiedTexter = !!(t.verified || t.identity_cleared);
+  const who = t.channel === 'web' ? 'requester' : 'texter';
   const dispatched = (t.dispatches || []).some((d) => d.kind === 'vendor');
   const closed = ['resolved', 'closed'].includes(t.status);
   const showDetails = verifiedTexter && dispatched;
@@ -23,8 +24,9 @@ export function ticketView(t) {
     estimateLabel: ESTIMATE_SOURCES[t.cost_estimate_source || 'ai_model'],
     // shown in place of the hidden sections
     notice: !showDetails
-      ? (closed && !verifiedTexter ? 'Closed without a dispatch: the texter was never verified.'
+      ? (closed && !verifiedTexter ? `Closed without a dispatch: the ${who} was never verified.`
         : closed ? 'Closed without a dispatch.'
+        : !verifiedTexter && t.channel === 'web' ? 'Waiting on identity: this requester is not verified. If you approve a dispatch, it tells the vendor not to enter until your office confirms.'
         : !verifiedTexter ? 'Waiting on identity: nothing is dispatched until the texter is verified.'
         : 'No dispatch has been drafted yet.')
       : null,

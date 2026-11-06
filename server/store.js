@@ -112,6 +112,7 @@ export const isHomeMode = () => getSetup().mode === 'home';
 // ---------- texting rules: opt-outs and delivery results ----------
 /** True the first time this number is seen, so the program disclosure goes out once per person. */
 export const markDisclosed = (phone) => db.prepare('INSERT OR IGNORE INTO sms_disclosures (phone, sent_at) VALUES (?, ?)').run(normPhone(phone), nowIso()).changes === 1;
+export const isDisclosed = (phone) => !!db.prepare('SELECT 1 AS x FROM sms_disclosures WHERE phone = ?').get(normPhone(phone));
 export const isOptedOut = (phone) => !!db.prepare('SELECT 1 FROM opt_outs WHERE phone = ?').get(normPhone(phone));
 export function setOptOut(phone, optedOut, source = 'text') {
   const p = normPhone(phone);
@@ -196,6 +197,7 @@ export function addMessage(ticketId, sender, body, { kind = 'sms', at } = {}) {
 }
 /** Internal activity line shown muted in the thread (never sent to anyone). */
 export const addNote = (ticketId, body) => addMessage(ticketId, 'system', body, { kind: 'note' });
+export const hasNote = (ticketId, prefix) => !!db.prepare("SELECT 1 FROM messages WHERE ticket_id = ? AND kind = 'note' AND body LIKE ? LIMIT 1").get(ticketId, prefix + '%');
 
 export function setStatus(ticketId, status, note = null, at) {
   const t = getTicket(ticketId);
@@ -318,8 +320,8 @@ export function inboxList() {
            (SELECT MAX(created_at) FROM messages m WHERE m.ticket_id = t.id AND m.sender = 'tenant') AS last_tenant_at
     FROM tickets t ORDER BY last_at DESC, t.id DESC`).all();
   return rows.map((r) => ({
-    id: r.id, title: r.title, status: r.status, urgency: r.urgency, ai_paused: !!r.ai_paused,
-    contact: r.tenant_name || r.from_phone || 'Unknown', from_phone: r.from_phone,
+    id: r.id, title: r.title, status: r.status, urgency: r.urgency, ai_paused: !!r.ai_paused, channel: r.channel,
+    contact: r.tenant_name || r.from_phone || (r.channel === 'web' ? 'Online request' : 'Unknown'), from_phone: r.from_phone,
     last_body: r.last_body || '', last_sender: r.last_sender || '', last_at: r.last_at || null,
     unread: !!r.last_tenant_at && (!r.pm_read_at || r.last_tenant_at > r.pm_read_at),
     opted_out: !!r.from_phone && r.channel === 'sms' && isOptedOut(r.from_phone),

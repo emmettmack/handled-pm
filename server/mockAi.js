@@ -130,6 +130,9 @@ export async function triage(ctx) {
   let reply;
   if (emergency) reply = EMERGENCY_REPLY[emergency.kind][li];
   else if (needsInfo) reply = FOLLOWUPS[category][li];
+  else if (ctx.ticket?.channel === 'web') reply = lang === 'es'
+    ? `Gracias${ctx.tenant ? ', ' + first(ctx.tenant.name) : ''}. Ya tengo lo que necesito y estoy buscando a un técnico (${tradeWord}). El administrador revisa cada solicitud antes de programar nada.`
+    : `Thanks${ctx.tenant ? ', ' + first(ctx.tenant.name) : ''}. I've got what I need and I'm lining up a ${tradeWord}. Your property manager reviews every request before anything is scheduled.`;
   else reply = lang === 'es'
     ? `Gracias${ctx.tenant ? ', ' + first(ctx.tenant.name) : ''}. Ya tengo lo que necesito y estoy buscando a un técnico (${tradeWord}). Le escribo en cuanto haya un horario. Si algo cambia, responda aquí.`
     : `Thanks${ctx.tenant ? ', ' + first(ctx.tenant.name) : ''}. I've got what I need and I'm lining up a ${tradeWord}. I'll text you as soon as there's a time. If anything changes, just reply here.`;

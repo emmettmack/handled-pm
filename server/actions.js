@@ -176,6 +176,9 @@ export function ackEmergency(ticketId) {
 export function pmMessage(ticketId, body) {
   const t = S.getTicket(ticketId);
   if (!body?.trim()) throw fail('Message is empty');
+  if (t.channel === 'web' && !S.hasNote(ticketId, 'Not delivered:')) {
+    S.addNote(ticketId, 'Not delivered: this request came through the online form, so what you write here is saved on the work order, not sent. Reach the requester directly (their email, if they gave one, is in the note above).');
+  }
   if (!t.ai_paused) {
     S.setAiPaused(ticketId, true);
     S.addNote(ticketId, 'You replied, so the assistant has paused on this conversation. Turn it back on from the inbox whenever you want it to take over again.');

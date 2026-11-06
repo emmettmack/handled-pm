@@ -72,7 +72,8 @@ footer div{max-width:760px;margin:0 auto;padding:18px 24px}
   h2,.cta,dl,.samples{break-inside:avoid}
   .qr{display:block!important}
 }
-input[type=tel]{display:block;width:100%;max-width:320px;font:inherit;padding:8px 10px;border:1px solid var(--ink);border-radius:4px;margin:4px 0 14px}
+input[type=tel],input[type=text],input[type=email],textarea{display:block;width:100%;max-width:320px;font:inherit;padding:8px 10px;border:1px solid var(--ink);border-radius:4px;margin:4px 0 14px}
+textarea{max-width:520px;resize:vertical}
 label{font-weight:600}
 .check{display:flex;gap:10px;align-items:flex-start;font-weight:400;margin:4px 0 8px}
 .check input{margin-top:6px;flex:none}
@@ -82,19 +83,20 @@ label{font-weight:600}
 .signup button{margin-top:8px}`;
 
 /** The words next to the opt-in checkbox. The server stores this exact text with every sign-up, so build it in one place. */
-export const consentCheckboxText = (company = null) => `I agree to receive text messages from ${company ? `${company} through Macalisto` : (company || DEFAULT_BRAND)} about my repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of submitting a repair request, or of any lease or purchase. You can use your rental portal instead.`;
+export const consentCheckboxText = (company = null) => `I agree to receive text messages from ${company ? `${company} through Macalisto` : (company || DEFAULT_BRAND)} about my repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of submitting a repair request, or of any lease or purchase. You can use the online form instead.`;
 
 export const SITE = 'https://macalisto.com';
 export const FORM_ACTION = 'https://app.macalisto.com/api/optin';
+export const REPAIR_ACTION = 'https://app.macalisto.com/api/repair-request';
 
-export function renderOptinPage({ number = DEFAULT_NUMBER, company = null, base = '', autoPrint = false, formAction = FORM_ACTION, slug = '' } = {}) {
+export function renderOptinPage({ number = DEFAULT_NUMBER, company = null, base = '', autoPrint = false, formAction = FORM_ACTION, repairAction = REPAIR_ACTION, slug = '' } = {}) {
   const brand = company || DEFAULT_BRAND;
   const b = esc(brand);
   const shown = prettyNumber(number);
   const tel = `+1${String(number).replace(/\D/g, '').slice(-10)}`;
   const fromWho = company ? `${b} through Macalisto` : b;
   // The consent sentence is the exact wording registered with the carriers. Only the number and the sender's name change.
-  const consent = `Text your maintenance request to ${shown}. By texting, you agree to receive text messages from ${fromWho} about your repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of submitting a repair request, or of any lease or purchase. You can use your rental portal instead.`;
+  const consent = `Text your maintenance request to ${shown}. By texting, you agree to receive text messages from ${fromWho} about your repair request, such as confirmations, questions, scheduling and updates. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of submitting a repair request, or of any lease or purchase. You can use the online form instead.`;
   const lead = company
     ? `This is the maintenance line for ${b}. If you rent a home managed by ${b}, text this number to report a repair or ask about one that is already open.`
     : `This is the repair request line for Macalisto. If your landlord or property manager gave you this number, text it to report a repair or ask about one that is already open. Every message comes from Macalisto.`;
@@ -117,7 +119,7 @@ ${CSS}
 <h1>Text your maintenance request</h1>
 <p class="lead">${lead}</p>
 
-<div class="optional"><strong>Texting is optional.</strong> You can always submit a repair request, or make changes to one, through your landlord's or property manager's rental portal. Use this number only if you prefer text messages.</div>
+<div class="optional"><strong>Texting is optional.</strong> You can always submit a repair request through the online form below - no text messages needed. Use this number only if you prefer text messages.</div>
 
 <div class="cta">
 <div class="label">Text this number</div>
@@ -135,7 +137,7 @@ ${CSS}
 
 <h2 id="signup">Or sign up here</h2>
 <form class="signup" method="post" action="${esc(formAction)}">
-<p class="note" style="margin-top:0">Signing up is optional. If you would rather get text messages, enter your mobile number and agree below. We will text you a confirmation, and then you can text your repair requests to ${shown}. You can always use your rental portal instead.</p>
+<p class="note" style="margin-top:0">Signing up is optional. If you would rather get text messages, enter your mobile number and agree below. We will text you a confirmation, and then you can text your repair requests to ${shown}. You can always use the online form on this page instead.</p>
 <label for="phone">Mobile phone number</label>
 <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(555) 555-5555" required>
 <div class="hp" aria-hidden="true"><label>Leave this empty<input name="website" tabindex="-1" autocomplete="off"></label></div>
@@ -145,6 +147,22 @@ ${CSS}
 <button type="submit">Sign me up for repair request texts</button>
 </form>
 
+<h2 id="online">Or submit a repair request online</h2>
+<form class="signup" method="post" action="${esc(repairAction)}">
+<p class="note" style="margin-top:0">No texts and no sign-up needed. Describe the problem and your property manager reviews it the same way as a text. Nothing is sent to a repair person until they approve it. If you give an email, it is only so they can reach you about this request.</p>
+<label for="rq-name">Full name</label>
+<input id="rq-name" name="name" type="text" autocomplete="name" maxlength="80" required>
+<label for="rq-unit">Unit or home</label>
+<input id="rq-unit" name="unit" type="text" placeholder="Unit 4B" maxlength="40" required>
+<label for="rq-desc">What needs repair?</label>
+<textarea id="rq-desc" name="description" rows="4" maxlength="2000" required></textarea>
+<label for="rq-email">Email (optional)</label>
+<input id="rq-email" name="email" type="email" autocomplete="email" maxlength="200">
+<div class="hp" aria-hidden="true"><label>Leave this empty<input name="website" tabindex="-1" autocomplete="off"></label></div>
+<input type="hidden" name="slug" value="${esc(slug)}">
+<button type="submit">Submit repair request</button>
+</form>
+
 <h2>How it works</h2>
 <ol class="steps">
 <li><strong>You text the problem.</strong> Describe what is wrong. Photos help and can be sent in the same conversation.</li>
@@ -152,7 +170,7 @@ ${CSS}
 <li><strong>Your property manager reviews and approves the repair.</strong> Nothing is sent to a repair person until they do.</li>
 <li><strong>You are kept informed.</strong> You will get a text with the day and time once a repair person confirms, and a follow-up when the work is done.</li>
 </ol>
-<p class="note">If you would rather not text, you can follow the same steps through your landlord's or property manager's rental portal.</p>
+<p class="note">If you would rather not text, use the online form below instead. Your property manager reviews it the same way, but there is no text channel: they reach you directly if they need anything.</p>
 
 <h2>Program details</h2>
 <dl>
@@ -212,6 +230,23 @@ export function renderThanksPage({ number = DEFAULT_NUMBER, company = null, back
 <p class="legal" style="margin:0">The confirmation reads:</p><div class="msg" style="margin-top:8px">${esc(FIRST_CONTACT)}</div></div>
 <p>Message frequency varies. Message and data rates may apply. Reply <strong>STOP</strong> at any time to opt out, or <strong>HELP</strong> for help. Questions? Email <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>.</p>
 <p><a href="${esc(back)}">Back to the sign-up page</a></p>`, company || DEFAULT_BRAND);
+}
+
+/** Shown after an online repair request. Static safety wording: web submissions cannot be texted, so the emergency guidance lives here for everyone. */
+export function renderRequestThanks({ company = null, back = `${SITE}/text/#online`, duplicate = false } = {}) {
+  return shell('Request received', `<h1>Your repair request is in</h1>
+<p class="lead">${duplicate ? 'We already have this exact request, so nothing was duplicated.' : 'Your request has been added to your property manager\'s queue. They review every request before anything is scheduled.'} No text messages will be sent to you about this request.</p>
+<div class="warn"><strong>If there is a fire, a gas smell, a medical emergency or immediate danger, call 911 first.</strong> For a gas smell, leave the building and call the gas company from outside. Do not use light switches or flames.</div>
+<p>If your property manager needs more information, they will reach out directly. Questions? Email <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>.</p>
+<p><a href="${esc(back)}">Back to the request page</a></p>`, company || DEFAULT_BRAND);
+}
+
+/** Shown when an online repair request cannot be completed (missing fields, too many tries). */
+export function renderRequestError({ message, back = `${SITE}/text/#online`, company = null }) {
+  return shell('Request not sent', `<h1>We could not send that request</h1>
+<p class="lead">${esc(message)}</p>
+<p><a href="${esc(back)}">Back to the request form</a></p>
+<p class="note">You can also text ${prettyNumber(DEFAULT_NUMBER)} to report a repair.</p>`, company || DEFAULT_BRAND);
 }
 
 /** Shown when a sign-up cannot be completed (missing box, bad number, too many tries). */

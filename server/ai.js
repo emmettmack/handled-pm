@@ -96,7 +96,8 @@ TASK: Read the whole conversation and return ONLY a JSON object (no prose, no co
  "photo_request": "a short ask, in the tenant's language: if photos_helpful, exactly what to photograph and why, and that a description is fine; if not, the specific details a vendor needs instead; empty string if you need nothing more",
  "photo_request_english": "English translation of photo_request",
  "identity_claim": { "name": "name the texter gave or null", "unit": "unit number the texter gave or null", "address": "street address the texter gave or null" }
-}`;
+}`
+      + (ctx.ticket.channel === 'web' ? `\n\nCHANNEL: this request came through a public web form, not a text message. You cannot text or call this person, and they cannot reply here. reply_to_tenant is saved as a note for the property manager, never delivered: never promise to text or call, never say anything is scheduled, and do not ask for photos (ask for the specific details a vendor needs instead).` : '');
       const user = JSON.stringify({
         unit: ctx.unit ? `${unitName(ctx.unit.number)}, ${ctx.unit.address}${ctx.unit.neighborhood ? ` (${ctx.unit.neighborhood})` : ''}` : 'unknown (number not on file)',
         tenant_on_file: ctx.tenant ? ctx.tenant.name : null,
@@ -105,6 +106,7 @@ TASK: Read the whole conversation and return ONLY a JSON object (no prose, no co
         follow_up_rounds_allowed: ctx.maxRounds,
         timing_to_tell_tenant: { routine: ctx.prefs?.timing_routine, urgent: ctx.prefs?.timing_urgent },
         pm_name: ctx.company?.pm_name || null,
+        channel: ctx.ticket.channel,
         conversation: ctx.transcript.map((m) => `${m.sender === 'tenant' ? 'TENANT' : m.sender === 'pm' ? 'PM' : 'COORDINATOR'}: ${m.body}`),
       });
       return callJSON(system, user, 2200, ctx.images || []);
