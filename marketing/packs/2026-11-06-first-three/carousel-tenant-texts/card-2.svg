@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.83" y2="1">
+      <stop offset="0" stop-color="#2a1a6e"/><stop offset="0.48" stop-color="#4433d6"/><stop offset="1" stop-color="#3b6df0"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="0.5" cy="0.38" r="0.55">
+      <stop offset="0" stop-color="#7d8cff" stop-opacity="0.55"/><stop offset="0.7" stop-color="#7d8cff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="0.85" cy="1" r="0.5">
+      <stop offset="0" stop-color="#50c8ff" stop-opacity="0.28"/><stop offset="0.7" stop-color="#50c8ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1080" height="1080" fill="url(#bg)"/>
+  <rect width="1080" height="1080" fill="url(#glow1)"/>
+  <rect width="1080" height="1080" fill="url(#glow2)"/>
+  <g transform="translate(72,64)">
+    <rect width="64" height="64" rx="18" fill="#fff"/>
+    <g transform="scale(2.6667)"><path d="M5 12.5l5 5 9-10" fill="none" stroke="#5b45e8" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+  </g>
+  <text x="156" y="109" font-family="Geist, -apple-system, 'Segoe UI', sans-serif" font-size="42" font-weight="600" letter-spacing="-0.5" fill="#fff">Macalisto</text>
+  <text x="72" y="470" font-family="Geist, -apple-system, 'Segoe UI', sans-serif" font-size="220" font-weight="700" letter-spacing="-4" fill="rgba(255,255,255,0.28)">1</text>
+  <text x="72" y="620" font-family="Geist, -apple-system, 'Segoe UI', sans-serif" font-size="84" font-weight="700" letter-spacing="-2" fill="#fff">They text one number.</text>
+  <text x="72" y="760" font-family="Geist, -apple-system, 'Segoe UI', sans-serif" font-size="40" fill="rgba(255,255,255,0.8)">Any language, photos welcome.</text>
+  <text x="72" y="820" font-family="Geist, -apple-system, 'Segoe UI', sans-serif" font-size="40" fill="rgba(255,255,255,0.8)">No app to download.</text>
+  <text x="72" y="1006" font-family="Geist, -apple-system, 'Segoe UI', sans-serif" font-size="30" fill="rgba(255,255,255,0.72)">macalisto.com</text>
+</svg>
